@@ -124,6 +124,7 @@ export type Database = {
           id: string;
           rank: number | null;
           release_year: number | null;
+          status: Database["public"]["Enums"]["comic_status"];
           title: string;
           view_count: number | null;
           vote_count: number | null;
@@ -138,6 +139,7 @@ export type Database = {
           id?: string;
           rank?: number | null;
           release_year?: number | null;
+          status?: Database["public"]["Enums"]["comic_status"];
           title: string;
           view_count?: number | null;
           vote_count?: number | null;
@@ -152,6 +154,7 @@ export type Database = {
           id?: string;
           rank?: number | null;
           release_year?: number | null;
+          status?: Database["public"]["Enums"]["comic_status"];
           title?: string;
           view_count?: number | null;
           vote_count?: number | null;
@@ -595,6 +598,7 @@ export type Database = {
     };
     Enums: {
       country: "KR" | "JPN" | "CN";
+      comic_status: "On Going" | "End" | "Hiatus" | "Break";
       popular_period: "harian" | "mingguan" | "bulanan" | "all_time";
     };
     CompositeTypes: {
@@ -712,6 +716,7 @@ export const Constants = {
   public: {
     Enums: {
       country: ["KR", "JPN", "CN"],
+      comic_status: ["On Going", "End", "Hiatus", "Break"],
       popular_period: ["harian", "mingguan", "bulanan", "all_time"],
     },
   },

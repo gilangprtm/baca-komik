@@ -4,15 +4,15 @@ import { useSearchParams } from "next/navigation";
 import { AdminLayout } from "@/components/admin-layout";
 import dynamic from "next/dynamic";
 
-// Komponen-komponen yang akan dimuat secara dinamis
+// Dynamically load components
 const DashboardContent = dynamic(() => import("@/components/admin/dashboard"), {
   ssr: false,
 });
 const ComicsContent = dynamic(() => import("@/components/admin/comic/comics"), {
   ssr: false,
 });
-const NewComicContent = dynamic(
-  () => import("@/components/admin/comic/new-comic"),
+const ComicFormContent = dynamic(
+  () => import("@/components/admin/comic/form-comic"),
   {
     ssr: false,
   }
@@ -22,14 +22,14 @@ export default function AdminPage() {
   const searchParams = useSearchParams();
   const view = searchParams.get("view") || "dashboard";
 
-  // Fungsi untuk mendapatkan komponen berdasarkan parameter view
+  // Function to get the component based on the view parameter
   const getComponent = () => {
-    // Cek parameter view dan kembalikan komponen yang sesuai
+    // Check view parameter and return the appropriate component
     switch (view) {
-      case "comics":
+      case "comics-list":
         return <ComicsContent />;
-      case "comics-new":
-        return <NewComicContent />;
+      case "comics-form":
+        return <ComicFormContent />;
       default:
         return <DashboardContent />;
     }

@@ -119,11 +119,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: [
         {
           title: "All Comics",
-          url: "/admin?view=comics",
+          url: "/admin?view=comics-list",
         },
         {
           title: "Add New Comic",
-          url: "/admin?view=comics-new",
+          url: "/admin?view=comics-form",
         },
         {
           title: "Featured Comics",

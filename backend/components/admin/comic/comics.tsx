@@ -172,7 +172,7 @@ export default function ComicsContent() {
   };
 
   const navigateToEdit = (id: string) => {
-    router.push(`/admin?view=comics-edit&id=${id}`);
+    router.push(`/admin?view=comics-form&id=${id}`);
   };
 
   const handleDeleteComic = async (id: string) => {
@@ -199,7 +199,7 @@ export default function ComicsContent() {
     <>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Comic Management</h1>
-        <Button onClick={() => navigateTo("comics-new")}>
+        <Button onClick={() => navigateTo("comics-form")}>
           <BookOpen className="mr-2 h-4 w-4" />
           Add New Comic
         </Button>
