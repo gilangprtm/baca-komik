@@ -30,9 +30,18 @@ import {
   ArrowUpDown,
   Eye,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type ComicType = {
   id: string;
@@ -58,6 +67,9 @@ export default function ComicsContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortColumn, setSortColumn] = useState<SortColumn>("title");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const supabase = createClientComponentClient<Database>();
 
   useEffect(() => {
@@ -103,6 +115,11 @@ export default function ComicsContent() {
     fetchComics();
   }, [supabase]);
 
+  // Reset to first page when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   // Filter comics based on search query
   const filteredComics = useMemo(() => {
     return comics.filter(
@@ -141,6 +158,21 @@ export default function ComicsContent() {
       return 0;
     });
   }, [filteredComics, sortColumn, sortDirection]);
+
+  // Get paginated comics
+  const paginatedComics = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedComics.slice(startIndex, endIndex);
+  }, [sortedComics, currentPage, itemsPerPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(sortedComics.length / itemsPerPage);
+
+  // Handle page change
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
 
   // Handle sorting when a column header is clicked
   const handleSort = (column: SortColumn) => {
@@ -205,13 +237,33 @@ export default function ComicsContent() {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="flex justify-between items-center mb-4">
         <Input
           placeholder="Search by title or alternative title..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-sm"
         />
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Show:</span>
+          <Select
+            value={itemsPerPage.toString()}
+            onValueChange={(value) => {
+              setItemsPerPage(parseInt(value));
+              setCurrentPage(1); // Reset to first page when changing items per page
+            }}
+          >
+            <SelectTrigger className="w-[70px]">
+              <SelectValue placeholder="10" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5</SelectItem>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -307,14 +359,14 @@ export default function ComicsContent() {
                     </TableCell>
                   </TableRow>
                 ))
-            ) : sortedComics.length === 0 ? (
+            ) : paginatedComics.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">
                   No comics found
                 </TableCell>
               </TableRow>
             ) : (
-              sortedComics.map((comic) => (
+              paginatedComics.map((comic) => (
                 <TableRow key={comic.id} className="group">
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
@@ -384,6 +436,83 @@ export default function ComicsContent() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {!loading && totalPages > 0 && (
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, sortedComics.length)} of{" "}
+            {sortedComics.length} comics
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(1)}
+              disabled={currentPage === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Show at most 5 page buttons
+                let pageNum = currentPage;
+
+                // Adjust which page numbers to show based on current page
+                if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                // Skip if page number exceeds total pages or is less than 1
+                if (pageNum > totalPages || pageNum < 1) {
+                  return null;
+                }
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => goToPage(pageNum)}
+                    className="w-9"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goToPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
