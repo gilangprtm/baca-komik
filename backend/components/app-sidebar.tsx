@@ -55,19 +55,19 @@ const data = {
       items: [
         {
           title: "All Comics",
-          url: "/admin/comics",
+          url: "/admin?view=comics",
         },
         {
           title: "Add New",
-          url: "/admin/comics/new",
+          url: "/admin?view=comics-new",
         },
         {
           title: "Categories",
-          url: "/admin/comics/categories",
+          url: "/admin?view=comics-categories",
         },
         {
           title: "Tags",
-          url: "/admin/comics/tags",
+          url: "/admin?view=comics-tags",
         },
       ],
     },
@@ -78,15 +78,15 @@ const data = {
       items: [
         {
           title: "All Chapters",
-          url: "/admin/chapters",
+          url: "/admin?view=chapters",
         },
         {
           title: "Upload",
-          url: "/admin/chapters/upload",
+          url: "/admin?view=chapters-upload",
         },
         {
           title: "Pending",
-          url: "/admin/chapters/pending",
+          url: "/admin?view=chapters-pending",
         },
       ],
     },
@@ -97,15 +97,15 @@ const data = {
       items: [
         {
           title: "All Users",
-          url: "/admin/users",
+          url: "/admin?view=users",
         },
         {
           title: "Moderators",
-          url: "/admin/users/moderators",
+          url: "/admin?view=users-moderators",
         },
         {
           title: "Banned Users",
-          url: "/admin/users/banned",
+          url: "/admin?view=users-banned",
         },
       ],
     },
@@ -116,11 +116,11 @@ const data = {
       items: [
         {
           title: "User Reports",
-          url: "/admin/reports/users",
+          url: "/admin?view=reports-users",
         },
         {
           title: "Content Reports",
-          url: "/admin/reports/content",
+          url: "/admin?view=reports-content",
         },
       ],
     },
@@ -131,15 +131,15 @@ const data = {
       items: [
         {
           title: "Overview",
-          url: "/admin/analytics",
+          url: "/admin?view=analytics",
         },
         {
           title: "Popular Comics",
-          url: "/admin/analytics/popular",
+          url: "/admin?view=analytics-popular",
         },
         {
           title: "User Activity",
-          url: "/admin/analytics/users",
+          url: "/admin?view=analytics-users",
         },
       ],
     },
@@ -150,15 +150,15 @@ const data = {
       items: [
         {
           title: "General",
-          url: "/admin/settings",
+          url: "/admin?view=settings",
         },
         {
           title: "Appearance",
-          url: "/admin/settings/appearance",
+          url: "/admin?view=settings-appearance",
         },
         {
           title: "Storage",
-          url: "/admin/settings/storage",
+          url: "/admin?view=settings-storage",
         },
       ],
     },
@@ -166,17 +166,17 @@ const data = {
   projects: [
     {
       name: "Scheduled Uploads",
-      url: "/admin/scheduled",
+      url: "/admin?view=scheduled",
       icon: Clock,
     },
     {
       name: "Batch Uploader",
-      url: "/admin/batch-upload",
+      url: "/admin?view=batch-upload",
       icon: Upload,
     },
     {
       name: "Tag Manager",
-      url: "/admin/tag-manager",
+      url: "/admin?view=tag-manager",
       icon: Tag,
     },
   ],

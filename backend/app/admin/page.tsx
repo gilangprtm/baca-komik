@@ -1,9 +1,10 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import { AdminLayout } from "@/components/admin-layout";
 import dynamic from "next/dynamic";
-import { SPARouter } from "@/components/spa-router";
 
-// Use dynamic imports to avoid NextJS pre-rendering these components
+// Komponen-komponen yang akan dimuat secara dinamis
 const DashboardContent = dynamic(() => import("@/components/admin/dashboard"), {
   ssr: false,
 });
@@ -15,22 +16,21 @@ const NewComicContent = dynamic(() => import("@/components/admin/new-comic"), {
 });
 
 export default function AdminPage() {
-  // Define our SPA routes
-  const routes = [
-    {
-      path: "/admin",
-      component: <DashboardContent />,
-    },
-    {
-      path: "/admin/comics",
-      component: <ComicsContent />,
-    },
-    {
-      path: "/admin/comics/new",
-      component: <NewComicContent />,
-    },
-    // Add other routes here as needed
-  ];
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view") || "dashboard";
 
-  return <SPARouter routes={routes} />;
+  // Fungsi untuk mendapatkan komponen berdasarkan parameter view
+  const getComponent = () => {
+    // Cek parameter view dan kembalikan komponen yang sesuai
+    switch (view) {
+      case "comics":
+        return <ComicsContent />;
+      case "comics-new":
+        return <NewComicContent />;
+      default:
+        return <DashboardContent />;
+    }
+  };
+
+  return <AdminLayout>{getComponent()}</AdminLayout>;
 }

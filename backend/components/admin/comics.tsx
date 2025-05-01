@@ -13,8 +13,10 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useRouter } from "next/navigation";
 
 export default function ComicsContent() {
+  const router = useRouter();
   const [comics, setComics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,13 +84,20 @@ export default function ComicsContent() {
     comic.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Handle SPA navigation
+  const navigateTo = (view: string) => {
+    router.push(`/admin?view=${view}`);
+  };
+
+  const navigateToEdit = (id: number) => {
+    router.push(`/admin?view=comics-edit&id=${id}`);
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Comics</h1>
-        <Link href="/admin/comics/new">
-          <Button>Add New Comic</Button>
-        </Link>
+        <Button onClick={() => navigateTo("comics-new")}>Add New Comic</Button>
       </div>
 
       <div className="mb-4">
@@ -143,11 +152,13 @@ export default function ComicsContent() {
                   <TableCell>{comic.views.toLocaleString()}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Link href={`/admin/comics/${comic.id}`}>
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
-                      </Link>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigateToEdit(comic.id)}
+                      >
+                        Edit
+                      </Button>
                       <Button variant="destructive" size="sm">
                         Delete
                       </Button>

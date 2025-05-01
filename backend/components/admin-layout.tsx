@@ -1,7 +1,7 @@
 "use client";
 
 import React, { ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -19,16 +19,23 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AdminLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view") || "dashboard";
 
-  // Get the current page title based on pathname
+  // Get the current page title based on view parameter
   const getPageTitle = () => {
-    const path = pathname.split("/").filter(Boolean);
-    if (path.length === 1) return "Dashboard";
-    return (
-      path[path.length - 1].charAt(0).toUpperCase() +
-      path[path.length - 1].slice(1)
-    );
+    if (!view || view === "dashboard") return "Dashboard";
+
+    // Convert view like "comics-new" to "New Comic"
+    const parts = view.split("-");
+    if (parts.length > 1) {
+      const mainPart = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+      const subPart = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+      return `${subPart} ${mainPart}`;
+    }
+
+    // Basic conversion for single word views
+    return view.charAt(0).toUpperCase() + view.slice(1);
   };
 
   return (

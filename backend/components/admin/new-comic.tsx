@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
 
 export default function NewComicContent() {
   const router = useRouter();
@@ -59,7 +58,7 @@ export default function NewComicContent() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Redirect to comics list after successful submission
-      router.push("/admin/comics");
+      router.push("/admin?view=comics");
     } catch (error) {
       console.error("Error submitting comic:", error);
     } finally {
@@ -67,13 +66,17 @@ export default function NewComicContent() {
     }
   };
 
+  const navigateToComics = () => {
+    router.push("/admin?view=comics");
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Add New Comic</h1>
-        <Link href="/admin/comics">
-          <Button variant="outline">Cancel</Button>
-        </Link>
+        <Button variant="outline" onClick={navigateToComics}>
+          Cancel
+        </Button>
       </div>
 
       <Card>
@@ -168,11 +171,9 @@ export default function NewComicContent() {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">
-            <Link href="/admin/comics">
-              <Button variant="outline" type="button">
-                Cancel
-              </Button>
-            </Link>
+            <Button variant="outline" type="button" onClick={navigateToComics}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Save Comic"}
             </Button>
