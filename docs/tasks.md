@@ -29,14 +29,14 @@
   - [x] POST /api/comments - Add comment
   - [x] GET /api/comments/:id - Get comments
 - [x] Create view counting mechanism
-- [ ] Implement authentication middleware
+- [x] Implement authentication middleware
 
 ## Admin Dashboard
 
-- [ ] Create admin layout and navigation
-- [ ] Implement comic management UI
-  - [ ] Comic list view with filtering/sorting
-  - [ ] Comic creation/edit form
+- [x] Create admin layout and navigation
+- [x] Implement comic management UI
+  - [x] Comic list view with filtering/sorting
+  - [x] Comic creation/edit form
   - [ ] Chapter management interface
   - [ ] Page upload and management
 - [ ] Implement metadata management
