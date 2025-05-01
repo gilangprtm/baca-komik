@@ -8,12 +8,15 @@ import dynamic from "next/dynamic";
 const DashboardContent = dynamic(() => import("@/components/admin/dashboard"), {
   ssr: false,
 });
-const ComicsContent = dynamic(() => import("@/components/admin/comics"), {
+const ComicsContent = dynamic(() => import("@/components/admin/comic/comics"), {
   ssr: false,
 });
-const NewComicContent = dynamic(() => import("@/components/admin/new-comic"), {
-  ssr: false,
-});
+const NewComicContent = dynamic(
+  () => import("@/components/admin/comic/new-comic"),
+  {
+    ssr: false,
+  }
+);
 
 export default function AdminPage() {
   const searchParams = useSearchParams();

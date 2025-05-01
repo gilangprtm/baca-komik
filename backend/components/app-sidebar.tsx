@@ -12,7 +12,13 @@ import {
   Clock,
   ShieldAlert,
   Home,
+  Flame,
+  PenTool,
+  BookMarked,
+  Layers,
+  FileText,
 } from "lucide-react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
@@ -25,68 +31,151 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { Database } from "@/lib/supabase/database.types";
 
-// This is sample data for BacaKomik admin
-const data = {
-  user: {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const supabase = createClientComponentClient<Database>();
+  const [userData, setUserData] = React.useState({
     name: "Admin",
-    email: "admin@bacakomik.com",
-    avatar: "/avatars/admin.jpg",
-  },
-  teams: [
+    email: "",
+    avatar: "",
+  });
+  const [activeNavItem, setActiveNavItem] = React.useState("dashboard");
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function fetchUserData() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          setUserData({
+            name: "Admin",
+            email: user.email || "",
+            avatar: "",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserData();
+  }, [supabase]);
+
+  // Set active nav item based on current path
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      const viewParam = new URLSearchParams(window.location.search).get("view");
+
+      if (path === "/admin" && !viewParam) {
+        setActiveNavItem("dashboard");
+      } else if (viewParam?.includes("comics")) {
+        setActiveNavItem("comics");
+      } else if (viewParam?.includes("chapter")) {
+        setActiveNavItem("chapters");
+      } else if (viewParam?.includes("metadata")) {
+        setActiveNavItem("metadata");
+      } else if (viewParam?.includes("user")) {
+        setActiveNavItem("users");
+      } else if (viewParam?.includes("analytics")) {
+        setActiveNavItem("analytics");
+      } else if (viewParam?.includes("settings")) {
+        setActiveNavItem("settings");
+      }
+    }
+  }, []);
+
+  const teams = [
     {
-      name: "BacaKomik",
+      name: "BacaKomik Admin",
       logo: BookOpen,
-      plan: "Admin",
+      plan: "Admin Dashboard",
     },
-  ],
-  navMain: [
+  ];
+
+  const navMain = [
     {
       title: "Dashboard",
       url: "/admin",
       icon: Home,
-      isActive: true,
-      items: [],
+      isActive: activeNavItem === "dashboard",
+      items: [
+        {
+          title: "Dashboard",
+          url: "/admin",
+        },
+      ],
     },
     {
-      title: "Comics",
+      title: "Comic Management",
       url: "#",
       icon: BookOpen,
+      isActive: activeNavItem === "comics",
       items: [
         {
           title: "All Comics",
           url: "/admin?view=comics",
         },
         {
-          title: "Add New",
+          title: "Add New Comic",
           url: "/admin?view=comics-new",
         },
         {
-          title: "Categories",
-          url: "/admin?view=comics-categories",
+          title: "Featured Comics",
+          url: "/admin?view=comics-featured",
         },
         {
-          title: "Tags",
-          url: "/admin?view=comics-tags",
+          title: "Recommended",
+          url: "/admin?view=comics-recommended",
         },
       ],
     },
     {
-      title: "Chapters",
+      title: "Chapter Management",
       url: "#",
       icon: List,
+      isActive: activeNavItem === "chapters",
       items: [
         {
           title: "All Chapters",
-          url: "/admin?view=chapters",
+          url: "/admin?view=chapters-list",
         },
         {
-          title: "Upload",
+          title: "Upload Pages",
           url: "/admin?view=chapters-upload",
         },
         {
-          title: "Pending",
-          url: "/admin?view=chapters-pending",
+          title: "Bulk Upload",
+          url: "/admin?view=chapters-bulk",
+        },
+      ],
+    },
+    {
+      title: "Metadata",
+      url: "#",
+      icon: Tag,
+      isActive: activeNavItem === "metadata",
+      items: [
+        {
+          title: "Genres",
+          url: "/admin?view=metadata-genres",
+        },
+        {
+          title: "Authors",
+          url: "/admin?view=metadata-authors",
+        },
+        {
+          title: "Artists",
+          url: "/admin?view=metadata-artists",
+        },
+        {
+          title: "Formats",
+          url: "/admin?view=metadata-formats",
         },
       ],
     },
@@ -94,33 +183,19 @@ const data = {
       title: "User Management",
       url: "#",
       icon: Users,
+      isActive: activeNavItem === "users",
       items: [
         {
           title: "All Users",
-          url: "/admin?view=users",
+          url: "/admin?view=users-list",
         },
         {
-          title: "Moderators",
-          url: "/admin?view=users-moderators",
+          title: "Comments Moderation",
+          url: "/admin?view=users-comments",
         },
         {
-          title: "Banned Users",
-          url: "/admin?view=users-banned",
-        },
-      ],
-    },
-    {
-      title: "Reports",
-      url: "#",
-      icon: ShieldAlert,
-      items: [
-        {
-          title: "User Reports",
-          url: "/admin?view=reports-users",
-        },
-        {
-          title: "Content Reports",
-          url: "/admin?view=reports-content",
+          title: "Reports",
+          url: "/admin?view=users-reports",
         },
       ],
     },
@@ -128,18 +203,19 @@ const data = {
       title: "Analytics",
       url: "#",
       icon: BarChart3,
+      isActive: activeNavItem === "analytics",
       items: [
         {
           title: "Overview",
-          url: "/admin?view=analytics",
+          url: "/admin?view=analytics-overview",
         },
         {
           title: "Popular Comics",
           url: "/admin?view=analytics-popular",
         },
         {
-          title: "User Activity",
-          url: "/admin?view=analytics-users",
+          title: "User Engagement",
+          url: "/admin?view=analytics-engagement",
         },
       ],
     },
@@ -147,53 +223,53 @@ const data = {
       title: "Settings",
       url: "#",
       icon: Settings2,
+      isActive: activeNavItem === "settings",
       items: [
         {
-          title: "General",
-          url: "/admin?view=settings",
+          title: "API Configuration",
+          url: "/admin?view=settings-api",
         },
         {
-          title: "Appearance",
-          url: "/admin?view=settings-appearance",
+          title: "Admin Accounts",
+          url: "/admin?view=settings-accounts",
         },
         {
-          title: "Storage",
-          url: "/admin?view=settings-storage",
+          title: "System Settings",
+          url: "/admin?view=settings-system",
         },
       ],
     },
-  ],
-  projects: [
+  ];
+
+  const projects = [
     {
-      name: "Scheduled Uploads",
-      url: "/admin?view=scheduled",
+      name: "Content Schedule",
+      url: "/admin?view=content-schedule",
       icon: Clock,
     },
     {
-      name: "Batch Uploader",
-      url: "/admin?view=batch-upload",
+      name: "Batch Upload Tool",
+      url: "/admin?view=batch-uploader",
       icon: Upload,
     },
     {
-      name: "Tag Manager",
-      url: "/admin?view=tag-manager",
-      icon: Tag,
+      name: "Image Validator",
+      url: "/admin?view=image-validator",
+      icon: FileText,
     },
-  ],
-};
+  ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={navMain} />
+        <NavProjects projects={projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
