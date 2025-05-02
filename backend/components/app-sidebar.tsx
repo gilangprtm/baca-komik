@@ -83,6 +83,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         setActiveNavItem("chapters");
       } else if (viewParam?.includes("metadata")) {
         setActiveNavItem("metadata");
+      } else if (viewParam?.includes("featured")) {
+        setActiveNavItem("featured");
       } else if (viewParam?.includes("user")) {
         setActiveNavItem("users");
       } else if (viewParam?.includes("analytics")) {
@@ -128,13 +130,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Add New Comic",
           url: "/admin?view=comics-form",
         },
+      ],
+    },
+    {
+      title: "Featured Comics",
+      url: "/admin?view=featured",
+      icon: Flame,
+      isActive: activeNavItem === "featured",
+      items: [
         {
-          title: "Featured Comics",
-          url: "/admin?view=comics-featured",
-        },
-        {
-          title: "Recommended",
-          url: "/admin?view=comics-recommended",
+          title: "Manage Featured Comics",
+          url: "/admin?view=featured",
         },
       ],
     },

@@ -38,6 +38,12 @@ const MetadataContent = dynamic(
     ssr: false,
   }
 );
+const FeaturedContent = dynamic(
+  () => import("@/components/admin/comic/featured"),
+  {
+    ssr: false,
+  }
+);
 
 export default function AdminPage() {
   const searchParams = useSearchParams();
@@ -59,6 +65,8 @@ export default function AdminPage() {
         return <PagesContent />;
       case "metadata":
         return <MetadataContent />;
+      case "featured":
+        return <FeaturedContent />;
       default:
         return <DashboardContent />;
     }
