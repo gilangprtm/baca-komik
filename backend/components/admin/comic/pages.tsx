@@ -48,6 +48,13 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type PageType = {
   id_chapter: string;
@@ -71,6 +78,13 @@ export default function PagesContent() {
   const [newPageUrl, setNewPageUrl] = useState("");
   const [bulkPageUrls, setBulkPageUrls] = useState("");
   const [showBulkAdd, setShowBulkAdd] = useState(false);
+
+  // Tambahkan state untuk base URL dan total pages
+  const [showSmartBulk, setShowSmartBulk] = useState(false);
+  const [baseUrl, setBaseUrl] = useState("");
+  const [startPage, setStartPage] = useState<number>(1);
+  const [endPage, setEndPage] = useState<number>(10);
+  const [fileExtension, setFileExtension] = useState<string>("webp");
 
   const supabase = createClientComponentClient<Database>();
 
@@ -366,6 +380,89 @@ export default function PagesContent() {
     }
   };
 
+  // Tambahkan fungsi untuk membuat URL berdasarkan pola
+  const generateUrlsFromPattern = (
+    baseUrl: string,
+    start: number,
+    end: number,
+    extension: string
+  ): string[] => {
+    // Hapus angka dan ekstensi di akhir URL jika ada
+    const cleanBaseUrl = baseUrl.replace(/\/\d+\.\w+$/, "");
+    // Pastikan URL diakhiri dengan "/"
+    const normalizedBaseUrl = cleanBaseUrl.endsWith("/")
+      ? cleanBaseUrl
+      : `${cleanBaseUrl}/`;
+
+    // Buat array URL berdasarkan range
+    const urls: string[] = [];
+    for (let i = start; i <= end; i++) {
+      urls.push(`${normalizedBaseUrl}${i}.${extension}`);
+    }
+    return urls;
+  };
+
+  // Tambahkan fungsi untuk menangani smart bulk upload
+  const handleSmartBulkAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!baseUrl) {
+      alert("Please enter a base URL");
+      return;
+    }
+
+    if (!chapterId) {
+      alert("Chapter ID is missing");
+      return;
+    }
+
+    if (startPage > endPage) {
+      alert("Start page cannot be greater than end page");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Generate URLs berdasarkan range
+      const urls = generateUrlsFromPattern(
+        baseUrl,
+        startPage,
+        endPage,
+        fileExtension
+      );
+
+      // Get the highest page number and add from there
+      let currentMaxPageNumber =
+        pages.length > 0 ? Math.max(...pages.map((p) => p.page_number)) : 0;
+
+      // Prepare data for insertion
+      const newPages = urls.map((url, index) => ({
+        id_chapter: chapterId as string,
+        page_number: currentMaxPageNumber + index + 1,
+        page_url: url,
+      }));
+
+      // Insert all pages
+      const { error } = await supabase.from("trChapter").insert(newPages);
+
+      if (error) throw error;
+
+      // Add to local state
+      setPages([...pages, ...newPages]);
+
+      // Clear input and reset state
+      setBaseUrl("");
+      setShowSmartBulk(false);
+      setShowBulkAdd(false);
+    } catch (error) {
+      console.error("Error adding bulk pages:", error);
+      alert("Failed to add pages. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-6">
@@ -422,35 +519,180 @@ export default function PagesContent() {
             </form>
           ) : (
             <div>
-              <form onSubmit={handleAddBulkPages}>
-                <Label htmlFor="bulk_urls">Page URLs (one per line)</Label>
-                <textarea
-                  id="bulk_urls"
-                  className="w-full min-h-[100px] p-2 border rounded-md mt-1 mb-2"
-                  placeholder="https://example.com/page1.jpg&#10;https://example.com/page2.jpg&#10;https://example.com/page3.jpg"
-                  value={bulkPageUrls}
-                  onChange={(e) => setBulkPageUrls(e.target.value)}
-                  disabled={submitting}
-                />
-                <div className="flex space-x-2 mt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowBulkAdd(false)}
+              <div className="flex space-x-2 mb-3">
+                <Button
+                  type="button"
+                  variant={!showSmartBulk ? "default" : "outline"}
+                  onClick={() => setShowSmartBulk(false)}
+                  size="sm"
+                >
+                  Manual Bulk
+                </Button>
+                <Button
+                  type="button"
+                  variant={showSmartBulk ? "default" : "outline"}
+                  onClick={() => setShowSmartBulk(true)}
+                  size="sm"
+                >
+                  Smart Pattern
+                </Button>
+              </div>
+
+              {!showSmartBulk ? (
+                // Form bulk upload manual original
+                <form onSubmit={handleAddBulkPages}>
+                  <Label htmlFor="bulk_urls">Page URLs (one per line)</Label>
+                  <textarea
+                    id="bulk_urls"
+                    className="w-full min-h-[100px] p-2 border rounded-md mt-1 mb-2"
+                    placeholder="https://example.com/page1.jpg&#10;https://example.com/page2.jpg&#10;https://example.com/page3.jpg"
+                    value={bulkPageUrls}
+                    onChange={(e) => setBulkPageUrls(e.target.value)}
                     disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    Add Pages
-                  </Button>
-                </div>
-              </form>
+                  />
+                  <div className="flex space-x-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowBulkAdd(false)}
+                      disabled={submitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-2" />
+                      )}
+                      Add Pages
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                // Form smart pattern bulk upload
+                <form onSubmit={handleSmartBulkAdd}>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="base_url">Base URL Pattern</Label>
+                      <Input
+                        id="base_url"
+                        placeholder="https://github.com/example/comic/ch1/"
+                        value={baseUrl}
+                        onChange={(e) => setBaseUrl(e.target.value)}
+                        disabled={submitting}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter the URL pattern. System will automatically add
+                        1.webp, 2.webp, etc.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="file_extension">File Extension</Label>
+                        <Select
+                          value={fileExtension}
+                          onValueChange={setFileExtension}
+                          disabled={submitting}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="File Extension" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="webp">webp</SelectItem>
+                            <SelectItem value="jpg">jpg</SelectItem>
+                            <SelectItem value="jpeg">jpeg</SelectItem>
+                            <SelectItem value="png">png</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <Label htmlFor="start_page">From Page</Label>
+                        <Input
+                          id="start_page"
+                          type="number"
+                          min="1"
+                          max="999"
+                          value={startPage}
+                          onChange={(e) =>
+                            setStartPage(parseInt(e.target.value) || 1)
+                          }
+                          disabled={submitting}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="end_page">To Page</Label>
+                        <Input
+                          id="end_page"
+                          type="number"
+                          min="1"
+                          max="999"
+                          value={endPage}
+                          onChange={(e) =>
+                            setEndPage(parseInt(e.target.value) || startPage)
+                          }
+                          disabled={submitting}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-2">
+                      <p className="text-sm font-medium">
+                        Preview{" "}
+                        {startPage === endPage
+                          ? "URL"
+                          : `URLs (${endPage - startPage + 1} pages)`}
+                        :
+                      </p>
+                      <div className="text-xs text-muted-foreground space-y-1 mt-1 p-2 bg-muted rounded-md max-w-full overflow-auto">
+                        {baseUrl &&
+                          generateUrlsFromPattern(
+                            baseUrl,
+                            startPage,
+                            Math.min(startPage + 2, endPage),
+                            fileExtension
+                          ).map((url, i) => (
+                            <div key={i} className="truncate">
+                              {startPage + i}. {url}
+                            </div>
+                          ))}
+                        {baseUrl && endPage > startPage + 3 && (
+                          <div className="text-center">
+                            ... and {endPage - startPage - 2} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2 mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowBulkAdd(false)}
+                      disabled={submitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={submitting}>
+                      {submitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-2" />
+                      )}
+                      Add {endPage - startPage + 1} Pages
+                    </Button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
         </CardContent>
