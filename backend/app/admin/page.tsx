@@ -44,6 +44,18 @@ const FeaturedContent = dynamic(
     ssr: false,
   }
 );
+const AnalyticsContent = dynamic(
+  () => import("@/components/admin/analytics/overview"),
+  {
+    ssr: false,
+  }
+);
+const EngagementContent = dynamic(
+  () => import("@/components/admin/analytics/engagement"),
+  {
+    ssr: false,
+  }
+);
 
 export default function AdminPage() {
   const searchParams = useSearchParams();
@@ -67,6 +79,10 @@ export default function AdminPage() {
         return <MetadataContent />;
       case "featured":
         return <FeaturedContent />;
+      case "analytics-overview":
+        return <AnalyticsContent />;
+      case "analytics-engagement":
+        return <EngagementContent />;
       default:
         return <DashboardContent />;
     }
