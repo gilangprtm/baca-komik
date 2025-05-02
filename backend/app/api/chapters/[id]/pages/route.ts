@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/middleware";
 import { supabaseAdmin } from "@/lib/supabase/client";
 
 interface RouteParams {
@@ -7,9 +8,14 @@ interface RouteParams {
   };
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// GET /api/chapters/:id/pages - Get pages for a chapter
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
+    const supabase = createClient(request);
 
     // Validate ID
     if (!id || typeof id !== "string") {

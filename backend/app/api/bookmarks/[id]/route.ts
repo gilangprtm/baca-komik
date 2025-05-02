@@ -2,14 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/middleware";
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
 // DELETE /api/bookmarks/:id - Remove bookmark
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params; // id_komik
     const supabase = createClient(request);

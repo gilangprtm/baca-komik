@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
 // GET /api/comments/:id - Get comments for a comic or chapter
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "comic";
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = parseInt(searchParams.get("limit") || "10");
     const parent_only = searchParams.get("parent_only") === "true";
 
     if (type !== "comic" && type !== "chapter") {
