@@ -18,6 +18,12 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function NavMain({
   items,
@@ -30,6 +36,8 @@ export function NavMain({
     items?: {
       title: string;
       url: string;
+      disabled?: boolean;
+      tooltip?: string;
     }[];
   }[];
 }) {
@@ -56,11 +64,31 @@ export function NavMain({
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <Link href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </Link>
-                      </SidebarMenuSubButton>
+                      {subItem.disabled ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SidebarMenuSubButton
+                                className="cursor-not-allowed opacity-50"
+                                onClick={(e) => e.preventDefault()}
+                              >
+                                <span>{subItem.title}</span>
+                              </SidebarMenuSubButton>
+                            </TooltipTrigger>
+                            {subItem.tooltip && (
+                              <TooltipContent>
+                                <p>{subItem.tooltip}</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <SidebarMenuSubButton asChild>
+                          <Link href={subItem.url}>
+                            <span>{subItem.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      )}
                     </SidebarMenuSubItem>
                   ))}
                 </SidebarMenuSub>

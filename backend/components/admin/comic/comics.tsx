@@ -227,6 +227,15 @@ export default function ComicsContent() {
     }
   };
 
+  // Tambahkan fungsi navigasi ke chapter list
+  const navigateToChapters = (id: string, title: string) => {
+    router.push(
+      `/admin?view=chapters-list&comicId=${id}&title=${encodeURIComponent(
+        title
+      )}`
+    );
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-6">
@@ -426,6 +435,14 @@ export default function ComicsContent() {
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigateToChapters(comic.id, comic.title)
+                          }
+                        >
+                          <BookOpen className="mr-2 h-4 w-4" />
+                          Manage Chapters
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

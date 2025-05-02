@@ -37,8 +37,8 @@
 - [x] Implement comic management UI
   - [x] Comic list view with filtering/sorting
   - [x] Comic creation/edit form
-  - [ ] Chapter management interface
-  - [ ] Page upload and management
+  - [x] Chapter management interface
+  - [x] Page upload and management
 - [ ] Implement metadata management
   - [ ] Artists management
   - [ ] Authors management

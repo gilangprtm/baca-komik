@@ -76,7 +76,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         setActiveNavItem("dashboard");
       } else if (viewParam?.includes("comics")) {
         setActiveNavItem("comics");
-      } else if (viewParam?.includes("chapter")) {
+      } else if (
+        viewParam?.includes("chapter") ||
+        viewParam?.includes("pages")
+      ) {
         setActiveNavItem("chapters");
       } else if (viewParam?.includes("metadata")) {
         setActiveNavItem("metadata");
@@ -142,16 +145,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       isActive: activeNavItem === "chapters",
       items: [
         {
-          title: "All Chapters",
-          url: "/admin?view=chapters-list",
+          title: "Return to Comics",
+          url: "/admin?view=comics-list",
         },
         {
-          title: "Upload Pages",
-          url: "/admin?view=chapters-upload",
+          title: "Add New Chapter",
+          url: "/admin?view=chapter-form",
+          disabled: true,
+          tooltip: "Select a comic first",
         },
         {
-          title: "Bulk Upload",
-          url: "/admin?view=chapters-bulk",
+          title: "Manage Pages",
+          url: "/admin?view=pages-list",
+          disabled: true,
+          tooltip: "Select a chapter first",
         },
       ],
     },
