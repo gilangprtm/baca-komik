@@ -39,6 +39,7 @@ type Comic = {
   cover_image_url: string | null;
   rank: number | null;
   view_count: number | null;
+  vote_count: number | null;
   created_date: string | null;
 };
 
@@ -89,16 +90,17 @@ export default function FeaturedContent() {
     try {
       // Fetch recommeded comics dengan join ke mKomik untuk mendapatkan detail komik
       const { data, error } = await supabase.from("mRecomed").select(`
-          id_komik,
-          comic:mKomik(
-            id,
-            title,
-            cover_image_url,
-            rank,
-            view_count,
-            created_date
-          )
-        `);
+        id_komik,
+        comic:mKomik(
+          id,
+          title,
+          cover_image_url,
+          rank,
+          view_count,
+          vote_count,
+          created_date
+        )
+      `);
 
       if (error) throw error;
 
@@ -128,6 +130,7 @@ export default function FeaturedContent() {
             cover_image_url,
             rank,
             view_count,
+            vote_count,
             created_date
           )
         `
@@ -149,18 +152,25 @@ export default function FeaturedContent() {
   const fetchAvailableComics = async () => {
     setIsLoadingComics(true);
     try {
-      // Fetch semua komik yang tersedia untuk ditambahkan
+      // Fetch komik yang tersedia untuk ditambahkan
       let query = supabase
         .from("mKomik")
-        .select("id, title, cover_image_url, rank, view_count, created_date")
-        .order("title");
+        .select(
+          "id, title, cover_image_url, rank, view_count, vote_count, created_date"
+        );
 
       // Filter by search query jika ada
       if (searchQuery) {
         query = query.ilike("title", `%${searchQuery}%`);
+        // Tetap mengurutkan berdasarkan judul untuk hasil pencarian
+        query = query.order("title");
+      } else {
+        // Jika tidak ada pencarian, urutkan berdasarkan vote_count (tertinggi ke terendah)
+        query = query.order("vote_count", { ascending: false });
       }
 
-      const { data, error } = await query.limit(50);
+      // Batasi hanya 30 komik untuk performa yang lebih baik
+      const { data, error } = await query.limit(30);
 
       if (error) throw error;
 
@@ -376,9 +386,11 @@ export default function FeaturedContent() {
                           <p className="font-medium truncate">
                             {item.comic?.title}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            Views: {item.comic?.view_count}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Views: {item.comic?.view_count || 0}</span>
+                            <span>•</span>
+                            <span>Votes: {item.comic?.vote_count || 0}</span>
+                          </div>
                         </div>
                         <Button
                           variant="ghost"
@@ -394,7 +406,12 @@ export default function FeaturedContent() {
               </div>
 
               <div className="border rounded-md p-4">
-                <h3 className="font-medium mb-2">Add Comics to Recommended</h3>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-medium">Add Comics to Recommended</h3>
+                  <span className="text-xs text-muted-foreground">
+                    Showing top 30 comics by votes
+                  </span>
+                </div>
 
                 <div className="flex gap-2 mb-4">
                   <div className="flex-grow relative">
@@ -431,9 +448,11 @@ export default function FeaturedContent() {
                         )}
                         <div className="flex-grow">
                           <p className="font-medium truncate">{comic.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Views: {comic.view_count}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Views: {comic.view_count || 0}</span>
+                            <span>•</span>
+                            <span>Votes: {comic.vote_count || 0}</span>
+                          </div>
                         </div>
                         <Button
                           variant="outline"
@@ -529,13 +548,15 @@ export default function FeaturedContent() {
                           <p className="font-medium truncate">
                             {item.comic?.title}
                           </p>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
                             <Badge variant="outline" className="text-xs">
                               {item.type}
                             </Badge>
-                            <p className="text-xs text-muted-foreground">
-                              Views: {item.comic?.view_count}
-                            </p>
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <span>Views: {item.comic?.view_count || 0}</span>
+                              <span>•</span>
+                              <span>Votes: {item.comic?.vote_count || 0}</span>
+                            </div>
                           </div>
                         </div>
                         <Button
@@ -552,9 +573,14 @@ export default function FeaturedContent() {
               </div>
 
               <div className="border rounded-md p-4">
-                <h3 className="font-medium mb-2">
-                  Add Comics to Popular ({selectedPopularType})
-                </h3>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-medium">
+                    Add Comics to Popular ({selectedPopularType})
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    Showing top 30 comics by votes
+                  </span>
+                </div>
 
                 <div className="flex gap-2 mb-4">
                   <div className="flex-grow relative">
@@ -591,9 +617,11 @@ export default function FeaturedContent() {
                         )}
                         <div className="flex-grow">
                           <p className="font-medium truncate">{comic.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Views: {comic.view_count}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Views: {comic.view_count || 0}</span>
+                            <span>•</span>
+                            <span>Votes: {comic.vote_count || 0}</span>
+                          </div>
                         </div>
                         <Button
                           variant="outline"
