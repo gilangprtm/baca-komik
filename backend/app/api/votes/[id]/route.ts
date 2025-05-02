@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/middleware";
 
-type RouteParams = { params: { id: string } };
-
 // DELETE /api/votes/:id - Remove vote
-export async function DELETE(request: NextRequest, context: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = context.params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "comic";
 

@@ -52,7 +52,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/admin">BacaKomik Admin</BreadcrumbLink>
+                  <BreadcrumbLink href="/admin">
+                    Baca Komik Admin
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>

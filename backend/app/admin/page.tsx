@@ -1,92 +1,13 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { AdminLayout } from "@/components/admin-layout";
 import dynamic from "next/dynamic";
 
-// Dynamically load components
-const DashboardContent = dynamic(() => import("@/components/admin/dashboard"), {
-  ssr: false,
-});
-const ComicsContent = dynamic(() => import("@/components/admin/comic/comics"), {
-  ssr: false,
-});
-const ComicFormContent = dynamic(
-  () => import("@/components/admin/comic/form-comic"),
-  {
-    ssr: false,
-  }
-);
-const ChaptersContent = dynamic(
-  () => import("@/components/admin/comic/chapters"),
-  {
-    ssr: false,
-  }
-);
-const ChapterFormContent = dynamic(
-  () => import("@/components/admin/comic/form-chapter"),
-  {
-    ssr: false,
-  }
-);
-const PagesContent = dynamic(() => import("@/components/admin/comic/pages"), {
-  ssr: false,
-});
-const MetadataContent = dynamic(
-  () => import("@/components/admin/comic/metadata"),
-  {
-    ssr: false,
-  }
-);
-const FeaturedContent = dynamic(
-  () => import("@/components/admin/comic/featured"),
-  {
-    ssr: false,
-  }
-);
-const AnalyticsContent = dynamic(
-  () => import("@/components/admin/analytics/overview"),
-  {
-    ssr: false,
-  }
-);
-const EngagementContent = dynamic(
-  () => import("@/components/admin/analytics/engagement"),
-  {
-    ssr: false,
-  }
+// Disable SSR for the entire admin section
+const AdminDashboardNoSSR = dynamic(
+  () => import("@/components/admin/admin-dashboard"),
+  { ssr: false, loading: () => <div>Loading admin panel...</div> }
 );
 
 export default function AdminPage() {
-  const searchParams = useSearchParams();
-  const view = searchParams.get("view") || "dashboard";
-
-  // Function to get the component based on the view parameter
-  const getComponent = () => {
-    // Check view parameter and return the appropriate component
-    switch (view) {
-      case "comics-list":
-        return <ComicsContent />;
-      case "comics-form":
-        return <ComicFormContent />;
-      case "chapters-list":
-        return <ChaptersContent />;
-      case "chapter-form":
-        return <ChapterFormContent />;
-      case "pages-list":
-        return <PagesContent />;
-      case "metadata":
-        return <MetadataContent />;
-      case "featured":
-        return <FeaturedContent />;
-      case "analytics-overview":
-        return <AnalyticsContent />;
-      case "analytics-engagement":
-        return <EngagementContent />;
-      default:
-        return <DashboardContent />;
-    }
-  };
-
-  return <AdminLayout>{getComponent()}</AdminLayout>;
+  return <AdminDashboardNoSSR />;
 }

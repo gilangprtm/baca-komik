@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
-type RouteParams = { params: { id: string } };
-
 // GET /api/comments/:id - Get comments for a comic or chapter
-export async function GET(request: NextRequest, context: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = context.params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "comic";
     const page = parseInt(searchParams.get("page") || "1");
