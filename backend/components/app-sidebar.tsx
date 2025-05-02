@@ -145,54 +145,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     },
     {
-      title: "Chapter Management",
-      url: "#",
-      icon: List,
-      isActive: activeNavItem === "chapters",
-      items: [
-        {
-          title: "Return to Comics",
-          url: "/admin?view=comics-list",
-        },
-        {
-          title: "Add New Chapter",
-          url: "/admin?view=chapter-form",
-          disabled: true,
-          tooltip: "Select a comic first",
-        },
-        {
-          title: "Manage Pages",
-          url: "/admin?view=pages-list",
-          disabled: true,
-          tooltip: "Select a chapter first",
-        },
-      ],
-    },
-    {
-      title: "Metadata",
-      url: "#",
-      icon: Tag,
-      isActive: activeNavItem === "metadata",
-      items: [
-        {
-          title: "Genres",
-          url: "/admin?view=metadata-genres",
-        },
-        {
-          title: "Authors",
-          url: "/admin?view=metadata-authors",
-        },
-        {
-          title: "Artists",
-          url: "/admin?view=metadata-artists",
-        },
-        {
-          title: "Formats",
-          url: "/admin?view=metadata-formats",
-        },
-      ],
-    },
-    {
       title: "User Management",
       url: "#",
       icon: Users,
@@ -232,6 +184,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
+  ];
+
+  const projects = [
     {
       title: "Settings",
       url: "#",
@@ -254,32 +209,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  const projects = [
-    {
-      name: "Content Schedule",
-      url: "/admin?view=content-schedule",
-      icon: Clock,
-    },
-    {
-      name: "Batch Upload Tool",
-      url: "/admin?view=batch-uploader",
-      icon: Upload,
-    },
-    {
-      name: "Image Validator",
-      url: "/admin?view=image-validator",
-      icon: FileText,
-    },
-  ];
-
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
-        <NavProjects projects={projects} />
+        <NavMain title="Platform" items={navMain} />
+        <NavMain title="..." items={projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userData} />

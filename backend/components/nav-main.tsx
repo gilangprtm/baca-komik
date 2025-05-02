@@ -26,8 +26,10 @@ import {
 } from "@/components/ui/tooltip";
 
 export function NavMain({
+  title,
   items,
 }: {
+  title: string;
   items: {
     title: string;
     url: string;
@@ -43,7 +45,7 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>{title}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
