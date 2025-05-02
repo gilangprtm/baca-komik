@@ -32,6 +32,12 @@ const ChapterFormContent = dynamic(
 const PagesContent = dynamic(() => import("@/components/admin/comic/pages"), {
   ssr: false,
 });
+const MetadataContent = dynamic(
+  () => import("@/components/admin/comic/metadata"),
+  {
+    ssr: false,
+  }
+);
 
 export default function AdminPage() {
   const searchParams = useSearchParams();
@@ -51,6 +57,8 @@ export default function AdminPage() {
         return <ChapterFormContent />;
       case "pages-list":
         return <PagesContent />;
+      case "metadata":
+        return <MetadataContent />;
       default:
         return <DashboardContent />;
     }

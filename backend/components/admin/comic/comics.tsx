@@ -32,6 +32,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  Tags,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -233,6 +234,13 @@ export default function ComicsContent() {
       `/admin?view=chapters-list&comicId=${id}&title=${encodeURIComponent(
         title
       )}`
+    );
+  };
+
+  // Tambahkan fungsi untuk navigasi ke halaman metadata
+  const navigateToMetadata = (id: string, title: string) => {
+    router.push(
+      `/admin?view=metadata&comicId=${id}&title=${encodeURIComponent(title)}`
     );
   };
 
@@ -443,6 +451,14 @@ export default function ComicsContent() {
                         >
                           <BookOpen className="mr-2 h-4 w-4" />
                           Manage Chapters
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigateToMetadata(comic.id, comic.title)
+                          }
+                        >
+                          <Tags className="mr-2 h-4 w-4" />
+                          Manage Metadata
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
