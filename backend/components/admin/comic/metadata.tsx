@@ -64,15 +64,26 @@ export default function MetadataContent() {
   const comicId = searchParams.get("comicId");
   const comicTitle = searchParams.get("title");
 
-  // States for loading
-  const [isLoading, setIsLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  // Modifikasi state loading menjadi per-jenis metadata
+  const [isLoadingAuthors, setIsLoadingAuthors] = useState(false);
+  const [isLoadingArtists, setIsLoadingArtists] = useState(false);
+  const [isLoadingGenres, setIsLoadingGenres] = useState(false);
+  const [isLoadingFormats, setIsLoadingFormats] = useState(false);
+  const [isLoadingSelected, setIsLoadingSelected] = useState(true);
 
-  // States for selections
-  const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
-  const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  // Tambahkan state untuk tracking tab mana yang sudah dimuat
+  const [loadedTabs, setLoadedTabs] = useState<Record<string, boolean>>({
+    authors: false,
+    artists: false,
+    genres: false,
+    formats: false,
+  });
+
+  // Modifikasi state untuk hanya menyimpan IDs yang dipilih, bukan item lengkap
+  const [selectedAuthorIds, setSelectedAuthorIds] = useState<string[]>([]);
+  const [selectedArtistIds, setSelectedArtistIds] = useState<string[]>([]);
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
+  const [selectedFormatIds, setSelectedFormatIds] = useState<string[]>([]);
 
   // States for available options
   const [authors, setAuthors] = useState<Author[]>([]);
@@ -100,46 +111,10 @@ export default function MetadataContent() {
       return;
     }
 
-    // Fetch all metadata-related data
-    async function fetchData() {
-      setIsLoading(true);
+    // Modifikasi useEffect untuk hanya memuat IDs yang dipilih
+    async function fetchSelectedData() {
+      setIsLoadingSelected(true);
       try {
-        // Fetch Authors
-        const { data: allAuthors, error: authorsError } = await supabase
-          .from("mAuthor")
-          .select("*")
-          .order("name");
-
-        if (authorsError) throw authorsError;
-        setAuthors(allAuthors || []);
-
-        // Fetch Artists
-        const { data: allArtists, error: artistsError } = await supabase
-          .from("mArtist")
-          .select("*")
-          .order("name");
-
-        if (artistsError) throw artistsError;
-        setArtists(allArtists || []);
-
-        // Fetch Genres
-        const { data: allGenres, error: genresError } = await supabase
-          .from("mGenre")
-          .select("*")
-          .order("name");
-
-        if (genresError) throw genresError;
-        setGenres(allGenres || []);
-
-        // Fetch Formats
-        const { data: allFormats, error: formatsError } = await supabase
-          .from("mFormat")
-          .select("*")
-          .order("name");
-
-        if (formatsError) throw formatsError;
-        setFormats(allFormats || []);
-
         // Fetch comic's selected authors
         const { data: comicAuthors, error: comicAuthorsError } = await supabase
           .from("trAuthor")
@@ -147,7 +122,7 @@ export default function MetadataContent() {
           .eq("id_komik", comicId as string);
 
         if (comicAuthorsError) throw comicAuthorsError;
-        setSelectedAuthors(comicAuthors.map((item) => item.id_author) || []);
+        setSelectedAuthorIds(comicAuthors.map((item) => item.id_author) || []);
 
         // Fetch comic's selected artists
         const { data: comicArtists, error: comicArtistsError } = await supabase
@@ -156,7 +131,7 @@ export default function MetadataContent() {
           .eq("id_komik", comicId as string);
 
         if (comicArtistsError) throw comicArtistsError;
-        setSelectedArtists(comicArtists.map((item) => item.id_artist) || []);
+        setSelectedArtistIds(comicArtists.map((item) => item.id_artist) || []);
 
         // Fetch comic's selected genres
         const { data: comicGenres, error: comicGenresError } = await supabase
@@ -165,7 +140,7 @@ export default function MetadataContent() {
           .eq("id_komik", comicId as string);
 
         if (comicGenresError) throw comicGenresError;
-        setSelectedGenres(comicGenres.map((item) => item.id_genre) || []);
+        setSelectedGenreIds(comicGenres.map((item) => item.id_genre) || []);
 
         // Fetch comic's selected formats
         const { data: comicFormats, error: comicFormatsError } = await supabase
@@ -174,31 +149,208 @@ export default function MetadataContent() {
           .eq("id_komik", comicId as string);
 
         if (comicFormatsError) throw comicFormatsError;
-        setSelectedFormats(comicFormats.map((item) => item.id_format) || []);
+        setSelectedFormatIds(comicFormats.map((item) => item.id_format) || []);
+
+        // Kemudian load authors secara default
+        await fetchAuthors();
       } catch (error) {
-        console.error("Error fetching metadata:", error);
+        console.error("Error fetching selected metadata:", error);
         alert("Failed to load metadata. Please try again.");
       } finally {
-        setIsLoading(false);
+        setIsLoadingSelected(false);
       }
     }
 
-    fetchData();
+    fetchSelectedData();
   }, [comicId, router, supabase]);
 
+  // Modifikasi fungsi fetchAuthors untuk juga memuat author yang dipilih jika belum ada di data
+  const fetchAuthors = async () => {
+    if (loadedTabs.authors) return; // Skip jika sudah dimuat
+
+    setIsLoadingAuthors(true);
+    try {
+      // Fetch semua author available
+      const { data, error } = await supabase
+        .from("mAuthor")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setAuthors(data || []);
+
+      // Periksa jika ada author yang dipilih tapi belum ada di daftar author
+      const missingAuthorIds = selectedAuthorIds.filter(
+        (id) => !data?.some((author) => author.id === id)
+      );
+
+      // Jika ada yang hilang, fetch secara terpisah
+      if (missingAuthorIds.length > 0) {
+        const { data: missingAuthors, error: missingError } = await supabase
+          .from("mAuthor")
+          .select("*")
+          .in("id", missingAuthorIds);
+
+        if (missingError) throw missingError;
+
+        // Gabungkan dengan data yang sudah ada
+        if (missingAuthors && missingAuthors.length > 0) {
+          setAuthors([...data, ...missingAuthors]);
+        }
+      }
+
+      setLoadedTabs((prev) => ({ ...prev, authors: true }));
+    } catch (error) {
+      console.error("Error fetching authors:", error);
+    } finally {
+      setIsLoadingAuthors(false);
+    }
+  };
+
+  const fetchArtists = async () => {
+    if (loadedTabs.artists) return;
+
+    setIsLoadingArtists(true);
+    try {
+      const { data, error } = await supabase
+        .from("mArtist")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setArtists(data || []);
+
+      // Periksa jika ada artist yang dipilih tapi belum ada di daftar
+      const missingArtistIds = selectedArtistIds.filter(
+        (id) => !data?.some((artist) => artist.id === id)
+      );
+
+      if (missingArtistIds.length > 0) {
+        const { data: missingArtists, error: missingError } = await supabase
+          .from("mArtist")
+          .select("*")
+          .in("id", missingArtistIds);
+
+        if (missingError) throw missingError;
+
+        if (missingArtists && missingArtists.length > 0) {
+          setArtists([...data, ...missingArtists]);
+        }
+      }
+
+      setLoadedTabs((prev) => ({ ...prev, artists: true }));
+    } catch (error) {
+      console.error("Error fetching artists:", error);
+    } finally {
+      setIsLoadingArtists(false);
+    }
+  };
+
+  const fetchGenres = async () => {
+    if (loadedTabs.genres) return; // Skip jika sudah dimuat
+
+    setIsLoadingGenres(true);
+    try {
+      const { data, error } = await supabase
+        .from("mGenre")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setGenres(data || []);
+      setLoadedTabs((prev) => ({ ...prev, genres: true }));
+    } catch (error) {
+      console.error("Error fetching genres:", error);
+    } finally {
+      setIsLoadingGenres(false);
+    }
+  };
+
+  const fetchFormats = async () => {
+    if (loadedTabs.formats) return; // Skip jika sudah dimuat
+
+    setIsLoadingFormats(true);
+    try {
+      const { data, error } = await supabase
+        .from("mFormat")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setFormats(data || []);
+      setLoadedTabs((prev) => ({ ...prev, formats: true }));
+    } catch (error) {
+      console.error("Error fetching formats:", error);
+    } finally {
+      setIsLoadingFormats(false);
+    }
+  };
+
+  // Modifikasi handler untuk tab changes - load data jika belum diload
+  const handleTabChange = (tab: string) => {
+    resetSearchQueries();
+
+    switch (tab) {
+      case "authors":
+        fetchAuthors();
+        break;
+      case "artists":
+        fetchArtists();
+        break;
+      case "genres":
+        fetchGenres();
+        break;
+      case "formats":
+        fetchFormats();
+        break;
+    }
+  };
+
+  // Update handler checkbox untuk menggunakan IDs baru
+  const handleAuthorCheckChange = (authorId: string, checked: CheckedState) => {
+    if (checked === true) {
+      setSelectedAuthorIds([...selectedAuthorIds, authorId]);
+    } else {
+      setSelectedAuthorIds(selectedAuthorIds.filter((id) => id !== authorId));
+    }
+  };
+
+  const handleArtistCheckChange = (artistId: string, checked: CheckedState) => {
+    if (checked === true) {
+      setSelectedArtistIds([...selectedArtistIds, artistId]);
+    } else {
+      setSelectedArtistIds(selectedArtistIds.filter((id) => id !== artistId));
+    }
+  };
+
+  const handleGenreCheckChange = (genreId: string, checked: CheckedState) => {
+    if (checked === true) {
+      setSelectedGenreIds([...selectedGenreIds, genreId]);
+    } else {
+      setSelectedGenreIds(selectedGenreIds.filter((id) => id !== genreId));
+    }
+  };
+
+  const handleFormatCheckChange = (formatId: string, checked: CheckedState) => {
+    if (checked === true) {
+      setSelectedFormatIds([...selectedFormatIds, formatId]);
+    } else {
+      setSelectedFormatIds(selectedFormatIds.filter((id) => id !== formatId));
+    }
+  };
+
+  // Update fungsi save metadata untuk menggunakan state IDs baru
   const handleSaveMetadata = async () => {
     if (!comicId) return;
 
-    setSubmitting(true);
+    setIsLoadingSelected(true);
 
     try {
       // Update Authors
-      // First delete all existing authors for this comic
       await supabase.from("trAuthor").delete().eq("id_komik", comicId);
 
-      // Then insert the selected authors
-      if (selectedAuthors.length > 0) {
-        const authorInserts = selectedAuthors.map((authorId) => ({
+      if (selectedAuthorIds.length > 0) {
+        const authorInserts = selectedAuthorIds.map((authorId) => ({
           id_komik: comicId,
           id_author: authorId,
         }));
@@ -210,11 +362,11 @@ export default function MetadataContent() {
         if (authorsInsertError) throw authorsInsertError;
       }
 
-      // Update Artists
+      // Update Artists dengan cara yang sama
       await supabase.from("trArtist").delete().eq("id_komik", comicId);
 
-      if (selectedArtists.length > 0) {
-        const artistInserts = selectedArtists.map((artistId) => ({
+      if (selectedArtistIds.length > 0) {
+        const artistInserts = selectedArtistIds.map((artistId) => ({
           id_komik: comicId,
           id_artist: artistId,
         }));
@@ -229,8 +381,8 @@ export default function MetadataContent() {
       // Update Genres
       await supabase.from("trGenre").delete().eq("id_komik", comicId);
 
-      if (selectedGenres.length > 0) {
-        const genreInserts = selectedGenres.map((genreId) => ({
+      if (selectedGenreIds.length > 0) {
+        const genreInserts = selectedGenreIds.map((genreId) => ({
           id_komik: comicId,
           id_genre: genreId,
         }));
@@ -245,8 +397,8 @@ export default function MetadataContent() {
       // Update Formats
       await supabase.from("trFormat").delete().eq("id_komik", comicId);
 
-      if (selectedFormats.length > 0) {
-        const formatInserts = selectedFormats.map((formatId) => ({
+      if (selectedFormatIds.length > 0) {
+        const formatInserts = selectedFormatIds.map((formatId) => ({
           id_komik: comicId,
           id_format: formatId,
         }));
@@ -263,7 +415,7 @@ export default function MetadataContent() {
       console.error("Error saving metadata:", error);
       alert("Failed to save metadata. Please try again.");
     } finally {
-      setSubmitting(false);
+      setIsLoadingSelected(false);
     }
   };
 
@@ -280,7 +432,7 @@ export default function MetadataContent() {
       if (error) throw error;
 
       setAuthors([...authors, data]);
-      setSelectedAuthors([...selectedAuthors, data.id]);
+      setSelectedAuthorIds([...selectedAuthorIds, data.id]);
       setNewAuthorName("");
     } catch (error) {
       console.error("Error adding new author:", error);
@@ -301,7 +453,7 @@ export default function MetadataContent() {
       if (error) throw error;
 
       setArtists([...artists, data]);
-      setSelectedArtists([...selectedArtists, data.id]);
+      setSelectedArtistIds([...selectedArtistIds, data.id]);
       setNewArtistName("");
     } catch (error) {
       console.error("Error adding new artist:", error);
@@ -322,7 +474,7 @@ export default function MetadataContent() {
       if (error) throw error;
 
       setGenres([...genres, data]);
-      setSelectedGenres([...selectedGenres, data.id]);
+      setSelectedGenreIds([...selectedGenreIds, data.id]);
       setNewGenreName("");
     } catch (error) {
       console.error("Error adding new genre:", error);
@@ -343,7 +495,7 @@ export default function MetadataContent() {
       if (error) throw error;
 
       setFormats([...formats, data]);
-      setSelectedFormats([...selectedFormats, data.id]);
+      setSelectedFormatIds([...selectedFormatIds, data.id]);
       setNewFormatName("");
     } catch (error) {
       console.error("Error adding new format:", error);
@@ -353,38 +505,6 @@ export default function MetadataContent() {
 
   const navigateBack = () => {
     router.push(`/admin?view=comics-list`);
-  };
-
-  const handleAuthorCheckChange = (authorId: string, checked: CheckedState) => {
-    if (checked === true) {
-      setSelectedAuthors([...selectedAuthors, authorId]);
-    } else {
-      setSelectedAuthors(selectedAuthors.filter((id) => id !== authorId));
-    }
-  };
-
-  const handleArtistCheckChange = (artistId: string, checked: CheckedState) => {
-    if (checked === true) {
-      setSelectedArtists([...selectedArtists, artistId]);
-    } else {
-      setSelectedArtists(selectedArtists.filter((id) => id !== artistId));
-    }
-  };
-
-  const handleGenreCheckChange = (genreId: string, checked: CheckedState) => {
-    if (checked === true) {
-      setSelectedGenres([...selectedGenres, genreId]);
-    } else {
-      setSelectedGenres(selectedGenres.filter((id) => id !== genreId));
-    }
-  };
-
-  const handleFormatCheckChange = (formatId: string, checked: CheckedState) => {
-    if (checked === true) {
-      setSelectedFormats([...selectedFormats, formatId]);
-    } else {
-      setSelectedFormats(selectedFormats.filter((id) => id !== formatId));
-    }
   };
 
   // Tambahkan filtered items berdasarkan query pencarian
@@ -428,7 +548,8 @@ export default function MetadataContent() {
     setFormatSearchQuery("");
   };
 
-  if (isLoading) {
+  // Hapus isLoading umum dan gunakan loading state per-tab
+  if (isLoadingSelected) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -463,7 +584,7 @@ export default function MetadataContent() {
           <Tabs
             defaultValue="authors"
             className="w-full"
-            onValueChange={resetSearchQueries}
+            onValueChange={handleTabChange}
           >
             <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="authors" className="flex items-center">
@@ -505,12 +626,12 @@ export default function MetadataContent() {
               <div className="border rounded-md p-4 max-h-[400px] overflow-y-auto">
                 <div className="mb-2 font-medium">Selected Authors</div>
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {selectedAuthors.length === 0 ? (
+                  {selectedAuthorIds.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       No authors selected
                     </p>
                   ) : (
-                    selectedAuthors.map((authorId) => {
+                    selectedAuthorIds.map((authorId) => {
                       const author = authors.find((a) => a.id === authorId);
                       return author ? (
                         <Badge
@@ -521,8 +642,10 @@ export default function MetadataContent() {
                           {author.name}
                           <button
                             onClick={() =>
-                              setSelectedAuthors(
-                                selectedAuthors.filter((id) => id !== author.id)
+                              setSelectedAuthorIds(
+                                selectedAuthorIds.filter(
+                                  (id) => id !== author.id
+                                )
                               )
                             }
                             className="ml-1 hover:text-destructive"
@@ -530,7 +653,27 @@ export default function MetadataContent() {
                             <X className="h-3 w-3" />
                           </button>
                         </Badge>
-                      ) : null;
+                      ) : (
+                        <Badge
+                          key={authorId}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          ID: {authorId.substring(0, 8)}...
+                          <button
+                            onClick={() =>
+                              setSelectedAuthorIds(
+                                selectedAuthorIds.filter(
+                                  (id) => id !== authorId
+                                )
+                              )
+                            }
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
                     })
                   )}
                 </div>
@@ -545,30 +688,39 @@ export default function MetadataContent() {
                       className="max-w-sm"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {filteredAuthors
-                      .filter((author) => !selectedAuthors.includes(author.id))
-                      .map((author) => (
-                        <div
-                          key={author.id}
-                          className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
-                        >
-                          <Checkbox
-                            id={`author-${author.id}`}
-                            checked={selectedAuthors.includes(author.id)}
-                            onCheckedChange={(checked: CheckedState) =>
-                              handleAuthorCheckChange(author.id, checked)
-                            }
-                          />
-                          <Label
-                            htmlFor={`author-${author.id}`}
-                            className="text-sm cursor-pointer"
+
+                  {isLoadingAuthors ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {filteredAuthors
+                        .filter(
+                          (author) => !selectedAuthorIds.includes(author.id)
+                        )
+                        .map((author) => (
+                          <div
+                            key={author.id}
+                            className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
                           >
-                            {author.name}
-                          </Label>
-                        </div>
-                      ))}
-                  </div>
+                            <Checkbox
+                              id={`author-${author.id}`}
+                              checked={selectedAuthorIds.includes(author.id)}
+                              onCheckedChange={(checked: CheckedState) =>
+                                handleAuthorCheckChange(author.id, checked)
+                              }
+                            />
+                            <Label
+                              htmlFor={`author-${author.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {author.name}
+                            </Label>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -594,12 +746,12 @@ export default function MetadataContent() {
               <div className="border rounded-md p-4 max-h-[400px] overflow-y-auto">
                 <div className="mb-2 font-medium">Selected Artists</div>
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {selectedArtists.length === 0 ? (
+                  {selectedArtistIds.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       No artists selected
                     </p>
                   ) : (
-                    selectedArtists.map((artistId) => {
+                    selectedArtistIds.map((artistId) => {
                       const artist = artists.find((a) => a.id === artistId);
                       return artist ? (
                         <Badge
@@ -610,8 +762,10 @@ export default function MetadataContent() {
                           {artist.name}
                           <button
                             onClick={() =>
-                              setSelectedArtists(
-                                selectedArtists.filter((id) => id !== artist.id)
+                              setSelectedArtistIds(
+                                selectedArtistIds.filter(
+                                  (id) => id !== artist.id
+                                )
                               )
                             }
                             className="ml-1 hover:text-destructive"
@@ -634,30 +788,39 @@ export default function MetadataContent() {
                       className="max-w-sm"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {filteredArtists
-                      .filter((artist) => !selectedArtists.includes(artist.id))
-                      .map((artist) => (
-                        <div
-                          key={artist.id}
-                          className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
-                        >
-                          <Checkbox
-                            id={`artist-${artist.id}`}
-                            checked={selectedArtists.includes(artist.id)}
-                            onCheckedChange={(checked: CheckedState) =>
-                              handleArtistCheckChange(artist.id, checked)
-                            }
-                          />
-                          <Label
-                            htmlFor={`artist-${artist.id}`}
-                            className="text-sm cursor-pointer"
+
+                  {isLoadingArtists ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {filteredArtists
+                        .filter(
+                          (artist) => !selectedArtistIds.includes(artist.id)
+                        )
+                        .map((artist) => (
+                          <div
+                            key={artist.id}
+                            className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
                           >
-                            {artist.name}
-                          </Label>
-                        </div>
-                      ))}
-                  </div>
+                            <Checkbox
+                              id={`artist-${artist.id}`}
+                              checked={selectedArtistIds.includes(artist.id)}
+                              onCheckedChange={(checked: CheckedState) =>
+                                handleArtistCheckChange(artist.id, checked)
+                              }
+                            />
+                            <Label
+                              htmlFor={`artist-${artist.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {artist.name}
+                            </Label>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -683,12 +846,12 @@ export default function MetadataContent() {
               <div className="border rounded-md p-4 max-h-[400px] overflow-y-auto">
                 <div className="mb-2 font-medium">Selected Genres</div>
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {selectedGenres.length === 0 ? (
+                  {selectedGenreIds.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       No genres selected
                     </p>
                   ) : (
-                    selectedGenres.map((genreId) => {
+                    selectedGenreIds.map((genreId) => {
                       const genre = genres.find((g) => g.id === genreId);
                       return genre ? (
                         <Badge
@@ -699,8 +862,8 @@ export default function MetadataContent() {
                           {genre.name}
                           <button
                             onClick={() =>
-                              setSelectedGenres(
-                                selectedGenres.filter((id) => id !== genre.id)
+                              setSelectedGenreIds(
+                                selectedGenreIds.filter((id) => id !== genre.id)
                               )
                             }
                             className="ml-1 hover:text-destructive"
@@ -723,30 +886,37 @@ export default function MetadataContent() {
                       className="max-w-sm"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {filteredGenres
-                      .filter((genre) => !selectedGenres.includes(genre.id))
-                      .map((genre) => (
-                        <div
-                          key={genre.id}
-                          className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
-                        >
-                          <Checkbox
-                            id={`genre-${genre.id}`}
-                            checked={selectedGenres.includes(genre.id)}
-                            onCheckedChange={(checked: CheckedState) =>
-                              handleGenreCheckChange(genre.id, checked)
-                            }
-                          />
-                          <Label
-                            htmlFor={`genre-${genre.id}`}
-                            className="text-sm cursor-pointer"
+
+                  {isLoadingGenres ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {filteredGenres
+                        .filter((genre) => !selectedGenreIds.includes(genre.id))
+                        .map((genre) => (
+                          <div
+                            key={genre.id}
+                            className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
                           >
-                            {genre.name}
-                          </Label>
-                        </div>
-                      ))}
-                  </div>
+                            <Checkbox
+                              id={`genre-${genre.id}`}
+                              checked={selectedGenreIds.includes(genre.id)}
+                              onCheckedChange={(checked: CheckedState) =>
+                                handleGenreCheckChange(genre.id, checked)
+                              }
+                            />
+                            <Label
+                              htmlFor={`genre-${genre.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {genre.name}
+                            </Label>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -772,12 +942,12 @@ export default function MetadataContent() {
               <div className="border rounded-md p-4 max-h-[400px] overflow-y-auto">
                 <div className="mb-2 font-medium">Selected Formats</div>
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {selectedFormats.length === 0 ? (
+                  {selectedFormatIds.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       No formats selected
                     </p>
                   ) : (
-                    selectedFormats.map((formatId) => {
+                    selectedFormatIds.map((formatId) => {
                       const format = formats.find((f) => f.id === formatId);
                       return format ? (
                         <Badge
@@ -788,8 +958,10 @@ export default function MetadataContent() {
                           {format.name}
                           <button
                             onClick={() =>
-                              setSelectedFormats(
-                                selectedFormats.filter((id) => id !== format.id)
+                              setSelectedFormatIds(
+                                selectedFormatIds.filter(
+                                  (id) => id !== format.id
+                                )
                               )
                             }
                             className="ml-1 hover:text-destructive"
@@ -812,32 +984,40 @@ export default function MetadataContent() {
                       className="max-w-sm"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {filteredFormats
-                      .filter(
-                        (format: Format) => !selectedFormats.includes(format.id)
-                      )
-                      .map((format: Format) => (
-                        <div
-                          key={format.id}
-                          className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
-                        >
-                          <Checkbox
-                            id={`format-${format.id}`}
-                            checked={selectedFormats.includes(format.id)}
-                            onCheckedChange={(checked: CheckedState) =>
-                              handleFormatCheckChange(format.id, checked)
-                            }
-                          />
-                          <Label
-                            htmlFor={`format-${format.id}`}
-                            className="text-sm cursor-pointer"
+
+                  {isLoadingFormats ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {filteredFormats
+                        .filter(
+                          (format: Format) =>
+                            !selectedFormatIds.includes(format.id)
+                        )
+                        .map((format: Format) => (
+                          <div
+                            key={format.id}
+                            className="flex items-center space-x-1 bg-muted/30 px-2 py-0.5 rounded-sm"
                           >
-                            {format.name}
-                          </Label>
-                        </div>
-                      ))}
-                  </div>
+                            <Checkbox
+                              id={`format-${format.id}`}
+                              checked={selectedFormatIds.includes(format.id)}
+                              onCheckedChange={(checked: CheckedState) =>
+                                handleFormatCheckChange(format.id, checked)
+                              }
+                            />
+                            <Label
+                              htmlFor={`format-${format.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {format.name}
+                            </Label>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -847,8 +1027,8 @@ export default function MetadataContent() {
           <Button variant="outline" onClick={navigateBack}>
             Cancel
           </Button>
-          <Button onClick={handleSaveMetadata} disabled={submitting}>
-            {submitting ? (
+          <Button onClick={handleSaveMetadata} disabled={isLoadingSelected}>
+            {isLoadingSelected ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
