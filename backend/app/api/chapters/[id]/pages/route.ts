@@ -2,19 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { supabaseAdmin } from "@/lib/supabase/client";
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
+type RouteParams = { params: { id: string } };
 
 // GET /api/chapters/:id/pages - Get pages for a chapter
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const supabase = createClient(request);
 
     // Validate ID

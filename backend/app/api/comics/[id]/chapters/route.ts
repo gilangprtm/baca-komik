@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/client";
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
+type RouteParams = { params: { id: string } };
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// GET /api/comics/:id/chapters - Get chapters for a comic
+export async function GET(request: NextRequest, context: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");

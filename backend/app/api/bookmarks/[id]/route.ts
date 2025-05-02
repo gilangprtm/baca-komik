@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { createClient } from "@/lib/supabase/middleware";
 
+type RouteParams = { params: { id: string } };
+
 // DELETE /api/bookmarks/:id - Remove bookmark
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context: RouteParams) {
   try {
-    const { id } = params; // id_komik
+    const { id } = context.params; // id_komik
     const supabase = createClient(request);
 
     // Check if user is authenticated
