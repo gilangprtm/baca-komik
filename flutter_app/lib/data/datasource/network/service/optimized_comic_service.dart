@@ -7,19 +7,16 @@ class OptimizedComicService extends BaseService {
 
   /// Get home comics with their latest chapters
   /// Uses the optimized /comics/home endpoint
+  /// Comics are automatically sorted by their latest chapters
   Future<Map<String, dynamic>> getHomeComics({
     int page = 1,
     int limit = 10,
-    String sort = 'updated_date',
-    String order = 'desc',
   }) async {
     return await performanceAsync(
       operationName: 'getHomeComics',
       function: () => _repository.getHomeComics(
         page: page,
         limit: limit,
-        sort: sort,
-        order: order,
       ),
     );
   }

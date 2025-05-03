@@ -7,18 +7,15 @@ import '../../../models/metadata_models.dart';
 class OptimizedComicRepository extends BaseRepository {
   /// Get home comics with their latest chapters
   /// Uses the optimized /comics/home endpoint
+  /// This endpoint returns comics sorted by their latest chapters
   Future<Map<String, dynamic>> getHomeComics({
     int page = 1,
     int limit = 10,
-    String sort = 'updated_date',
-    String order = 'desc',
   }) async {
     try {
       final queryParams = <String, dynamic>{
         'page': page,
         'limit': limit,
-        'sort': sort,
-        'order': order,
       };
 
       final response = await dioService.get('/comics/home', queryParameters: queryParams);

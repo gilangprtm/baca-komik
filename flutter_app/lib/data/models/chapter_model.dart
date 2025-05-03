@@ -1,8 +1,10 @@
+import 'package:flutter_project/core/utils/format_utils.dart';
+
 import 'page_model.dart';
 
 class Chapter {
   final String id;
-  final double chapterNumber;
+  final int chapterNumber;
   final String? title;
   final DateTime? releaseDate;
   final double? rating;
@@ -34,9 +36,7 @@ class Chapter {
   factory Chapter.fromJson(Map<String, dynamic> json) {
     return Chapter(
       id: json['id'],
-      chapterNumber: json['chapter_number'] is int
-          ? (json['chapter_number'] as int).toDouble()
-          : json['chapter_number'],
+      chapterNumber: MahasFormat.dynamicToInt(json['chapter_number']) ?? 0,
       title: json['title'],
       releaseDate: json['release_date'] != null
           ? DateTime.parse(json['release_date'])
