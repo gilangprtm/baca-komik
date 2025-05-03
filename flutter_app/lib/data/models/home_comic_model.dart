@@ -1,0 +1,64 @@
+import 'chapter_model.dart';
+import 'metadata_models.dart';
+
+class HomeComic {
+  final String id;
+  final String title;
+  final String? alternativeTitle;
+  final String? synopsis;
+  final String? status;
+  final int viewCount;
+  final int voteCount;
+  final int bookmarkCount;
+  final String? coverImageUrl;
+  final DateTime? createdDate;
+  final DateTime? updatedDate;
+  final int chapterCount;
+  final List<Genre> genres;
+  final List<Chapter> latestChapters;
+
+  HomeComic({
+    required this.id,
+    required this.title,
+    this.alternativeTitle,
+    this.synopsis,
+    this.status,
+    this.viewCount = 0,
+    this.voteCount = 0,
+    this.bookmarkCount = 0,
+    this.coverImageUrl,
+    this.createdDate,
+    this.updatedDate,
+    required this.chapterCount,
+    required this.genres,
+    required this.latestChapters,
+  });
+
+  factory HomeComic.fromJson(Map<String, dynamic> json) {
+    return HomeComic(
+      id: json['id'],
+      title: json['title'],
+      alternativeTitle: json['alternative_title'],
+      synopsis: json['synopsis'],
+      status: json['status'],
+      viewCount: json['view_count'] ?? 0,
+      voteCount: json['vote_count'] ?? 0,
+      bookmarkCount: json['bookmark_count'] ?? 0,
+      coverImageUrl: json['cover_image_url'],
+      createdDate: json['created_date'] != null
+          ? DateTime.parse(json['created_date'])
+          : null,
+      updatedDate: json['updated_date'] != null
+          ? DateTime.parse(json['updated_date'])
+          : null,
+      chapterCount: json['chapter_count'] ?? 0,
+      genres: json['genres'] != null
+          ? List<Genre>.from(json['genres'].map((x) => Genre.fromJson(x)))
+          : [],
+      latestChapters: json['latest_chapters'] != null
+          ? List<Chapter>.from(
+              json['latest_chapters'].map((x) => Chapter.fromJson(x)))
+          : [],
+    );
+  }
+}

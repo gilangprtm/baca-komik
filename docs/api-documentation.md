@@ -8,6 +8,8 @@ This document provides details about the BacaKomik API endpoints for integration
 https://baca-komik.vercel.app/api
 ```
 
+> **Note**: Beberapa endpoint telah dioptimasi untuk mengurangi jumlah request. Endpoint yang dioptimasi ditandai dengan label [Optimized].
+
 ## Authentication
 
 Most endpoints require authentication using a JWT token. Include the token in the `Authorization` header:
@@ -19,6 +21,122 @@ Authorization: Bearer {token}
 ## Endpoints
 
 ### Comics
+
+#### Get Home Comics [Optimized]
+
+```
+GET /comics/home
+```
+
+Query Parameters:
+
+- `page` (optional): Page number for pagination (default: 1)
+- `limit` (optional): Number of comics per page (default: 10)
+- `sort` (optional): Field to sort by (default: 'updated_date')
+- `order` (optional): Sort order, 'asc' or 'desc' (default: 'desc')
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "id": "string",
+      "title": "string",
+      "alternative_title": "string",
+      "synopsis": "string",
+      "status": "string",
+      "view_count": 0,
+      "vote_count": 0,
+      "bookmark_count": 0,
+      "cover_image_url": "string",
+      "created_date": "string",
+      "updated_date": "string",
+      "chapter_count": 0,
+      "genres": [
+        {
+          "id": "string",
+          "name": "string"
+        }
+      ],
+      "latest_chapters": [
+        {
+          "id": "string",
+          "id_komik": "string",
+          "chapter_number": 0,
+          "title": "string",
+          "release_date": "string",
+          "thumbnail_image_url": "string"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 0,
+    "total_pages": 0,
+    "has_more": false
+  }
+}
+```
+
+#### Get Discover Comics [Optimized]
+
+```
+GET /comics/discover
+```
+
+Query Parameters:
+
+- `page` (optional): Page number for pagination (default: 1)
+- `limit` (optional): Number of comics per page (default: 10)
+- `search` (optional): Search term to filter comics by title
+- `country` (optional): Country filter (KR, JPN, CN)
+- `genre` (optional): Genre ID to filter by
+- `format` (optional): Format ID to filter by
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "id": "string",
+      "title": "string",
+      "alternative_title": "string",
+      "synopsis": "string",
+      "status": "string",
+      "view_count": 0,
+      "vote_count": 0,
+      "bookmark_count": 0,
+      "cover_image_url": "string",
+      "created_date": "string",
+      "updated_date": "string",
+      "chapter_count": 0,
+      "genres": [
+        {
+          "id": "string",
+          "name": "string"
+        }
+      ],
+      "formats": [
+        {
+          "id": "string",
+          "name": "string"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 0,
+    "total_pages": 0,
+    "has_more": false
+  }
+}
+```
 
 #### Get All Comics
 
@@ -61,6 +179,84 @@ Response:
     "total": 0,
     "total_pages": 0,
     "has_more": false
+  }
+}
+```
+
+#### Get Complete Comic Details [Optimized]
+
+```
+GET /comics/{id}/complete
+```
+
+Path Parameters:
+
+- `id`: Comic ID
+
+Response:
+
+```json
+{
+  "comic": {
+    "id": "string",
+    "title": "string",
+    "alternative_title": "string",
+    "synopsis": "string",
+    "status": "string",
+    "view_count": 0,
+    "vote_count": 0,
+    "bookmark_count": 0,
+    "cover_image_url": "string",
+    "genres": [
+      {
+        "id": "string",
+        "name": "string"
+      }
+    ],
+    "authors": [
+      {
+        "id": "string",
+        "name": "string"
+      }
+    ],
+    "artists": [
+      {
+        "id": "string",
+        "name": "string"
+      }
+    ],
+    "formats": [
+      {
+        "id": "string",
+        "name": "string"
+      }
+    ]
+  },
+  "chapters": {
+    "data": [
+      {
+        "id": "string",
+        "chapter_number": 0,
+        "title": "string",
+        "release_date": "string",
+        "rating": 0,
+        "view_count": 0,
+        "vote_count": 0,
+        "thumbnail_image_url": "string"
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "limit": 20,
+      "total": 0,
+      "total_pages": 0,
+      "has_more": false
+    }
+  },
+  "user_data": {
+    "is_bookmarked": true,
+    "is_voted": false,
+    "last_read_chapter": "chapter_id"
   }
 }
 ```
@@ -176,6 +372,61 @@ Response:
 ```
 
 ### Chapters
+
+#### Get Complete Chapter Details [Optimized]
+
+```
+GET /chapters/{id}/complete
+```
+
+Path Parameters:
+
+- `id`: Chapter ID
+
+Response:
+
+```json
+{
+  "chapter": {
+    "id": "string",
+    "chapter_number": 0,
+    "title": "string",
+    "release_date": "string",
+    "rating": 0,
+    "view_count": 0,
+    "vote_count": 0,
+    "id_komik": "string",
+    "thumbnail_image_url": "string",
+    "comic": {
+      "id": "string",
+      "title": "string",
+      "alternative_title": "string",
+      "cover_image_url": "string"
+    }
+  },
+  "pages": [
+    {
+      "id_chapter": "string",
+      "page_number": 0,
+      "page_url": "string"
+    }
+  ],
+  "navigation": {
+    "next_chapter": {
+      "id": "string",
+      "chapter_number": 0
+    },
+    "prev_chapter": {
+      "id": "string",
+      "chapter_number": 0
+    }
+  },
+  "user_data": {
+    "is_voted": false,
+    "is_read": false
+  }
+}
+```
 
 #### Get Chapter Details
 
@@ -365,6 +616,51 @@ Response:
 {
   "success": true,
   "id": "string"
+}
+```
+
+#### Get Bookmark Details [Optimized]
+
+```
+GET /bookmarks/details
+```
+
+Query Parameters:
+
+- `page` (optional): Page number for pagination (default: 1)
+- `limit` (optional): Number of bookmarks per page (default: 20)
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "bookmark_id": "string",
+      "comic": {
+        "id": "string",
+        "title": "string",
+        "alternative_title": "string",
+        "cover_image_url": "string",
+        "status": "string",
+        "updated_date": "string",
+        "latest_chapter": {
+          "id": "string",
+          "chapter_number": 0,
+          "title": "string",
+          "release_date": "string",
+          "thumbnail_image_url": "string"
+        }
+      }
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 0,
+    "total_pages": 0,
+    "has_more": false
+  }
 }
 ```
 
