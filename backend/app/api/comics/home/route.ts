@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
-    const sort = searchParams.get("sort") || "updated_date";
+    // Make sort optional - we'll sort by latest chapters later
+    const sort = searchParams.get("sort");
     const order = searchParams.get("order") || "desc";
 
     // Calculate offset
@@ -26,9 +27,13 @@ export async function GET(request: NextRequest) {
       { count: "exact" }
     );
 
-    // Apply sorting
-    if (sort && order) {
+    // Apply sorting only if explicitly specified
+    if (sort) {
       query = query.order(sort, { ascending: order === "asc" });
+    } else {
+      // Default sorting by created_date desc to get newer comics first
+      // We'll sort by latest chapters later in memory
+      query = query.order('created_date', { ascending: false });
     }
 
     // Apply pagination
@@ -48,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Fetch latest chapters for all comics in one query
     const { data: chaptersData, error: chaptersError } = await supabaseAdmin
       .from("mChapter")
-      .select("id, id_komik, chapter_number, title, release_date, thumbnail_image_url")
+      .select("id, id_komik, chapter_number, release_date, thumbnail_image_url")
       .in("id_komik", comicIds)
       .order("release_date", { ascending: false })
       .limit(limit * 2); // Fetch enough chapters to cover 2 per comic
@@ -106,14 +111,41 @@ export async function GET(request: NextRequest) {
     // Calculate total pages
     const totalPages = count ? Math.ceil(count / limit) : 0;
 
+    // Sort by latest chapter release date if no explicit sort parameter was provided
+    if (!sort) {
+      transformedData.sort((a, b) => {
+        // Get the latest chapter for each comic
+        const latestChapterA = a.latest_chapters && a.latest_chapters.length > 0 ? 
+          a.latest_chapters[0] : null;
+        const latestChapterB = b.latest_chapters && b.latest_chapters.length > 0 ? 
+          b.latest_chapters[0] : null;
+        
+        // If both comics have chapters, compare their release dates
+        if (latestChapterA && latestChapterB) {
+          const dateA = new Date(latestChapterA.release_date || 0);
+          const dateB = new Date(latestChapterB.release_date || 0);
+          return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+        }
+        
+        // If only one comic has chapters, prioritize that one
+        if (latestChapterA) return -1;
+        if (latestChapterB) return 1;
+        
+        // If neither has chapters, sort by comic creation date
+        const comicDateA = new Date(a.created_date || 0);
+        const comicDateB = new Date(b.created_date || 0);
+        return comicDateB.getTime() - comicDateA.getTime(); // Descending order (newest first)
+      });
+    }
+    
+    // Return formatted response
     return NextResponse.json({
       data: transformedData,
       meta: {
-        page,
-        limit,
-        total: count,
-        total_pages: totalPages,
-        has_more: page < totalPages,
+        currentPage: page,
+        totalPages: Math.ceil((count || 0) / limit),
+        totalItems: count || 0,
+        itemsPerPage: limit,
       },
     });
   } catch (error) {

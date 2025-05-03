@@ -1,16 +1,50 @@
 
+import 'package:flutter/foundation.dart';
+import '../../../data/models/home_comic_model.dart';
+
+enum HomeStatus { initial, loading, success, error }
+
+@immutable
 class HomeState {
-  final int counter;
+  final HomeStatus status;
+  final List<HomeComic> comics;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final String? errorMessage;
+  final int currentPage;
+  final int totalPages;
+  final bool hasReachedMax;
 
   const HomeState({
-    this.counter = 0,
+    this.status = HomeStatus.initial,
+    this.comics = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.errorMessage,
+    this.currentPage = 1,
+    this.totalPages = 1,
+    this.hasReachedMax = false,
   });
 
   HomeState copyWith({
-    int? counter,
+    HomeStatus? status,
+    List<HomeComic>? comics,
+    bool? isLoading,
+    bool? isLoadingMore,
+    String? errorMessage,
+    int? currentPage,
+    int? totalPages,
+    bool? hasReachedMax,
   }) {
     return HomeState(
-      counter: counter ?? this.counter,
+      status: status ?? this.status,
+      comics: comics ?? this.comics,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      errorMessage: errorMessage,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 }
