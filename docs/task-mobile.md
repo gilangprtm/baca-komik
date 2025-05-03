@@ -92,11 +92,11 @@
   - [ ] Settings
 
 ### Widgets
-- [ ] Create ComicCard widget
-- [ ] Create ChapterListItem widget
-- [ ] Create CommentItem widget
-- [ ] Create Loading indicators
-- [ ] Create Error handling widgets
+- [x] Create ComicCard widget
+- [x] Create ChapterListItem widget
+- [x] Create CommentItem widget
+- [x] Create Loading indicators
+- [x] Create Error handling widgets
 - [ ] Create Navigation components
 
 ## Features
