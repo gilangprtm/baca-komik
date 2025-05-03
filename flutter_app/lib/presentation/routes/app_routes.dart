@@ -1,5 +1,8 @@
 
 class AppRoutes {
+  static const main = '/main';
   static const home = '/home';
-  // Feature routes
+  static const search = '/search';
+  static const bookmark = '/bookmark';
+  static const profile = '/profile';
 }

@@ -29,6 +29,8 @@ dependencies:
   firebase_remote_config: ^5.4.3
   firebase_crashlytics: ^4.3.5
   firebase_analytics: ^11.4.5
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.1.0
 
 dev_dependencies:
   flutter_test:
