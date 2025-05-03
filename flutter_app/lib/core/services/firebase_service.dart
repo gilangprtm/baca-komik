@@ -81,6 +81,8 @@ class FirebaseService {
       if (apiUrl.isNotEmpty) {
         GlobalState.baseUrl = apiUrl;
       }
+
+      GlobalState.baseUrl = "http://192.168.1.12:3000/api";
     } catch (e, stackTrace) {
       _logger.e('Error initializing Firebase Remote Config', error: e, stackTrace: stackTrace, tag: 'Firebase');
       rethrow;

@@ -35,11 +35,10 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
       }
 
       // Fetch home comics from service
+      // Comics are automatically sorted by their latest chapters
       final result = await _comicService.getHomeComics(
         page: page,
         limit: 10,
-        sort: 'updated_date',
-        order: 'desc',
       );
 
       // Extract data and metadata
