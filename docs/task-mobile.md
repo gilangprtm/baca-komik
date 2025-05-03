@@ -6,9 +6,9 @@
 - [x] Set up project structure (core, data, presentation)
 - [x] Configure Dio for API communication
 - [ ] Update base URL in DioService to point to BacaKomik API
-- [ ] Configure token handling and authentication
-- [ ] Set up proper error handling
-- [ ] Implement logging and performance tracking
+- [x] Configure token handling and authentication
+- [x] Set up proper error handling
+- [x] Implement logging and performance tracking
 
 ## Data Layer
 

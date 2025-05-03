@@ -2,6 +2,8 @@
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
+import '../../../../core/base/global_state.dart';
+
 enum UrlType {
   baseUrl,
   customUrl, // For handling complete URLs
@@ -13,7 +15,7 @@ class DioService {
   static String getBaseUrl(UrlType urlType) {
     switch (urlType) {
       case UrlType.baseUrl:
-        return "https://pokeapi.co/api/v2";
+        return GlobalState.baseUrl;
       case UrlType.customUrl:
         return ""; // Empty string as we'll use the full path for custom URLs
     }
