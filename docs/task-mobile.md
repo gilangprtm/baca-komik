@@ -13,45 +13,45 @@
 ## Data Layer
 
 ### Models
-- [ ] Create Comic model
-- [ ] Create Chapter model
-- [ ] Create Page model
-- [ ] Create User model
-- [ ] Create Comment model
-- [ ] Create Bookmark model
-- [ ] Create Vote model
-- [ ] Create Genre, Author, Artist, Format models
+- [x] Create Comic model
+- [x] Create Chapter model
+- [x] Create Page model
+- [x] Create User model
+- [x] Create Comment model
+- [x] Create Bookmark model
+- [x] Create Vote model
+- [x] Create Genre, Author, Artist, Format models
 
 ### Repositories
-- [ ] Implement ComicRepository
-  - [ ] Get all comics with filtering and pagination
-  - [ ] Get comic details
-  - [ ] Get comic chapters
-- [ ] Implement ChapterRepository
-  - [ ] Get chapter details
-  - [ ] Get chapter pages
-- [ ] Implement UserRepository
-  - [ ] Login/logout functionality
-  - [ ] Get user profile
-  - [ ] Update user profile
-- [ ] Implement BookmarkRepository
-  - [ ] Add bookmark
-  - [ ] Remove bookmark
-  - [ ] Get user bookmarks
-- [ ] Implement VoteRepository
-  - [ ] Add vote
-  - [ ] Remove vote
-- [ ] Implement CommentRepository
-  - [ ] Get comments
-  - [ ] Post comment
+- [x] Implement ComicRepository
+  - [x] Get all comics with filtering and pagination
+  - [x] Get comic details
+  - [x] Get comic chapters
+- [x] Implement ChapterRepository
+  - [x] Get chapter details
+  - [x] Get chapter pages
+- [x] Implement UserRepository
+  - [x] Login/logout functionality
+  - [x] Get user profile
+  - [x] Update user profile
+- [x] Implement BookmarkRepository
+  - [x] Add bookmark
+  - [x] Remove bookmark
+  - [x] Get user bookmarks
+- [x] Implement VoteRepository
+  - [x] Add vote
+  - [x] Remove vote
+- [x] Implement CommentRepository
+  - [x] Get comments
+  - [x] Post comment
 
 ### Services
-- [ ] Implement ComicService
-- [ ] Implement ChapterService
-- [ ] Implement UserService
-- [ ] Implement BookmarkService
-- [ ] Implement VoteService
-- [ ] Implement CommentService
+- [x] Implement ComicService
+- [x] Implement ChapterService
+- [x] Implement UserService
+- [x] Implement BookmarkService
+- [x] Implement VoteService
+- [x] Implement CommentService
 
 ## Presentation Layer
 

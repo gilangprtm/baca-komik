@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/base/global_state.dart';
 import '../../riverpod/home/home_provider.dart';
 
 class HomePage extends ConsumerWidget {
@@ -19,7 +18,6 @@ class HomePage extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Counter: ${state.counter}'),
-            Text('URL API: ${GlobalState.baseUrl}'),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () =>
