@@ -4,81 +4,110 @@ import '../../../data/models/home_comic_model.dart';
 import '../../riverpod/home/home_provider.dart';
 import '../../riverpod/home/home_state.dart';
 import '../../widgets/common/comic_card.dart';
+import '../../../core/mahas/widget/mahas_grid.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(homeProvider);
-    final notifier = ref.read(homeProvider.notifier);
-
+  Widget build(BuildContext context) {
     return SafeArea(
-      child: _buildBody(context, state, notifier),
+      child: _buildBody(context),
     );
   }
 
-  Widget _buildBody(BuildContext context, HomeState state, dynamic notifier) {
-    switch (state.status) {
-      case HomeStatus.initial:
-      case HomeStatus.loading:
-        if (state.comics.isEmpty) {
-          return _buildLoadingState();
+  Widget _buildBody(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        // Only select the status to determine the high-level UI state
+        final status = ref.watch(homeProvider.select((state) => state.status));
+
+        switch (status) {
+          case HomeStatus.initial:
+          case HomeStatus.loading:
+            // Check if comics are empty without rebuilding when comics change
+            final hasComics = ref
+                .watch(homeProvider.select((state) => state.comics.isNotEmpty));
+            if (!hasComics) {
+              return _buildLoadingState();
+            }
+            return _buildComicGrid(context, ref);
+
+          case HomeStatus.success:
+            return _buildComicGrid(context, ref);
+
+          case HomeStatus.error:
+            final errorMessage =
+                ref.watch(homeProvider.select((state) => state.errorMessage));
+            return _buildErrorState(context, errorMessage, ref);
+
+          default:
+            // Added to satisfy Dart's non-nullable return type check
+            return const SizedBox.shrink();
         }
-        return _buildComicGrid(context, state, notifier);
-
-      case HomeStatus.success:
-        return _buildComicGrid(context, state, notifier);
-
-      case HomeStatus.error:
-        return _buildErrorState(context, state.errorMessage, notifier);
-    }
+      },
+    );
   }
 
-  Widget _buildComicGrid(BuildContext context, HomeState state, dynamic notifier) {
+  Widget _buildComicGrid(BuildContext context, WidgetRef ref) {
+    // Select only the parts of state we need for scroll behavior
+    final isLoadingMore =
+        ref.watch(homeProvider.select((state) => state.isLoadingMore));
+    final hasReachedMax =
+        ref.watch(homeProvider.select((state) => state.hasReachedMax));
+    final notifier = ref.read(homeProvider.notifier);
+
     return RefreshIndicator(
       onRefresh: () => notifier.refreshComics(),
       child: NotificationListener<ScrollNotification>(
         onNotification: (ScrollNotification scrollInfo) {
           if (scrollInfo is ScrollEndNotification &&
-              scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent * 0.8 &&
-              !state.isLoadingMore &&
-              !state.hasReachedMax) {
+              scrollInfo.metrics.pixels >=
+                  scrollInfo.metrics.maxScrollExtent * 0.8 &&
+              !isLoadingMore &&
+              !hasReachedMax) {
             notifier.loadMoreComics();
           }
           return false;
         },
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(16.0),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.5, // Ubah dari 0.6 ke 0.5 untuk memberikan lebih banyak ruang vertikal
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index >= state.comics.length) {
-                      return null;
-                    }
-                    return _buildComicItem(context, state.comics[index]);
-                  },
-                  childCount: state.comics.length,
-                ),
+        child: Column(
+          children: [
+            // Comic grid that only rebuilds when comics list changes
+            Expanded(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final comics =
+                      ref.watch(homeProvider.select((state) => state.comics));
+
+                  // Create list of comic card widgets
+                  final comicItems = comics
+                      .map((comic) => _buildComicItem(context, comic))
+                      .toList();
+
+                  return MahasGrid(
+                    items: comicItems,
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.45,
+                    padding: const EdgeInsets.all(8.0),
+                  );
+                },
               ),
             ),
-            if (state.isLoadingMore)
-              const SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              ),
+
+            // Loading indicator that only rebuilds when isLoadingMore changes
+            Consumer(
+              builder: (context, ref, _) {
+                final isLoading = ref
+                    .watch(homeProvider.select((state) => state.isLoadingMore));
+
+                if (!isLoading) return const SizedBox.shrink();
+
+                return const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -107,7 +136,10 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String? errorMessage, dynamic notifier) {
+  Widget _buildErrorState(
+      BuildContext context, String? errorMessage, WidgetRef ref) {
+    final notifier = ref.read(homeProvider.notifier);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

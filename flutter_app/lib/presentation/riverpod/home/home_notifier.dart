@@ -1,4 +1,3 @@
-
 import '../../../core/base/base_state_notifier.dart';
 import '../../../data/datasource/network/service/comic_service.dart';
 import 'home_state.dart';
@@ -6,8 +5,8 @@ import 'home_state.dart';
 /// StateNotifier for the home Screen
 class HomeNotifier extends BaseStateNotifier<HomeState> {
   final ComicService _comicService = ComicService();
-  final int _itemsPerPage = 20;
-  
+  final int _itemsPerPage = 10;
+
   HomeNotifier(super.initialState, super.ref);
 
   @override
@@ -19,17 +18,18 @@ class HomeNotifier extends BaseStateNotifier<HomeState> {
   /// Fetch comics with latest chapters for the home page
   Future<void> fetchComics() async {
     if (state.isLoading) return;
-    
+
     try {
       state = state.copyWith(
         status: HomeStatus.loading,
         isLoading: true,
         errorMessage: null,
       );
-      
+
       // Use the new service method that returns properly typed HomeComic objects
-      final homeComics = await _comicService.getHomeComics(limit: _itemsPerPage);
-      
+      final homeComics =
+          await _comicService.getHomeComics(limit: _itemsPerPage);
+
       state = state.copyWith(
         status: HomeStatus.success,
         comics: homeComics,
@@ -59,23 +59,24 @@ class HomeNotifier extends BaseStateNotifier<HomeState> {
   /// Load more comics (pagination)
   Future<void> loadMoreComics() async {
     if (state.isLoadingMore || state.hasReachedMax) return;
-    
+
     try {
       state = state.copyWith(
         isLoadingMore: true,
         errorMessage: null,
       );
-      
+
       final nextPage = state.currentPage + 1;
-      
+
       // Use the new service method that returns properly typed HomeComic objects
       // We'll need to enhance the service to support pagination
-      final moreComics = await _comicService.getHomeComics(limit: _itemsPerPage);
-      
+      final moreComics = await _comicService.getHomeComics(
+          page: nextPage, limit: _itemsPerPage);
+
       // For now, we'll just assume a simple pagination model
       // In a real implementation, we would pass the page number to getHomeComics
       final hasReachedMax = moreComics.length < _itemsPerPage;
-      
+
       state = state.copyWith(
         comics: [...state.comics, ...moreComics],
         isLoadingMore: false,
