@@ -93,3 +93,29 @@ class Format {
     };
   }
 }
+
+class MetaData {
+  final int page;
+  final int limit;
+  final int total;
+  final int totalPages;
+  final bool hasMore;
+
+  MetaData({
+    required this.page,
+    required this.limit,
+    required this.total,
+    required this.totalPages,
+    required this.hasMore,
+  });
+
+  factory MetaData.fromJson(Map<String, dynamic> json) {
+    return MetaData(
+      page: json['page'] ?? 1,
+      limit: json['limit'] ?? 10,
+      total: json['total'] ?? 0,
+      totalPages: json['total_pages'] ?? 0,
+      hasMore: json['has_more'] ?? false,
+    );
+  }
+}
