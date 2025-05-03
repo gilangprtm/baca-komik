@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "889906815635",
+    "project_id": "baca-komik-1-5c2c1",
+    "storage_bucket": "baca-komik-1-5c2c1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889906815635:android:d2fce72b664d579ceba366",
+        "android_client_info": {
+          "package_name": "com.example.flutter_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUpcaCtdQz4dAuD9ZarFvtR-wqx2CsyPk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
