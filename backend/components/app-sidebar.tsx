@@ -201,10 +201,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Admin Accounts",
           url: "/admin?view=settings-accounts",
         },
-        {
-          title: "System Settings",
-          url: "/admin?view=settings-system",
-        },
       ],
     },
   ];
