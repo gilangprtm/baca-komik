@@ -56,13 +56,13 @@
 ## Presentation Layer
 
 ### State Management (Riverpod)
-- [ ] Set up Riverpod providers
-- [ ] Implement comic providers
-- [ ] Implement chapter providers
-- [ ] Implement user providers
-- [ ] Implement bookmark providers
-- [ ] Implement vote providers
-- [ ] Implement comment providers
+- [x] Set up Riverpod providers
+- [x] Implement comic providers
+- [x] Implement chapter providers
+- [x] Implement user providers
+- [x] Implement bookmark providers
+- [x] Implement vote providers
+- [x] Implement comment providers
 
 ### Pages
 - [ ] Create Splash screen
