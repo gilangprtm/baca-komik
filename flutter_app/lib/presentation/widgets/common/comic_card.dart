@@ -9,7 +9,7 @@ import '../../../core/base/global_state.dart';
 
 class ComicCard extends StatelessWidget {
   final dynamic comic; // Can be Comic, HomeComic, or DiscoverComic
-  final VoidCallback? onTap;
+  final VoidCallback? onTapKomik;
   final double width;
   final double height;
   final bool showTitle;
@@ -21,7 +21,7 @@ class ComicCard extends StatelessWidget {
   const ComicCard({
     Key? key,
     required this.comic,
-    this.onTap,
+    this.onTapKomik,
     this.width = 120,
     this.height = 180,
     this.showTitle = true,
@@ -45,19 +45,19 @@ class ComicCard extends StatelessWidget {
     final bool hasChapterReleasedToday =
         _hasChapterReleasedToday(latestChapters);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: width,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        // Wrap in a SizedBox to constrain height and prevent overflow
-        child: SizedBox(
-          height: isGrid ? 280 : height + 80, // Adjust height based on content
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Cover image with rating badge
-              Stack(
+    return Container(
+      width: width,
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      // Wrap in a SizedBox to constrain height and prevent overflow
+      child: SizedBox(
+        height: isGrid ? 280 : height + 80, // Adjust height based on content
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover image with rating badge
+            GestureDetector(
+              onTap: onTapKomik,
+              child: Stack(
                 children: [
                   // Cover image
                   ClipRRect(
@@ -140,78 +140,78 @@ class ComicCard extends StatelessWidget {
                     ),
                 ],
               ),
+            ),
 
-              // Title
-              if (showTitle)
-                Container(
-                  height: 50,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Center(
-                      child: Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.getTextPrimaryColor(context),
-                        ),
+            // Title
+            if (showTitle)
+              Container(
+                height: 50,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Center(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.getTextPrimaryColor(context),
                       ),
                     ),
                   ),
                 ),
+              ),
 
-              // Genre
-              if (showGenre && genre != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    genre,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+            // Genre
+            if (showGenre && genre != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  genre,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
                   ),
                 ),
+              ),
 
-              // Latest Chapters
-              if (showChapters && latestChapters.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Badge "UP" only if has chapters released today
-                      if (hasChapterReleasedToday)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'UP',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+            // Latest Chapters
+            if (showChapters && latestChapters.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Badge "UP" only if has chapters released today
+                    if (hasChapterReleasedToday)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'UP',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      if (hasChapterReleasedToday) const SizedBox(height: 6),
-                      // Chapter list
-                      ...latestChapters
-                          .map((chapter) => _buildChapterItem(chapter))
-                          .toList(),
-                    ],
-                  ),
+                      ),
+                    if (hasChapterReleasedToday) const SizedBox(height: 6),
+                    // Chapter list
+                    ...latestChapters
+                        .map((chapter) => _buildChapterItem(chapter))
+                        .toList(),
+                  ],
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -358,34 +358,40 @@ class ComicCard extends StatelessWidget {
       }
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Chapter number
-          Text(
-            'Chapter $chapterNumber',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
+    return GestureDetector(
+      onTap: () {
+        // Navigate to chapter detail page
+        // Navigator.pushNamed(context, '/chapter/${comic.id}');
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Chapter number
+            Text(
+              'Chapter $chapterNumber',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
             ),
-          ),
-          // Time ago
-          Text(
-            timeAgo,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.white70,
+            // Time ago
+            Text(
+              timeAgo,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white70,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

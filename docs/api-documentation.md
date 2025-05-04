@@ -261,7 +261,7 @@ Response:
 }
 ```
 
-#### Get Comic Details
+#### Get Comic Details [Optimized]
 
 ```
 GET /comics/{id}
@@ -280,23 +280,14 @@ Response:
   "alternative_title": "string",
   "synopsis": "string",
   "status": "string",
+  "country_id": "string", // KR, JPN, or CN
   "view_count": 0,
   "vote_count": 0,
   "bookmark_count": 0,
   "cover_image_url": "string",
   "created_date": "string",
   "updated_date": "string",
-  "chapters": [
-    {
-      "id": "string",
-      "chapter_number": 0,
-      "release_date": "string",
-      "rating": 0,
-      "view_count": 0,
-      "vote_count": 0,
-      "thumbnail_image_url": "string"
-    }
-  ],
+  "chapter_count": 42, // Total number of chapters without loading all chapter data
   "genres": [
     {
       "id": "string",

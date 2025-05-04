@@ -129,7 +129,7 @@ class HomePage extends StatelessWidget {
       showGenre: false,
       showChapters: true,
       isGrid: true,
-      onTap: () {
+      onTapKomik: () {
         // Navigate to comic detail page
         // Navigator.pushNamed(context, '/comic/${comic.id}');
       },
