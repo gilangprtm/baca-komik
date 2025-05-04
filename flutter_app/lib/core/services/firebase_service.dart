@@ -21,10 +21,10 @@ class FirebaseService {
 
   /// Cek apakah Firebase telah diinisialisasi
   bool get isInitialized => _isInitialized;
-  
+
   /// Akses ke instance Firebase Remote Config
   FirebaseRemoteConfig get remoteConfig => _remoteConfig;
-  
+
   /// Akses ke instance Firebase Analytics
   FirebaseAnalytics get analytics => _analytics;
 
@@ -47,7 +47,8 @@ class FirebaseService {
 
       _isInitialized = true;
     } catch (e, stackTrace) {
-      _logger.e('Error initializing Firebase Services', error: e, stackTrace: stackTrace, tag: 'Firebase');
+      _logger.e('Error initializing Firebase Services',
+          error: e, stackTrace: stackTrace, tag: 'Firebase');
       rethrow;
     }
   }
@@ -57,34 +58,36 @@ class FirebaseService {
     try {
       await Firebase.initializeApp();
     } catch (e, stackTrace) {
-      _logger.e('Error initializing Firebase Core', error: e, stackTrace: stackTrace, tag: 'Firebase');
+      _logger.e('Error initializing Firebase Core',
+          error: e, stackTrace: stackTrace, tag: 'Firebase');
       rethrow;
     }
   }
-  
+
   /// Inisialisasi Firebase Remote Config
   Future<void> _initFirebaseRemoteConfig() async {
     try {
       _remoteConfig = FirebaseRemoteConfig.instance;
-      
+
       // Set fetch settings
       await _remoteConfig.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(minutes: 1),
         minimumFetchInterval: const Duration(hours: 1),
       ));
-      
+
       // Fetch and activate
       await _remoteConfig.fetchAndActivate();
-      
+
       // Update base URL in BaseState
       final apiUrl = _remoteConfig.getString('url_api');
       if (apiUrl.isNotEmpty) {
         GlobalState.baseUrl = apiUrl;
       }
 
-      // GlobalState.baseUrl = "http://192.168.1.12:3000/api";
+      //GlobalState.baseUrl = "http://192.168.1.12:3000/api";
     } catch (e, stackTrace) {
-      _logger.e('Error initializing Firebase Remote Config', error: e, stackTrace: stackTrace, tag: 'Firebase');
+      _logger.e('Error initializing Firebase Remote Config',
+          error: e, stackTrace: stackTrace, tag: 'Firebase');
       rethrow;
       // Don't rethrow, continue with default values
     }
@@ -96,7 +99,8 @@ class FirebaseService {
       _analytics = FirebaseAnalytics.instance;
       await _analytics.setAnalyticsCollectionEnabled(true);
     } catch (e, stackTrace) {
-      _logger.e('Error initializing Firebase Analytics', error: e, stackTrace: stackTrace, tag: 'Firebase');
+      _logger.e('Error initializing Firebase Analytics',
+          error: e, stackTrace: stackTrace, tag: 'Firebase');
       // Don't rethrow, continue without analytics
     }
   }
@@ -105,16 +109,17 @@ class FirebaseService {
   Future<void> _initFirebaseCrashlytics() async {
     try {
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-      
+
       // Pass all uncaught errors to Crashlytics
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-      
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
     } catch (e, stackTrace) {
-      _logger.e('Error initializing Firebase Crashlytics', error: e, stackTrace: stackTrace, tag: 'Firebase');
+      _logger.e('Error initializing Firebase Crashlytics',
+          error: e, stackTrace: stackTrace, tag: 'Firebase');
       // Don't rethrow, continue without crashlytics
     }
   }
-  
+
   /// Log custom event to Firebase Analytics
   Future<void> logEvent({
     required String name,
@@ -128,16 +133,17 @@ class FirebaseService {
         );
       }
     } catch (e, stackTrace) {
-      _logger.e('Error logging event to Firebase Analytics', error: e, stackTrace: stackTrace, tag: 'Firebase');
+      _logger.e('Error logging event to Firebase Analytics',
+          error: e, stackTrace: stackTrace, tag: 'Firebase');
     }
   }
-  
+
   /// Refresh Remote Config values
   Future<void> refreshRemoteConfig() async {
     try {
       if (_isInitialized) {
         await _remoteConfig.fetchAndActivate();
-        
+
         // Update base URL in BaseState
         final apiUrl = _remoteConfig.getString('url_api');
         if (apiUrl.isNotEmpty) {
@@ -145,8 +151,8 @@ class FirebaseService {
         }
       }
     } catch (e, stackTrace) {
-      _logger.e('Error refreshing Remote Config', error: e, stackTrace: stackTrace, tag: 'Firebase');
+      _logger.e('Error refreshing Remote Config',
+          error: e, stackTrace: stackTrace, tag: 'Firebase');
     }
   }
-
 }

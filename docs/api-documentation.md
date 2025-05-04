@@ -189,6 +189,8 @@ Response:
 GET /comics/{id}/complete
 ```
 
+Returns detailed comic information and user-related data without chapter data. For obtaining chapters, use the `/comics/{id}/chapters` endpoint.
+
 Path Parameters:
 
 - `id`: Comic ID
@@ -231,27 +233,6 @@ Response:
         "name": "string"
       }
     ]
-  },
-  "chapters": {
-    "data": [
-      {
-        "id": "string",
-        "chapter_number": 0,
-        "title": "string",
-        "release_date": "string",
-        "rating": 0,
-        "view_count": 0,
-        "vote_count": 0,
-        "thumbnail_image_url": "string"
-      }
-    ],
-    "meta": {
-      "page": 1,
-      "limit": 20,
-      "total": 0,
-      "total_pages": 0,
-      "has_more": false
-    }
   },
   "user_data": {
     "is_bookmarked": true,

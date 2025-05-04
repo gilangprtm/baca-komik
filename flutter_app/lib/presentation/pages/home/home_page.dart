@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/mahas_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/home_comic_model.dart';
 import '../../riverpod/home/home_provider.dart';
 import '../../riverpod/home/home_state.dart';
+import '../../routes/app_routes.dart';
 import '../../widgets/common/comic_card.dart';
 import '../../widgets/skeletons/skeleton_widgets.dart';
 import '../../../core/mahas/widget/mahas_grid.dart';
@@ -130,8 +132,10 @@ class HomePage extends StatelessWidget {
       showChapters: true,
       isGrid: true,
       onTapKomik: () {
-        // Navigate to comic detail page
-        // Navigator.pushNamed(context, '/comic/${comic.id}');
+        Mahas.routeTo(
+          AppRoutes.comic,
+          arguments: {'comicId': comic.id},
+        );
       },
     );
   }

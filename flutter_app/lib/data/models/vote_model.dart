@@ -17,14 +17,31 @@ class Vote {
 
 class VoteResponse {
   final bool success;
+  final String? message;
 
   VoteResponse({
     required this.success,
+    this.message,
   });
 
   factory VoteResponse.fromJson(Map<String, dynamic> json) {
     return VoteResponse(
-      success: json['success'],
+      success: json['success'] ?? false,
+      message: json['message'],
     );
   }
+}
+
+class VoteResult {
+  final bool success;
+  final String message;
+  final bool voted;
+  final int voteCount;
+
+  VoteResult({
+    required this.success,
+    required this.message,
+    required this.voted,
+    required this.voteCount,
+  });
 }
