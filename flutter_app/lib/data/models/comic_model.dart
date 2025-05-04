@@ -7,6 +7,7 @@ class Comic {
   final String? alternativeTitle;
   final String? synopsis;
   final String? status;
+  final String? countryId; // Added countryId property
   final int viewCount;
   final int voteCount;
   final int bookmarkCount;
@@ -25,6 +26,7 @@ class Comic {
     this.alternativeTitle,
     this.synopsis,
     this.status,
+    this.countryId, // Added countryId parameter
     this.viewCount = 0,
     this.voteCount = 0,
     this.bookmarkCount = 0,
@@ -45,6 +47,7 @@ class Comic {
       alternativeTitle: json['alternative_title'],
       synopsis: json['synopsis'],
       status: json['status'],
+      countryId: json['country_id'], // Added countryId from JSON
       viewCount: json['view_count'] ?? 0,
       voteCount: json['vote_count'] ?? 0,
       bookmarkCount: json['bookmark_count'] ?? 0,

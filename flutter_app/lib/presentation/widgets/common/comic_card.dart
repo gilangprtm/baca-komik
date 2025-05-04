@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_project/core/mahas/widget/mahas_image.dart';
+import 'package:flutter_project/core/theme/app_colors.dart';
+import '../../../core/utils/type_utils.dart';
 import '../../../data/models/comic_model.dart';
 import '../../../data/models/home_comic_model.dart';
 import '../../../data/models/discover_comic_model.dart';
@@ -68,7 +71,7 @@ class ComicCard extends StatelessWidget {
                         return Container(
                           width: width,
                           height: 250,
-                          color: Colors.grey[300],
+                          color: AppColors.darkBorderColor,
                           child: const Center(
                             child: Icon(Icons.book, color: Colors.grey),
                           ),
@@ -79,12 +82,26 @@ class ComicCard extends StatelessWidget {
                         return Container(
                           width: width,
                           height: height,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
+                          color: AppColors.darkBorderColor,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.getTextPrimaryColor(context),
+                            ),
                           ),
                         );
                       },
+                    ),
+                  ),
+
+                  // Country flag
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: MahasImage(
+                      svgPath: 'assets/flags/${_getCountryFlagName()}.svg',
+                      width: 20,
+                      height: 20,
+                      borderRadius: MahasBorderRadius.small,
                     ),
                   ),
 
@@ -97,7 +114,7 @@ class ComicCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Row(
@@ -135,9 +152,10 @@ class ComicCard extends StatelessWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          color: AppColors.getTextPrimaryColor(context),
                         ),
                       ),
                     ),
@@ -206,14 +224,12 @@ class ComicCard extends StatelessWidget {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    for (final chapter in chapters) {
-      final releaseDate = chapter.releaseDate;
-      if (releaseDate != null) {
-        final releaseDay =
-            DateTime(releaseDate.year, releaseDate.month, releaseDate.day);
-        if (releaseDay.isAtSameMomentAs(today)) {
-          return true;
-        }
+    final releaseDate = chapters[0].releaseDate;
+    if (releaseDate != null) {
+      final releaseDay =
+          DateTime(releaseDate.year, releaseDate.month, releaseDate.day);
+      if (releaseDay.isAtSameMomentAs(today)) {
+        return true;
       }
     }
 
@@ -301,6 +317,31 @@ class ComicCard extends StatelessWidget {
     return [];
   }
 
+  // Get country flag file name based on country_id
+  String _getCountryFlagName() {
+    String? countryId;
+
+    if (comic is Comic) {
+      countryId = (comic as Comic).countryId;
+    } else if (comic is HomeComic) {
+      countryId = (comic as HomeComic).countryId;
+    } else if (comic is DiscoverComic) {
+      countryId = (comic as DiscoverComic).countryId;
+    }
+
+    // Map country_id to flag file name
+    switch (countryId) {
+      case 'KR':
+        return 'kr';
+      case 'JPN':
+        return 'jpn';
+      case 'CN':
+        return 'cn';
+      default:
+        return 'cn'; // Default to CN if country_id is not available
+    }
+  }
+
   Widget _buildChapterItem(dynamic chapter) {
     // Extract chapter info
     final String chapterNumber = chapter.chapterNumber.toString();
@@ -321,7 +362,7 @@ class ComicCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(

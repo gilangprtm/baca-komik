@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBUpcaCtdQz4dAuD9ZarFvtR-wqx2CsyPk',
-    appId: '1:889906815635:android:d2fce72b664d579ceba366',
+    appId: '1:889906815635:android:8b61b7361c7708dfeba366',
     messagingSenderId: '889906815635',
     projectId: 'baca-komik-1-5c2c1',
     storageBucket: 'baca-komik-1-5c2c1.firebasestorage.app',
@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'baca-komik-1-5c2c1.firebasestorage.app',
     measurementId: 'G-LW6JB3Y2MQ',
   );
+
 }

@@ -22,7 +22,7 @@ class CommentItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasReplies = comment.replies != null && comment.replies!.isNotEmpty;
     final repliesCount = comment.replies?.length ?? 0;
-    
+
     return Container(
       padding: EdgeInsets.only(
         left: isReply ? 40 : 16,
@@ -33,7 +33,7 @@ class CommentItem extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -60,9 +60,9 @@ class CommentItem extends StatelessWidget {
                       )
                     : null,
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Username and timestamp
               Expanded(
                 child: Column(
@@ -87,7 +87,7 @@ class CommentItem extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // Comment content
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -96,7 +96,7 @@ class CommentItem extends StatelessWidget {
               style: const TextStyle(fontSize: 14),
             ),
           ),
-          
+
           // Reply button and replies count
           if (!isReply)
             Row(
@@ -113,15 +113,16 @@ class CommentItem extends StatelessWidget {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
-                
+
                 const Spacer(),
-                
+
                 // View replies button
                 if (hasReplies && onViewReplies != null && !showReplies)
                   TextButton.icon(
                     onPressed: () => onViewReplies!(comment.id),
                     icon: const Icon(Icons.comment, size: 16),
-                    label: Text('View $repliesCount ${repliesCount == 1 ? 'reply' : 'replies'}'),
+                    label: Text(
+                        'View $repliesCount ${repliesCount == 1 ? 'reply' : 'replies'}'),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       minimumSize: Size.zero,
@@ -130,7 +131,7 @@ class CommentItem extends StatelessWidget {
                   ),
               ],
             ),
-          
+
           // Display replies if showReplies is true
           if (showReplies && hasReplies)
             Padding(
@@ -149,7 +150,7 @@ class CommentItem extends StatelessWidget {
   // Get initials from name
   String _getInitials(String name) {
     if (name.isEmpty) return '';
-    
+
     final nameParts = name.split(' ');
     if (nameParts.length > 1) {
       return '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();
@@ -190,9 +191,9 @@ class CommentReplyItem extends StatelessWidget {
                   )
                 : null,
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Reply content
           Expanded(
             child: Column(
@@ -218,7 +219,7 @@ class CommentReplyItem extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 // Reply content
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -238,7 +239,7 @@ class CommentReplyItem extends StatelessWidget {
   // Get initials from name
   String _getInitials(String name) {
     if (name.isEmpty) return '';
-    
+
     final nameParts = name.split(' ');
     if (nameParts.length > 1) {
       return '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();

@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Baca Komik',
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.dark,
       darkTheme: AppTheme.darkTheme,
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
