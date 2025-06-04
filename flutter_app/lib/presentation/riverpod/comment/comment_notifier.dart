@@ -1,12 +1,12 @@
 import '../../../core/base/base_state_notifier.dart';
 import '../../../data/datasource/network/service/comment_service.dart';
 import '../../../data/models/comment_model.dart';
-import '../../../data/models/metadata_models.dart';
+import '../../../data/models/pagination_model.dart';
 import 'comment_state.dart';
 
 class CommentNotifier extends BaseStateNotifier<CommentState> {
   final CommentService _commentService = CommentService();
-  
+
   CommentNotifier(super.initialState, super.ref);
 
   @override
@@ -24,7 +24,7 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
       meta: null,
       status: CommentStateStatus.initial,
     );
-    
+
     // Fetch comments for the new content
     fetchComments();
   }
@@ -38,8 +38,8 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
       }
 
       // If refreshing, reset to initial page, otherwise keep current state
-      final page = refresh ? 1 : (state.meta?.page ?? 0) + 1;
-      
+      final page = refresh ? 1 : (state.meta?.currentPage ?? 0) + 1;
+
       // Only show loading indicator on first page or refresh
       if (page == 1) {
         state = state.copyWith(status: CommentStateStatus.loading);
@@ -48,7 +48,7 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
       }
 
       // Fetch comments from service
-      final result = await _commentService.getComments(
+      final commentsResponse = await _commentService.getComments(
         id: state.currentId!,
         type: state.typeString,
         page: page,
@@ -57,20 +57,20 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
       );
 
       // Extract data and metadata
-      final List<Comment> comments = result['data'] as List<Comment>;
-      final MetaData meta = result['meta'] as MetaData;
-      
+      final List<Comment> comments = commentsResponse.data;
+      final PaginationMeta meta = commentsResponse.meta;
+
       // If refreshing, replace the list, otherwise append
-      final updatedComments = page == 1 
-          ? comments 
-          : [...state.comments, ...comments];
-      
+      final updatedComments =
+          page == 1 ? comments : [...state.comments, ...comments];
+
       // Update state with new data
       state = state.copyWith(
         status: CommentStateStatus.success,
         comments: updatedComments,
         meta: meta,
         isLoadingMore: false,
+        hasMore: page < meta.lastPage,
       );
     } catch (e, stackTrace) {
       logger.e('Error fetching comments', error: e, stackTrace: stackTrace);
@@ -91,27 +91,27 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
       }
 
       state = state.copyWith(isPosting: true);
-      
+
       // Prepare parameters based on content type
       String? idKomik;
       String? idChapter;
-      
+
       if (state.currentType == CommentType.comic) {
         idKomik = state.currentId;
       } else {
         idChapter = state.currentId;
       }
-      
+
       // Post comment through service
       final comment = await _commentService.postComment(
         content: content,
         idKomik: idKomik,
         idChapter: idChapter,
       );
-      
+
       // Add the new comment to the top of the list
       final updatedComments = [comment, ...state.comments];
-      
+
       // Update state with new comment
       state = state.copyWith(
         comments: updatedComments,
@@ -135,17 +135,17 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
       }
 
       state = state.copyWith(isPosting: true);
-      
+
       // Prepare parameters based on content type
       String? idKomik;
       String? idChapter;
-      
+
       if (state.currentType == CommentType.comic) {
         idKomik = state.currentId;
       } else {
         idChapter = state.currentId;
       }
-      
+
       // Post reply through service
       final reply = await _commentService.postReply(
         content: content,
@@ -153,25 +153,25 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
         idKomik: idKomik,
         idChapter: idChapter,
       );
-      
+
       // Find the parent comment and add the reply
       final updatedComments = List<Comment>.from(state.comments);
       final parentIndex = updatedComments.indexWhere((c) => c.id == parentId);
-      
+
       if (parentIndex != -1) {
         // Convert reply to CommentReply (if user is null, we can't create a CommentReply)
         if (reply.user == null) {
           state = state.copyWith(isPosting: false);
           return;
         }
-        
+
         final commentReply = CommentReply(
           id: reply.id,
           content: reply.content,
           createdDate: reply.createdDate,
           user: reply.user!,
         );
-        
+
         // Create a new parent comment with the reply added
         final parent = updatedComments[parentIndex];
         final replies = parent.replies ?? [];
@@ -186,11 +186,11 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
           user: parent.user,
           replies: [...replies, commentReply],
         );
-        
+
         // Replace the parent in the list
         updatedComments[parentIndex] = updatedParent;
       }
-      
+
       // Update state with updated comments
       state = state.copyWith(
         comments: updatedComments,
@@ -211,36 +211,36 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
       // Find the comment
       final commentIndex = state.comments.indexWhere((c) => c.id == commentId);
       if (commentIndex == -1) return;
-      
+
       // Get the comment
       final comment = state.comments[commentIndex];
-      
+
       // If replies are already loaded, no need to fetch again
       if (comment.replies != null && comment.replies!.isNotEmpty) return;
-      
+
       state = state.copyWith(isLoadingMore: true);
-      
+
       // Fetch comments with replies
       final result = await _commentService.getComments(
         id: commentId,
         type: 'reply', // Special type for replies
         limit: 50, // Get more replies at once
       );
-      
+
       // Extract data
-      final List<Comment> replies = result['data'] as List<Comment>;
-      
+      final List<Comment> replies = result.data;
+
       // Convert replies to CommentReply objects (filter out replies without user)
       final commentReplies = replies
-        .where((reply) => reply.user != null)
-        .map((reply) => CommentReply(
-          id: reply.id,
-          content: reply.content,
-          createdDate: reply.createdDate,
-          user: reply.user!,
-        ))
-        .toList();
-      
+          .where((reply) => reply.user != null)
+          .map((reply) => CommentReply(
+                id: reply.id,
+                content: reply.content,
+                createdDate: reply.createdDate,
+                user: reply.user!,
+              ))
+          .toList();
+
       // Create updated comment with replies
       final updatedComment = Comment(
         id: comment.id,
@@ -253,12 +253,11 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
         user: comment.user,
         replies: commentReplies,
       );
-      
-      // Update the comments list
+
+      // Update the comment in the list
       final updatedComments = List<Comment>.from(state.comments);
       updatedComments[commentIndex] = updatedComment;
-      
-      // Update state with updated comments
+
       state = state.copyWith(
         comments: updatedComments,
         isLoadingMore: false,
@@ -266,7 +265,6 @@ class CommentNotifier extends BaseStateNotifier<CommentState> {
     } catch (e, stackTrace) {
       logger.e('Error loading replies', error: e, stackTrace: stackTrace);
       state = state.copyWith(
-        errorMessage: 'Failed to load replies: ${e.toString()}',
         isLoadingMore: false,
       );
     }

@@ -38,7 +38,7 @@ class MainPage extends ConsumerWidget {
         pages: _pages,
         selectedIndex: state.selectedIndex,
         menuType: MenuType.iconOnly,
-        backgroundColor: AppColors.getTextPrimaryColor(context),
+        backgroundColor: AppColors.getBackgroundColor(context),
         selectedColor: Colors.white,
         unselectedColor: Colors.white70,
         textVisibility: TextVisibility.showAllText,

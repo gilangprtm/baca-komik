@@ -20,17 +20,19 @@ class ChapterListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formattedDate = chapter.releaseDate != null ? _formatDate(chapter.releaseDate!) : 'Unknown';
-    
+    final formattedDate = chapter.releaseDate != null
+        ? _formatDate(chapter.releaseDate!)
+        : 'Unknown';
+
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isLastRead ? Colors.amber.withOpacity(0.1) : null,
+          color: isLastRead ? Colors.amber.withValues(alpha: 0.1) : null,
           border: Border(
             bottom: BorderSide(
-              color: Colors.grey.withOpacity(0.2),
+              color: Colors.grey.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -64,7 +66,7 @@ class ChapterListItem extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Right side with date and indicators
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -77,7 +79,7 @@ class ChapterListItem extends StatelessWidget {
                     color: Colors.grey[600],
                   ),
                 ),
-                
+
                 // Status indicators
                 Row(
                   children: [
@@ -91,7 +93,7 @@ class ChapterListItem extends StatelessWidget {
                           color: Colors.green,
                         ),
                       ),
-                    
+
                     // Read indicator
                     if (isRead)
                       const Padding(
@@ -102,7 +104,7 @@ class ChapterListItem extends StatelessWidget {
                           color: Colors.blue,
                         ),
                       ),
-                    
+
                     // Last read indicator
                     if (isLastRead)
                       const Padding(
@@ -127,7 +129,7 @@ class ChapterListItem extends StatelessWidget {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       return 'Today';
     } else if (difference.inDays == 1) {

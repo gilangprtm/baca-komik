@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:889906815635:android:8b61b7361c7708dfeba366",
+        "android_client_info": {
+          "package_name": "com.edjavu.baca_komik"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUpcaCtdQz4dAuD9ZarFvtR-wqx2CsyPk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:889906815635:android:d2fce72b664d579ceba366",
         "android_client_info": {
           "package_name": "com.example.flutter_app"
