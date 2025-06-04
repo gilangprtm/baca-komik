@@ -1,4 +1,4 @@
-package com.example.flutter_app
+package com.edjavu.baca_komik
 
 import io.flutter.embedding.android.FlutterActivity
 

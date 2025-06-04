@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/middleware";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/client";
+import { Database } from "@/lib/supabase/database.types";
 
-// GET /api/comics/:id/complete - Get complete comic details with chapters and user data
+// GET /api/comics/:id/complete - Get complete comic details with user data (chapters removed)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const supabase = createClient(request);
+    
+    // Buat Supabase client langsung tanpa cookies
+    const supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     // Validate ID
     if (!id || typeof id !== "string") {
@@ -55,30 +61,6 @@ export async function GET(
       return NextResponse.json({ error: "Comic not found" }, { status: 404 });
     }
 
-    // Fetch chapters for the comic with pagination
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const sort = searchParams.get("sort") || "chapter_number";
-    const order = searchParams.get("order") || "desc";
-
-    // Calculate offset for pagination
-    const offset = (page - 1) * limit;
-
-    const { data: chaptersData, error: chaptersError, count } = await supabaseAdmin
-      .from("mChapter")
-      .select("*", { count: "exact" })
-      .eq("id_komik", id)
-      .order(sort, { ascending: order === "asc" })
-      .range(offset, offset + limit - 1);
-
-    if (chaptersError) {
-      return NextResponse.json({ error: chaptersError.message }, { status: 500 });
-    }
-
-    // Calculate total pages
-    const totalPages = count ? Math.ceil(count / limit) : 0;
-
     // Format comic data
     const formattedComic = {
       ...comicData,
@@ -97,7 +79,7 @@ export async function GET(
     let userData = {
       is_bookmarked: false,
       is_voted: false,
-      last_read_chapter: null as string | null
+      last_read_chapter: null as string | null,
     };
 
     // If user is authenticated, fetch user-specific data
@@ -131,27 +113,17 @@ export async function GET(
       userData = {
         is_bookmarked: !!bookmarkData,
         is_voted: !!voteData,
-        last_read_chapter: readingHistoryData?.id_chapter || null
+        last_read_chapter: readingHistoryData?.id_chapter || null,
       };
     }
 
     // Increment view count
     await supabaseAdmin.rpc("increment_comic_view_count", { comic_id: id });
 
-    // Return complete response
+    // Return response with comic details and user data, but without chapters
     return NextResponse.json({
       comic: formattedComic,
-      chapters: {
-        data: chaptersData,
-        meta: {
-          page,
-          limit,
-          total: count,
-          total_pages: totalPages,
-          has_more: page < totalPages,
-        },
-      },
-      user_data: userData
+      user_data: userData,
     });
   } catch (error) {
     console.error("Unexpected error:", error);

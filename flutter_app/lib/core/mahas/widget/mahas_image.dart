@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../utils/type_utils.dart';
 
 class MahasImage extends StatelessWidget {
-  final String imageUrl;
+  final String? imageUrl;
   final String? localPath;
   final String? svgPath;
   final double width;
@@ -16,7 +15,7 @@ class MahasImage extends StatelessWidget {
 
   const MahasImage({
     super.key,
-    required this.imageUrl,
+    this.imageUrl,
     this.localPath,
     this.svgPath,
     this.width = 100.0,
@@ -40,7 +39,7 @@ class MahasImage extends StatelessWidget {
     return ClipRRect(
       borderRadius: borderRadius,
       child: CachedNetworkImage(
-        imageUrl: imageUrl,
+        imageUrl: imageUrl!,
         width: width,
         height: height,
         fit: fit,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/utils/mahas_utils.dart';
 import 'presentation/routes/app_routes.dart';
 import 'presentation/routes/app_routes_provider.dart';
 import 'core/base/base_service.dart';
@@ -24,8 +25,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Baca Komik',
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.dark,
       darkTheme: AppTheme.darkTheme,
+      navigatorKey: Mahas.navigatorKey,
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.main,

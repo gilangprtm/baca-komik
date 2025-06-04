@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
-import '../../../data/models/complete_chapter_model.dart';
+import '../../../data/models/chapter_model.dart';
+import '../../../data/models/page_model.dart';
 
 enum ChapterStateStatus { initial, loading, success, error }
 
 @immutable
 class ChapterState {
   final ChapterStateStatus status;
-  final CompleteChapter? currentChapter;
+  final Chapter? chapter;
+  final List<Page> pages;
+  final Chapter? nextChapter;
+  final Chapter? previousChapter;
   final String? errorMessage;
   final int currentPageIndex;
   final bool isReaderControlsVisible;
@@ -15,7 +19,10 @@ class ChapterState {
 
   const ChapterState({
     this.status = ChapterStateStatus.initial,
-    this.currentChapter,
+    this.chapter,
+    this.pages = const [],
+    this.nextChapter,
+    this.previousChapter,
     this.errorMessage,
     this.currentPageIndex = 0,
     this.isReaderControlsVisible = true,
@@ -25,7 +32,10 @@ class ChapterState {
 
   ChapterState copyWith({
     ChapterStateStatus? status,
-    CompleteChapter? currentChapter,
+    Chapter? chapter,
+    List<Page>? pages,
+    Chapter? nextChapter,
+    Chapter? previousChapter,
     String? errorMessage,
     int? currentPageIndex,
     bool? isReaderControlsVisible,
@@ -34,10 +44,14 @@ class ChapterState {
   }) {
     return ChapterState(
       status: status ?? this.status,
-      currentChapter: currentChapter ?? this.currentChapter,
+      chapter: chapter ?? this.chapter,
+      pages: pages ?? this.pages,
+      nextChapter: nextChapter ?? this.nextChapter,
+      previousChapter: previousChapter ?? this.previousChapter,
       errorMessage: errorMessage ?? this.errorMessage,
       currentPageIndex: currentPageIndex ?? this.currentPageIndex,
-      isReaderControlsVisible: isReaderControlsVisible ?? this.isReaderControlsVisible,
+      isReaderControlsVisible:
+          isReaderControlsVisible ?? this.isReaderControlsVisible,
       zoomLevel: zoomLevel ?? this.zoomLevel,
       isHorizontalReading: isHorizontalReading ?? this.isHorizontalReading,
     );
@@ -45,15 +59,11 @@ class ChapterState {
 
   // Helper methods for reader
   bool get isFirstPage => currentPageIndex == 0;
-  
+
   bool get isLastPage {
-    if (currentChapter == null || currentChapter!.pages.isEmpty) return true;
-    return currentPageIndex >= currentChapter!.pages.length - 1;
+    if (pages.isEmpty) return true;
+    return currentPageIndex >= pages.length - 1;
   }
-  
-  int get totalPages => currentChapter?.pages.length ?? 0;
-  
-  String? get nextChapterId => currentChapter?.navigation.nextChapter?.id;
-  
-  String? get prevChapterId => currentChapter?.navigation.prevChapter?.id;
+
+  int get totalPages => pages.length;
 }
