@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import '../../../core/base/base_state_notifier.dart';
+import '../../../core/utils/mahas_utils.dart';
 import '../../../data/datasource/network/service/chapter_service.dart';
 import 'chapter_state.dart';
 
@@ -10,7 +12,16 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   @override
   void onInit() {
     super.onInit();
-    // Initialize with empty state
+    
+    // Get chapterId from route arguments
+    final chapterId = Mahas.argument<String>('chapterId');
+    
+    // Fetch chapter details if chapterId is available
+    if (chapterId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        fetchChapterDetails(chapterId);
+      });
+    }
   }
 
   /// Fetch chapter details by ID

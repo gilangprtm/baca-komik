@@ -73,25 +73,17 @@ class VoteNotifier extends BaseStateNotifier<VoteState> {
       state = state.copyWith(isVoting: true);
 
       // Add vote through service
-      final response = await _voteService.addVote(comicId, 'comic');
+      await _voteService.addVote(comicId, 'comic');
 
-      if (response.success) {
-        // Update local state
-        final updatedComicVotes = Map<String, bool>.from(state.comicVotes);
-        updatedComicVotes[comicId] = true;
+      // If successful, update local state
+      final updatedComicVotes = Map<String, bool>.from(state.comicVotes);
+      updatedComicVotes[comicId] = true;
 
-        state = state.copyWith(
-          status: VoteStateStatus.success,
-          comicVotes: updatedComicVotes,
-          isVoting: false,
-        );
-      } else {
-        state = state.copyWith(
-          status: VoteStateStatus.error,
-          errorMessage: response.message ?? 'Failed to add vote',
-          isVoting: false,
-        );
-      }
+      state = state.copyWith(
+        status: VoteStateStatus.success,
+        comicVotes: updatedComicVotes,
+        isVoting: false,
+      );
     } catch (e, stackTrace) {
       logger.e('Error adding comic vote', error: e, stackTrace: stackTrace);
       state = state.copyWith(
@@ -108,25 +100,17 @@ class VoteNotifier extends BaseStateNotifier<VoteState> {
       state = state.copyWith(isVoting: true);
 
       // Remove vote through service
-      final response = await _voteService.removeVote(comicId, 'comic');
+      await _voteService.removeVote(comicId, 'comic');
 
-      if (response.success) {
-        // Update local state
-        final updatedComicVotes = Map<String, bool>.from(state.comicVotes);
-        updatedComicVotes[comicId] = false;
+      // If successful, update local state
+      final updatedComicVotes = Map<String, bool>.from(state.comicVotes);
+      updatedComicVotes[comicId] = false;
 
-        state = state.copyWith(
-          status: VoteStateStatus.success,
-          comicVotes: updatedComicVotes,
-          isVoting: false,
-        );
-      } else {
-        state = state.copyWith(
-          status: VoteStateStatus.error,
-          errorMessage: response.message ?? 'Failed to remove vote',
-          isVoting: false,
-        );
-      }
+      state = state.copyWith(
+        status: VoteStateStatus.success,
+        comicVotes: updatedComicVotes,
+        isVoting: false,
+      );
     } catch (e, stackTrace) {
       logger.e('Error removing comic vote', error: e, stackTrace: stackTrace);
       state = state.copyWith(
@@ -143,25 +127,17 @@ class VoteNotifier extends BaseStateNotifier<VoteState> {
       state = state.copyWith(isVoting: true);
 
       // Add vote through service
-      final response = await _voteService.addVote(chapterId, 'chapter');
+      await _voteService.addVote(chapterId, 'chapter');
 
-      if (response.success) {
-        // Update local state
-        final updatedChapterVotes = Map<String, bool>.from(state.chapterVotes);
-        updatedChapterVotes[chapterId] = true;
+      // If successful, update local state
+      final updatedChapterVotes = Map<String, bool>.from(state.chapterVotes);
+      updatedChapterVotes[chapterId] = true;
 
-        state = state.copyWith(
-          status: VoteStateStatus.success,
-          chapterVotes: updatedChapterVotes,
-          isVoting: false,
-        );
-      } else {
-        state = state.copyWith(
-          status: VoteStateStatus.error,
-          errorMessage: response.message ?? 'Failed to add vote',
-          isVoting: false,
-        );
-      }
+      state = state.copyWith(
+        status: VoteStateStatus.success,
+        chapterVotes: updatedChapterVotes,
+        isVoting: false,
+      );
     } catch (e, stackTrace) {
       logger.e('Error adding chapter vote', error: e, stackTrace: stackTrace);
       state = state.copyWith(
@@ -178,25 +154,17 @@ class VoteNotifier extends BaseStateNotifier<VoteState> {
       state = state.copyWith(isVoting: true);
 
       // Remove vote through service
-      final response = await _voteService.removeVote(chapterId, 'chapter');
+      await _voteService.removeVote(chapterId, 'chapter');
 
-      if (response.success) {
-        // Update local state
-        final updatedChapterVotes = Map<String, bool>.from(state.chapterVotes);
-        updatedChapterVotes[chapterId] = false;
+      // If successful, update local state
+      final updatedChapterVotes = Map<String, bool>.from(state.chapterVotes);
+      updatedChapterVotes[chapterId] = false;
 
-        state = state.copyWith(
-          status: VoteStateStatus.success,
-          chapterVotes: updatedChapterVotes,
-          isVoting: false,
-        );
-      } else {
-        state = state.copyWith(
-          status: VoteStateStatus.error,
-          errorMessage: response.message ?? 'Failed to remove vote',
-          isVoting: false,
-        );
-      }
+      state = state.copyWith(
+        status: VoteStateStatus.success,
+        chapterVotes: updatedChapterVotes,
+        isVoting: false,
+      );
     } catch (e, stackTrace) {
       logger.e('Error removing chapter vote', error: e, stackTrace: stackTrace);
       state = state.copyWith(

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/middleware";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/client";
+import { Database } from "@/lib/supabase/database.types";
 
 // GET /api/comics/:id/complete - Get complete comic details with user data (chapters removed)
 export async function GET(
@@ -9,7 +10,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = createClient(request);
+    
+    // Buat Supabase client langsung tanpa cookies
+    const supabase = createClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     // Validate ID
     if (!id || typeof id !== "string") {

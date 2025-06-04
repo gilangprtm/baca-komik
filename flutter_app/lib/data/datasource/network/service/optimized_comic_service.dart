@@ -76,7 +76,7 @@ class OptimizedComicService extends BaseService {
           // Apply additional sorting or filtering if needed
           if (search != null && search.isNotEmpty) {
             // For search results, improve relevance by prioritizing exact matches in title
-            discoverResponse.data.sort((a, b) {
+            discoverResponse.searchResults.data.sort((a, b) {
               bool aExactMatch =
                   a.title.toLowerCase().contains(search.toLowerCase());
               bool bExactMatch =
@@ -93,7 +93,7 @@ class OptimizedComicService extends BaseService {
           logger.e('Error fetching discover comics',
               error: e, stackTrace: stackTrace, tag: 'OptimizedComicService');
           // Return empty result with pagination metadata to prevent UI crashes
-          return DiscoverComicsResponse.empty(page, limit);
+          return DiscoverComicsResponse.empty();
         }
       },
     );

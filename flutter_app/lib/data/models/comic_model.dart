@@ -92,4 +92,45 @@ class Comic {
       'updated_date': updatedDate?.toIso8601String(),
     };
   }
+  
+  /// Membuat salinan dari objek Comic dengan beberapa properti yang diperbarui
+  Comic copyWith({
+    String? id,
+    String? title,
+    String? alternativeTitle,
+    String? synopsis,
+    String? status,
+    String? countryId,
+    int? viewCount,
+    int? voteCount,
+    int? bookmarkCount,
+    String? coverImageUrl,
+    DateTime? createdDate,
+    DateTime? updatedDate,
+    List<Chapter>? chapters,
+    List<Genre>? genres,
+    List<Author>? authors,
+    List<Artist>? artists,
+    List<Format>? formats,
+  }) {
+    return Comic(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      alternativeTitle: alternativeTitle ?? this.alternativeTitle,
+      synopsis: synopsis ?? this.synopsis,
+      status: status ?? this.status,
+      countryId: countryId ?? this.countryId,
+      viewCount: viewCount ?? this.viewCount,
+      voteCount: voteCount ?? this.voteCount,
+      bookmarkCount: bookmarkCount ?? this.bookmarkCount,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
+      createdDate: createdDate ?? this.createdDate,
+      updatedDate: updatedDate ?? this.updatedDate,
+      chapters: chapters ?? this.chapters,
+      genres: genres ?? this.genres,
+      authors: authors ?? this.authors,
+      artists: artists ?? this.artists,
+      formats: formats ?? this.formats,
+    );
+  }
 }

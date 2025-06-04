@@ -46,53 +46,6 @@ class ComicActionButtons extends ConsumerWidget {
               ),
             ),
           ),
-
-          const SizedBox(height: 8),
-
-          // Bookmark and Up Vote buttons
-          Row(
-            children: [
-              // Bookmark button
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Toggle bookmark status
-                  },
-                  icon: const Icon(Icons.bookmark_border),
-                  label: const Text('Bookmark'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.grey),
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              // Up Vote button toggle
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Up Vote the comic
-                  },
-                  icon: const Icon(Icons.upcoming),
-                  label: const Text('Up Vote'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.grey),
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

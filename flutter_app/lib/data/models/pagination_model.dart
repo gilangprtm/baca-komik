@@ -1,41 +1,51 @@
 class PaginationMeta {
-  final int currentPage;
-  final int lastPage;
-  final int perPage;
+  final int page;
+  final int limit;
   final int total;
+  final int totalPages;
+  final bool hasMore;
 
   PaginationMeta({
-    required this.currentPage,
-    required this.lastPage,
-    required this.perPage,
+    required this.page,
+    required this.limit,
     required this.total,
+    required this.totalPages,
+    required this.hasMore,
   });
 
   factory PaginationMeta.fromJson(Map<String, dynamic> json) {
     return PaginationMeta(
-      currentPage: json['currentPage'] ?? 1,
-      lastPage: json['lastPage'] ?? 1,
-      perPage: json['perPage'] ?? 10,
+      page: json['page'] ?? 1,
+      limit: json['limit'] ?? 10,
       total: json['total'] ?? 0,
+      totalPages: json['total_pages'] ?? 0,
+      hasMore: json['has_more'] ?? false,
     );
   }
 
   // For empty results
   factory PaginationMeta.empty(int page, int limit) {
     return PaginationMeta(
-      currentPage: page,
-      lastPage: page,
-      perPage: limit,
+      page: page,
+      limit: limit,
       total: 0,
+      totalPages: 0,
+      hasMore: false,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'currentPage': currentPage,
-      'lastPage': lastPage,
-      'perPage': perPage,
+      'page': page,
+      'limit': limit,
       'total': total,
+      'total_pages': totalPages,
+      'has_more': hasMore,
     };
   }
+
+  // Getter untuk backward compatibility
+  int get currentPage => page;
+  int get lastPage => totalPages;
+  int get perPage => limit;
 }

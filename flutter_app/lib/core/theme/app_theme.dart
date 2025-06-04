@@ -53,7 +53,7 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: AppColors.backgroundColor,
     cardColor: AppColors.cardColor,
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.cardColor,
       shape: _cardShape,
       elevation: _elevation,
@@ -181,7 +181,7 @@ class AppTheme {
       ),
       errorStyle: AppTypography.caption.copyWith(color: AppColors.errorColor),
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       shape: _dialogShape,
       backgroundColor: AppColors.backgroundColor,
       titleTextStyle: AppTypography.headline6.copyWith(
@@ -234,7 +234,7 @@ class AppTheme {
       }),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: AppColors.primaryColor,
       unselectedLabelColor: AppColors.textSecondaryColor,
       labelStyle: AppTypography.button,
@@ -282,7 +282,7 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: AppColors.darkBackgroundColor,
     cardColor: AppColors.darkCardColor,
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.darkCardColor,
       shape: _cardShape,
       elevation: _elevation,
@@ -410,7 +410,7 @@ class AppTheme {
       ),
       errorStyle: AppTypography.caption.copyWith(color: AppColors.errorColor),
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       shape: _dialogShape,
       backgroundColor: AppColors.darkBackgroundColor,
       titleTextStyle: AppTypography.headline6.copyWith(
@@ -463,7 +463,7 @@ class AppTheme {
       }),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     ),
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: AppColors.primaryColor,
       unselectedLabelColor: AppColors.darkTextSecondaryColor,
       labelStyle: AppTypography.button,

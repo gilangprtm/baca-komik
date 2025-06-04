@@ -54,4 +54,16 @@ class UserComicData {
       lastReadChapter: json['last_read_chapter'],
     );
   }
+
+  UserComicData copyWith({
+    bool? isBookmarked,
+    bool? isVoted,
+    String? lastReadChapter,
+  }) {
+    return UserComicData(
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      isVoted: isVoted ?? this.isVoted,
+      lastReadChapter: lastReadChapter ?? this.lastReadChapter,
+    );
+  }
 }

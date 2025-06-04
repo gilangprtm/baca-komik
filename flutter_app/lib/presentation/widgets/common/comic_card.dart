@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_project/core/mahas/widget/mahas_image.dart';
 import 'package:flutter_project/core/theme/app_colors.dart';
+import '../../../core/utils/mahas_utils.dart';
 import '../../../core/utils/type_utils.dart';
 import '../../../data/models/comic_model.dart';
 import '../../../data/models/home_comic_model.dart';
 import '../../../data/models/discover_comic_model.dart';
 import '../../../core/base/global_state.dart';
+import '../../routes/app_routes.dart';
 
 class ComicCard extends StatelessWidget {
   final dynamic comic; // Can be Comic, HomeComic, or DiscoverComic
@@ -362,6 +364,7 @@ class ComicCard extends StatelessWidget {
       onTap: () {
         // Navigate to chapter detail page
         // Navigator.pushNamed(context, '/chapter/${comic.id}');
+        Mahas.routeTo(AppRoutes.chapter, arguments: {'chapterId': chapter.id});
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 6),

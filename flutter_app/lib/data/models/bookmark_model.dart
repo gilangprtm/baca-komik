@@ -3,13 +3,13 @@ import 'comic_model.dart';
 class Bookmark {
   final String idKomik;
   final String idUser;
-  final DateTime? createdDate;
+  final DateTime? createdAt;
   final Comic? comic;
 
   Bookmark({
     required this.idKomik,
     required this.idUser,
-    this.createdDate,
+    this.createdAt,
     this.comic,
   });
 
@@ -17,8 +17,8 @@ class Bookmark {
     return Bookmark(
       idKomik: json['id_komik'],
       idUser: json['id_user'],
-      createdDate: json['created_date'] != null
-          ? DateTime.parse(json['created_date'])
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
           : null,
       comic: json['mKomik'] != null ? Comic.fromJson(json['mKomik']) : null,
     );
@@ -28,7 +28,7 @@ class Bookmark {
     return {
       'id_komik': idKomik,
       'id_user': idUser,
-      'created_date': createdDate?.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 }

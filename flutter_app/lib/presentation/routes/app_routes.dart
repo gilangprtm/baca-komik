@@ -5,4 +5,5 @@ class AppRoutes {
   static const bookmark = '/bookmark';
   static const profile = '/profile';
   static const comic = '/comic';
+  static const chapter = '/chapter';
 }

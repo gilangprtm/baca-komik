@@ -32,7 +32,7 @@ class VoteService extends BaseService {
           if (hasVoted) {
             logger.w('User has already voted for this $type',
                 tag: 'VoteService');
-            return VoteResponse(success: false);
+            throw Exception('User has already voted');
           }
 
           // Add the vote through repository
@@ -46,8 +46,8 @@ class VoteService extends BaseService {
           logger.e('Error adding vote',
               error: e, stackTrace: stackTrace, tag: 'VoteService');
 
-          // Return error response
-          return VoteResponse(success: false);
+          // Re-throw error
+          rethrow;
         }
       },
     );
@@ -72,7 +72,7 @@ class VoteService extends BaseService {
           final hasVoted = await _hasUserVoted(id, type);
           if (!hasVoted) {
             logger.w('User has not voted for this $type', tag: 'VoteService');
-            return VoteResponse(success: false);
+            throw Exception('User has not voted');
           }
 
           // Remove the vote through repository
@@ -86,8 +86,8 @@ class VoteService extends BaseService {
           logger.e('Error removing vote',
               error: e, stackTrace: stackTrace, tag: 'VoteService');
 
-          // Return error response
-          return VoteResponse(success: false);
+          // Re-throw error
+          rethrow;
         }
       },
     );
@@ -102,30 +102,26 @@ class VoteService extends BaseService {
           // Check if user has already voted
           final hasVoted = await _hasUserVoted(id, type);
 
-          VoteResponse response;
           bool newVoteStatus;
           String resultMessage;
 
           if (hasVoted) {
             // User has voted, so remove the vote
-            response = await removeVote(id, type);
+            await removeVote(id, type);
             newVoteStatus = false;
-            resultMessage = response.success
-                ? 'Vote removed successfully'
-                : 'Failed to remove vote';
+            resultMessage = 'Vote removed successfully';
           } else {
             // User hasn't voted, so add a vote
-            response = await addVote(id, type);
+            await addVote(id, type);
             newVoteStatus = true;
-            resultMessage =
-                response.success ? 'Voted successfully' : 'Failed to add vote';
+            resultMessage = 'Voted successfully';
           }
 
           // Get the updated vote count after the operation
           final int updatedVoteCount = await _getVoteCount(id, type);
 
           return VoteResult(
-            success: response.success,
+            success: true,
             message: resultMessage,
             voted: newVoteStatus,
             voteCount: updatedVoteCount,
@@ -228,19 +224,4 @@ extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${this.substring(1)}";
   }
-}
-
-/// Class to represent the result of a vote toggle operation
-class VoteResult {
-  final bool success;
-  final String message;
-  final bool voted;
-  final int voteCount;
-
-  VoteResult({
-    required this.success,
-    required this.message,
-    required this.voted,
-    required this.voteCount,
-  });
 }

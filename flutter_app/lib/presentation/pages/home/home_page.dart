@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/base/global_state.dart';
 import '../../../core/utils/mahas_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/home_comic_model.dart';
@@ -7,6 +8,7 @@ import '../../riverpod/home/home_provider.dart';
 import '../../riverpod/home/home_state.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/comic_card.dart';
+import '../../widgets/common/under_construction.dart';
 import '../../widgets/skeletons/skeleton_widgets.dart';
 import '../../../core/mahas/widget/mahas_grid.dart';
 
@@ -16,8 +18,14 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: _buildBody(context),
+      child: GlobalState.underMaintenance
+          ? _buildUnderMaintenance(context)
+          : _buildBody(context),
     );
+  }
+
+  Widget _buildUnderMaintenance(BuildContext context) {
+    return UnderConstruction();
   }
 
   Widget _buildBody(BuildContext context) {

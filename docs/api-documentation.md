@@ -1,6 +1,6 @@
 # BacaKomik API Documentation
 
-This document provides details about the BacaKomik API endpoints for integration with Flutter or other clients.
+Dokumentasi lengkap untuk semua API endpoints BacaKomik yang digunakan oleh Flutter app dan client lainnya.
 
 ## Base URL
 
@@ -8,34 +8,76 @@ This document provides details about the BacaKomik API endpoints for integration
 https://baca-komik.vercel.app/api
 ```
 
-> **Note**: Beberapa endpoint telah dioptimasi untuk mengurangi jumlah request. Endpoint yang dioptimasi ditandai dengan label [Optimized].
-
 ## Authentication
 
-Most endpoints require authentication using a JWT token. Include the token in the `Authorization` header:
+Sebagian besar endpoint memerlukan autentikasi menggunakan JWT token dari Supabase Auth. Sertakan token dalam header `Authorization`:
 
 ```
 Authorization: Bearer {token}
 ```
 
-## Endpoints
+### Protected Endpoints
 
-### Comics
+Endpoint berikut memerlukan autentikasi:
 
-#### Get Home Comics [Optimized]
+- `/api/bookmarks/*`
+- `/api/votes/*`
+- `/api/comments/*`
 
+## Response Format
+
+Semua response menggunakan format JSON dengan struktur konsisten:
+
+### Success Response
+
+```json
+{
+  "data": "...",
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "total_pages": 5,
+    "has_more": true
+  }
+}
 ```
-GET /comics/home
+
+### Error Response
+
+```json
+{
+  "error": "Error message"
+}
 ```
 
-Query Parameters:
+## Status Codes
 
-- `page` (optional): Page number for pagination (default: 1)
-- `limit` (optional): Number of comics per page (default: 10)
-- `sort` (optional): Field to sort by (default: 'updated_date')
-- `order` (optional): Sort order, 'asc' or 'desc' (default: 'desc')
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request
+- `401` - Unauthorized
+- `404` - Not Found
+- `500` - Internal Server Error
 
-Response:
+---
+
+## 📚 Comics
+
+### Get Home Comics [Optimized]
+
+**Endpoint:** `GET /comics/home`
+
+**Deskripsi:** Mendapatkan daftar komik untuk halaman home dengan sorting berdasarkan chapter terbaru.
+
+**Query Parameters:**
+
+- `page` (optional): Nomor halaman untuk pagination (default: 1)
+- `limit` (optional): Jumlah komik per halaman (default: 10)
+- `sort` (optional): Field untuk sorting (default: berdasarkan chapter terbaru)
+- `order` (optional): Urutan sort 'asc' atau 'desc' (default: 'desc')
+
+**Response:**
 
 ```json
 {
@@ -45,28 +87,29 @@ Response:
       "title": "string",
       "alternative_title": "string",
       "synopsis": "string",
-      "status": "string",
+      "status": "On Going" | "End" | "Hiatus" | "Break",
+      "country_id": "KR" | "JPN" | "CN",
       "view_count": 0,
       "vote_count": 0,
       "bookmark_count": 0,
       "cover_image_url": "string",
       "created_date": "string",
       "updated_date": "string",
-      "chapter_count": 0,
-      "genres": [
-        {
-          "id": "string",
-          "name": "string"
-        }
-      ],
+      "chapter_count": 42,
       "latest_chapters": [
         {
           "id": "string",
           "id_komik": "string",
-          "chapter_number": 0,
+          "chapter_number": 1,
           "title": "string",
           "release_date": "string",
           "thumbnail_image_url": "string"
+        }
+      ],
+      "genres": [
+        {
+          "id": "string",
+          "name": "string"
         }
       ]
     }
@@ -81,22 +124,25 @@ Response:
 }
 ```
 
-#### Get Discover Comics [Optimized]
+---
 
-```
-GET /comics/discover
-```
+### Get All Comics
 
-Query Parameters:
+**Endpoint:** `GET /comics`
 
-- `page` (optional): Page number for pagination (default: 1)
-- `limit` (optional): Number of comics per page (default: 10)
-- `search` (optional): Search term to filter comics by title
-- `country` (optional): Country filter (KR, JPN, CN)
-- `genre` (optional): Genre ID to filter by
-- `format` (optional): Format ID to filter by
+**Deskripsi:** Mendapatkan daftar semua komik dengan filtering dan pagination.
 
-Response:
+**Query Parameters:**
+
+- `page` (optional): Nomor halaman (default: 1)
+- `limit` (optional): Jumlah komik per halaman (default: 10)
+- `search` (optional): Kata kunci pencarian berdasarkan title
+- `sort` (optional): Field untuk sorting (default: 'rank')
+- `order` (optional): Urutan sort 'asc' atau 'desc' (default: 'desc')
+- `genre` (optional): Filter berdasarkan genre ID
+- `country` (optional): Filter berdasarkan negara ('KR', 'JPN', 'CN')
+
+**Response:**
 
 ```json
 {
@@ -107,20 +153,15 @@ Response:
       "alternative_title": "string",
       "synopsis": "string",
       "status": "string",
+      "country_id": "string",
       "view_count": 0,
       "vote_count": 0,
       "bookmark_count": 0,
       "cover_image_url": "string",
       "created_date": "string",
       "updated_date": "string",
-      "chapter_count": 0,
+      "chapter_count": 42,
       "genres": [
-        {
-          "id": "string",
-          "name": "string"
-        }
-      ],
-      "formats": [
         {
           "id": "string",
           "name": "string"
@@ -138,64 +179,154 @@ Response:
 }
 ```
 
-#### Get All Comics
+---
 
-```
-GET /comics
-```
+### Get Discover Comics [Optimized]
 
-Query Parameters:
+**Endpoint:** `GET /comics/discover`
 
-- `page` (optional): Page number for pagination (default: 1)
-- `limit` (optional): Number of comics per page (default: 20)
-- `search` (optional): Search term to filter comics by title
-- `sort` (optional): Field to sort by (default: 'updated_date')
-- `order` (optional): Sort order, 'asc' or 'desc' (default: 'desc')
-- `genre` (optional): Genre ID to filter by
-- `status` (optional): Comic status to filter by ('ongoing', 'completed', 'hiatus')
+**Deskripsi:** Menggabungkan data komik populer, rekomendasi, dan hasil pencarian dalam satu request.
 
-Response:
+**Query Parameters:**
+
+- `page` (optional): Nomor halaman untuk search results (default: 1)
+- `limit` (optional): Jumlah komik per halaman untuk search results (default: 10)
+- `search` (optional): Kata kunci pencarian berdasarkan title
+- `genre` (optional): Filter berdasarkan genre ID
+- `format` (optional): Filter berdasarkan format ID
+- `country` (optional): Filter berdasarkan negara ('KR', 'JPN', 'CN')
+
+**Response:**
 
 ```json
 {
-  "data": [
+  "popular": [
     {
       "id": "string",
       "title": "string",
-      "alternative_title": "string",
-      "synopsis": "string",
-      "status": "string",
-      "view_count": 0,
-      "vote_count": 0,
-      "bookmark_count": 0,
       "cover_image_url": "string",
-      "created_date": "string",
-      "updated_date": "string"
+      "country_id": "string",
+      "view_count": 0
     }
   ],
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "total": 0,
-    "total_pages": 0,
-    "has_more": false
+  "recommended": [
+    {
+      "id": "string",
+      "title": "string",
+      "cover_image_url": "string",
+      "country_id": "string"
+    }
+  ],
+  "search_results": {
+    "data": [
+      {
+        "id": "string",
+        "title": "string",
+        "alternative_title": "string",
+        "synopsis": "string",
+        "status": "string",
+        "country_id": "string",
+        "view_count": 0,
+        "vote_count": 0,
+        "bookmark_count": 0,
+        "cover_image_url": "string",
+        "created_date": "string",
+        "updated_date": "string",
+        "chapter_count": 42,
+        "genres": [
+          {
+            "id": "string",
+            "name": "string"
+          }
+        ],
+        "formats": [
+          {
+            "id": "string",
+            "name": "string"
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "page": 1,
+      "limit": 10,
+      "total": 0,
+      "total_pages": 0,
+      "has_more": false
+    }
   }
 }
 ```
 
-#### Get Complete Comic Details [Optimized]
+---
 
-```
-GET /comics/{id}/complete
-```
+### Get Comic Details
 
-Returns detailed comic information and user-related data without chapter data. For obtaining chapters, use the `/comics/{id}/chapters` endpoint.
+**Endpoint:** `GET /comics/{id}`
 
-Path Parameters:
+**Deskripsi:** Mendapatkan detail komik berdasarkan ID.
+
+**Path Parameters:**
 
 - `id`: Comic ID
 
-Response:
+**Response:**
+
+```json
+{
+  "id": "string",
+  "title": "string",
+  "alternative_title": "string",
+  "synopsis": "string",
+  "status": "string",
+  "country_id": "KR" | "JPN" | "CN",
+  "view_count": 0,
+  "vote_count": 0,
+  "bookmark_count": 0,
+  "cover_image_url": "string",
+  "created_date": "string",
+  "updated_date": "string",
+  "chapter_count": 42,
+  "genres": [
+    {
+      "id": "string",
+      "name": "string"
+    }
+  ],
+  "authors": [
+    {
+      "id": "string",
+      "name": "string"
+    }
+  ],
+  "artists": [
+    {
+      "id": "string",
+      "name": "string"
+    }
+  ],
+  "formats": [
+    {
+      "id": "string",
+      "name": "string"
+    }
+  ]
+}
+```
+
+---
+
+### Get Complete Comic Details [Optimized]
+
+**Endpoint:** `GET /comics/{id}/complete`
+
+**Deskripsi:** Mendapatkan detail lengkap komik dengan data user (bookmark, vote, last read chapter) tanpa data chapter.
+
+**Path Parameters:**
+
+- `id`: Comic ID
+
+**Response:**
 
 ```json
 {
@@ -205,10 +336,13 @@ Response:
     "alternative_title": "string",
     "synopsis": "string",
     "status": "string",
+    "country_id": "string",
     "view_count": 0,
     "vote_count": 0,
     "bookmark_count": 0,
     "cover_image_url": "string",
+    "created_date": "string",
+    "updated_date": "string",
     "genres": [
       {
         "id": "string",
@@ -242,78 +376,26 @@ Response:
 }
 ```
 
-#### Get Comic Details [Optimized]
+---
 
-```
-GET /comics/{id}
-```
+### Get Comic Chapters
 
-Path Parameters:
+**Endpoint:** `GET /comics/{id}/chapters`
 
-- `id`: Comic ID
+**Deskripsi:** Mendapatkan daftar chapter dari komik tertentu dengan pagination.
 
-Response:
-
-```json
-{
-  "id": "string",
-  "title": "string",
-  "alternative_title": "string",
-  "synopsis": "string",
-  "status": "string",
-  "country_id": "string", // KR, JPN, or CN
-  "view_count": 0,
-  "vote_count": 0,
-  "bookmark_count": 0,
-  "cover_image_url": "string",
-  "created_date": "string",
-  "updated_date": "string",
-  "chapter_count": 42, // Total number of chapters without loading all chapter data
-  "genres": [
-    {
-      "id": "string",
-      "name": "string"
-    }
-  ],
-  "authors": [
-    {
-      "id": "string",
-      "name": "string"
-    }
-  ],
-  "artists": [
-    {
-      "id": "string",
-      "name": "string"
-    }
-  ],
-  "formats": [
-    {
-      "id": "string",
-      "name": "string"
-    }
-  ]
-}
-```
-
-#### Get Comic Chapters
-
-```
-GET /comics/{id}/chapters
-```
-
-Path Parameters:
+**Path Parameters:**
 
 - `id`: Comic ID
 
-Query Parameters:
+**Query Parameters:**
 
-- `page` (optional): Page number for pagination (default: 1)
-- `limit` (optional): Number of chapters per page (default: 20)
-- `sort` (optional): Field to sort by (default: 'chapter_number')
-- `order` (optional): Sort order, 'asc' or 'desc' (default: 'desc')
+- `page` (optional): Nomor halaman (default: 1)
+- `limit` (optional): Jumlah chapter per halaman (default: 20)
+- `sort` (optional): Field untuk sorting (default: 'chapter_number')
+- `order` (optional): Urutan sort 'asc' atau 'desc' (default: 'desc')
 
-Response:
+**Response:**
 
 ```json
 {
@@ -324,10 +406,10 @@ Response:
   "data": [
     {
       "id": "string",
-      "chapter_number": 0,
+      "chapter_number": 1,
       "title": "string",
       "release_date": "string",
-      "rating": 0,
+      "rating": 4.5,
       "view_count": 0,
       "vote_count": 0,
       "thumbnail_image_url": "string"
@@ -343,28 +425,30 @@ Response:
 }
 ```
 
-### Chapters
+---
 
-#### Get Complete Chapter Details [Optimized]
+## 📖 Chapters
 
-```
-GET /chapters/{id}/complete
-```
+### Get Complete Chapter Details [Optimized]
 
-Path Parameters:
+**Endpoint:** `GET /chapters/{id}/complete`
+
+**Deskripsi:** Mendapatkan detail lengkap chapter dengan pages, navigation, dan user data dalam satu request.
+
+**Path Parameters:**
 
 - `id`: Chapter ID
 
-Response:
+**Response:**
 
 ```json
 {
   "chapter": {
     "id": "string",
-    "chapter_number": 0,
+    "chapter_number": 1,
     "title": "string",
     "release_date": "string",
-    "rating": 0,
+    "rating": 4.5,
     "view_count": 0,
     "vote_count": 0,
     "id_komik": "string",
@@ -379,14 +463,14 @@ Response:
   "pages": [
     {
       "id_chapter": "string",
-      "page_number": 0,
+      "page_number": 1,
       "page_url": "string"
     }
   ],
   "navigation": {
     "next_chapter": {
       "id": "string",
-      "chapter_number": 0
+      "chapter_number": 2
     },
     "prev_chapter": {
       "id": "string",
@@ -400,25 +484,27 @@ Response:
 }
 ```
 
-#### Get Chapter Details
+---
 
-```
-GET /chapters/{id}
-```
+### Get Chapter Details
 
-Path Parameters:
+**Endpoint:** `GET /chapters/{id}`
+
+**Deskripsi:** Mendapatkan detail chapter berdasarkan ID.
+
+**Path Parameters:**
 
 - `id`: Chapter ID
 
-Response:
+**Response:**
 
 ```json
 {
   "id": "string",
-  "chapter_number": 0,
+  "chapter_number": 1,
   "title": "string",
   "release_date": "string",
-  "rating": 0,
+  "rating": 4.5,
   "view_count": 0,
   "vote_count": 0,
   "id_komik": "string",
@@ -428,35 +514,29 @@ Response:
     "title": "string",
     "alternative_title": "string",
     "cover_image_url": "string"
-  },
-  "next_chapter": {
-    "id": "string",
-    "chapter_number": 0
-  },
-  "prev_chapter": {
-    "id": "string",
-    "chapter_number": 0
   }
 }
 ```
 
-#### Get Chapter Pages
+---
 
-```
-GET /chapters/{id}/pages
-```
+### Get Chapter Pages
 
-Path Parameters:
+**Endpoint:** `GET /chapters/{id}/pages`
+
+**Deskripsi:** Mendapatkan daftar halaman dari chapter tertentu.
+
+**Path Parameters:**
 
 - `id`: Chapter ID
 
-Response:
+**Response:**
 
 ```json
 {
   "chapter": {
     "id": "string",
-    "chapter_number": 0,
+    "chapter_number": 1,
     "comic": {
       "id": "string",
       "title": "string"
@@ -464,36 +544,37 @@ Response:
   },
   "pages": [
     {
-      "id": "string",
       "id_chapter": "string",
-      "page_number": 0,
-      "image_url": "string"
+      "page_number": 1,
+      "page_url": "string"
     }
   ],
-  "count": 0
+  "count": 25
 }
 ```
 
-### Comments
+---
 
-#### Get Comments
+## 💬 Comments
 
-```
-GET /comments/{id}
-```
+### Get Comments
 
-Path Parameters:
+**Endpoint:** `GET /comments/{id}`
 
-- `id`: Comic ID or Chapter ID
+**Deskripsi:** Mendapatkan komentar untuk komik atau chapter tertentu.
 
-Query Parameters:
+**Path Parameters:**
 
-- `type` (optional): Type of content ('comic' or 'chapter', default: 'comic')
-- `page` (optional): Page number for pagination (default: 1)
-- `limit` (optional): Number of comments per page (default: 10)
-- `parent_only` (optional): Only fetch parent comments (default: false)
+- `id`: Comic ID atau Chapter ID
 
-Response:
+**Query Parameters:**
+
+- `type` (optional): Tipe konten ('comic' atau 'chapter', default: 'comic')
+- `page` (optional): Nomor halaman (default: 1)
+- `limit` (optional): Jumlah komentar per halaman (default: 10)
+- `parent_only` (optional): Hanya ambil parent comments (default: false)
+
+**Response:**
 
 ```json
 {
@@ -535,24 +616,26 @@ Response:
 }
 ```
 
-#### Post Comment
+---
 
-```
-POST /comments
-```
+### Add Comment [Auth Required]
 
-Request Body:
+**Endpoint:** `POST /comments`
+
+**Deskripsi:** Menambahkan komentar baru untuk komik atau chapter.
+
+**Request Body:**
 
 ```json
 {
   "content": "string",
-  "id_komik": "string", // Only for comic comments
-  "id_chapter": "string", // Only for chapter comments
-  "parent_id": "string" // Optional, for replies
+  "id_komik": "string",
+  "id_chapter": "string",
+  "parent_id": "string"
 }
 ```
 
-Response:
+**Response:**
 
 ```json
 {
@@ -566,43 +649,66 @@ Response:
 }
 ```
 
-### Bookmarks
+---
 
-#### Add Bookmark
+## 🔖 Bookmarks
 
-```
-POST /bookmarks
-```
+### Get User Bookmarks [Auth Required]
 
-Request Body:
+**Endpoint:** `GET /bookmarks`
+
+**Deskripsi:** Mendapatkan daftar bookmark user.
+
+**Query Parameters:**
+
+- `page` (optional): Nomor halaman (default: 1)
+- `limit` (optional): Jumlah bookmark per halaman (default: 10)
+
+**Response:**
 
 ```json
 {
-  "id_komik": "string"
+  "data": [
+    {
+      "id_user": "string",
+      "id_komik": "string",
+      "created_at": "string",
+      "mKomik": {
+        "id": "string",
+        "title": "string",
+        "cover_image_url": "string",
+        "alternative_title": "string",
+        "description": "string",
+        "rating": 4.5,
+        "status": "string",
+        "country_id": "string"
+      }
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 0,
+    "total_pages": 0,
+    "has_more": false
+  }
 }
 ```
 
-Response:
+---
 
-```json
-{
-  "success": true,
-  "id": "string"
-}
-```
+### Get Detailed Bookmarks [Auth Required]
 
-#### Get Bookmark Details [Optimized]
+**Endpoint:** `GET /bookmarks/details`
 
-```
-GET /bookmarks/details
-```
+**Deskripsi:** Mendapatkan bookmark dengan detail komik dan chapter terbaru.
 
-Query Parameters:
+**Query Parameters:**
 
-- `page` (optional): Page number for pagination (default: 1)
-- `limit` (optional): Number of bookmarks per page (default: 20)
+- `page` (optional): Nomor halaman (default: 1)
+- `limit` (optional): Jumlah bookmark per halaman (default: 10)
 
-Response:
+**Response:**
 
 ```json
 {
@@ -613,22 +719,27 @@ Response:
         "id": "string",
         "title": "string",
         "alternative_title": "string",
-        "cover_image_url": "string",
+        "synopsis": "string",
         "status": "string",
+        "country_id": "string",
+        "view_count": 0,
+        "vote_count": 0,
+        "bookmark_count": 0,
+        "cover_image_url": "string",
+        "created_date": "string",
         "updated_date": "string",
         "latest_chapter": {
           "id": "string",
-          "chapter_number": 0,
+          "chapter_number": 1,
           "title": "string",
-          "release_date": "string",
-          "thumbnail_image_url": "string"
+          "release_date": "string"
         }
       }
     }
   ],
   "meta": {
     "page": 1,
-    "limit": 20,
+    "limit": 10,
     "total": 0,
     "total_pages": 0,
     "has_more": false
@@ -636,173 +747,163 @@ Response:
 }
 ```
 
-#### Get User Bookmarks
+---
 
-```
-GET /bookmarks
-```
+### Add Bookmark [Auth Required]
 
-Query Parameters:
+**Endpoint:** `POST /bookmarks`
 
-- `page` (optional): Page number for pagination (default: 1)
-- `limit` (optional): Number of bookmarks per page (default: 20)
+**Deskripsi:** Menambahkan komik ke bookmark user.
 
-Response:
+**Request Body:**
 
 ```json
 {
-  "data": [
-    {
-      "id_komik": "string",
-      "id_user": "string",
-      "created_date": "string",
-      "mKomik": {
-        "id": "string",
-        "title": "string",
-        "cover_image_url": "string",
-        "status": "string",
-        "updated_date": "string"
-      }
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "total": 0,
-    "total_pages": 0,
-    "has_more": false
-  }
+  "id_komik": "string"
 }
 ```
 
-#### Remove Bookmark
-
-```
-DELETE /bookmarks/{id}
-```
-
-Path Parameters:
-
-- `id`: Comic ID
-
-Response:
+**Response:**
 
 ```json
 {
-  "success": true
-}
-```
-
-### Votes
-
-#### Add Vote
-
-```
-POST /votes
-```
-
-Request Body:
-
-```json
-{
-  "id": "string",
-  "type": "comic" | "chapter"
-}
-```
-
-Response:
-
-```json
-{
-  "success": true
-}
-```
-
-#### Remove Vote
-
-```
-DELETE /votes/{id}?type=comic|chapter
-```
-
-Path Parameters:
-
-- `id`: Comic ID or Chapter ID
-
-Query Parameters:
-
-- `type`: Type of content ('comic' or 'chapter')
-
-Response:
-
-```json
-{
-  "success": true
-}
-```
-
-### User
-
-#### Get User Profile
-
-```
-GET /user/profile
-```
-
-Response:
-
-```json
-{
-  "id": "string",
-  "email": "string",
-  "name": "string",
-  "avatar_url": "string",
+  "id_user": "string",
+  "id_komik": "string",
   "created_at": "string"
 }
 ```
 
-#### Update User Profile
+---
 
-```
-PATCH /user/profile
-```
+### Remove Bookmark [Auth Required]
 
-Request Body:
+**Endpoint:** `DELETE /bookmarks/{id}`
+
+**Deskripsi:** Menghapus komik dari bookmark user.
+
+**Path Parameters:**
+
+- `id`: Comic ID
+
+**Response:**
 
 ```json
 {
-  "name": "string",
-  "avatar_url": "string"
+  "success": true
 }
 ```
 
-Response:
+---
+
+## 👍 Votes
+
+### Add Vote [Auth Required]
+
+**Endpoint:** `POST /votes`
+
+**Deskripsi:** Menambahkan vote untuk komik atau chapter.
+
+**Request Body:**
 
 ```json
 {
-  "success": true,
+  "id_komik": "string",
+  "id_chapter": "string"
+}
+```
+
+**Note:** Hanya salah satu dari `id_komik` atau `id_chapter` yang boleh diisi.
+
+**Response:**
+
+```json
+{
+  "id_user": "string",
+  "id_komik": "string",
+  "id_chapter": "string",
+  "created_at": "string"
+}
+```
+
+---
+
+### Remove Vote [Auth Required]
+
+**Endpoint:** `DELETE /votes/{id}?type=comic|chapter`
+
+**Deskripsi:** Menghapus vote dari komik atau chapter.
+
+**Path Parameters:**
+
+- `id`: Comic ID atau Chapter ID
+
+**Query Parameters:**
+
+- `type`: Tipe konten ('comic' atau 'chapter')
+
+**Response:**
+
+```json
+{
+  "success": true
+}
+```
+
+---
+
+## ⚙️ Setup
+
+### Setup Admin User
+
+**Endpoint:** `GET /setup`
+
+**Deskripsi:** Membuat admin user untuk pertama kali (development only).
+
+**Response:**
+
+```json
+{
+  "message": "Admin user created successfully",
   "user": {
-    "id": "string",
-    "email": "string",
-    "name": "string",
-    "avatar_url": "string"
+    "email": "master@bacakomik.com",
+    "password": "Master1234"
   }
 }
 ```
 
-## Error Responses
+---
 
-All API endpoints return error responses in the following format:
+## 📊 Data Types & Enums
 
-```json
-{
-  "error": "Error message"
-}
-```
+### Comic Status
 
-Common HTTP status codes:
+- `"On Going"` - Komik masih berlanjut
+- `"End"` - Komik sudah selesai
+- `"Hiatus"` - Komik sedang hiatus
+- `"Break"` - Komik sedang break
 
-- 200: Success
-- 400: Bad request
-- 401: Unauthorized
-- 404: Resource not found
-- 500: Server error
+### Country ID
+
+- `"KR"` - Korea
+- `"JPN"` - Japan
+- `"CN"` - China
+
+### Error Codes
+
+- `400` - Bad Request (parameter tidak valid)
+- `401` - Unauthorized (token tidak valid atau tidak ada)
+- `404` - Not Found (resource tidak ditemukan)
+- `500` - Internal Server Error (error server)
+
+---
+
+## 🔄 Optimized Endpoints
+
+Endpoint yang ditandai dengan **[Optimized]** telah dioptimasi untuk mengurangi jumlah request:
+
+1. **`/comics/home`** - Menggabungkan data komik dengan chapter terbaru
+2. **`/comics/discover`** - Menggabungkan popular, recommended, dan search results
+3. **`/comics/{id}/complete`** - Detail komik lengkap dengan user data
+4. **`/chapters/{id}/complete`** - Detail chapter lengkap dengan pages dan navigation
+
+Gunakan endpoint optimized ini untuk performa yang lebih baik di Flutter app.
