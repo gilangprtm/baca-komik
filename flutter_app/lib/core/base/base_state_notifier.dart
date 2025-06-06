@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter_project/core/utils/mahas_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/logger_service.dart';
@@ -97,6 +97,7 @@ abstract class BaseStateNotifier<T> extends StateNotifier<T> {
   /// This method is separated from [dispose] to allow subclasses to perform
   /// custom cleanup without needing to call super.dispose().
   void onClose() {
+    Mahas.clearArguments();
     _logger.i('onClose called - cleaning up resources', tag: logTag);
     // To be overridden by subclasses
   }

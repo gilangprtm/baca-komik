@@ -91,7 +91,7 @@ class FirebaseService {
       GlobalState.baseUrl = apiUrl;
     }
 
-    GlobalState.baseUrl = "http://192.168.1.12:3000/api";
+    //GlobalState.baseUrl = "http://192.168.1.12:3000/api";
   }
 
   Future<void> getUnderMaintenance() async {

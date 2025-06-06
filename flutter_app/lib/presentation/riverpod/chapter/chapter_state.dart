@@ -9,8 +9,8 @@ class ChapterState {
   final ChapterStateStatus status;
   final Chapter? chapter;
   final List<Page> pages;
-  final Chapter? nextChapter;
-  final Chapter? previousChapter;
+  final ChapterNavigation? nextChapter;
+  final ChapterNavigation? previousChapter;
   final String? errorMessage;
   final int currentPageIndex;
   final bool isReaderControlsVisible;
@@ -34,8 +34,8 @@ class ChapterState {
     ChapterStateStatus? status,
     Chapter? chapter,
     List<Page>? pages,
-    Chapter? nextChapter,
-    Chapter? previousChapter,
+    ChapterNavigation? nextChapter,
+    ChapterNavigation? previousChapter,
     String? errorMessage,
     int? currentPageIndex,
     bool? isReaderControlsVisible,
@@ -66,4 +66,13 @@ class ChapterState {
   }
 
   int get totalPages => pages.length;
+
+  // Helper methods for chapter navigation
+  bool get isFirstChapter => previousChapter == null;
+
+  bool get isLastChapter => nextChapter == null;
+
+  bool get hasNextChapter => nextChapter != null;
+
+  bool get hasPreviousChapter => previousChapter != null;
 }

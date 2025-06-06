@@ -13,10 +13,12 @@ class Page {
 
   factory Page.fromJson(Map<String, dynamic> json) {
     return Page(
-      id: json['id'] ?? '',
-      idChapter: json['id_chapter'],
-      pageNumber: json['page_number'],
-      imageUrl: json['image_url'],
+      // Handle both 'id' field (if exists) or generate from id_chapter + page_number
+      id: json['id'] ?? '${json['id_chapter']}_${json['page_number']}',
+      idChapter: json['id_chapter'] ?? '',
+      pageNumber: json['page_number'] ?? 0,
+      // Handle both 'image_url' and 'page_url' field names
+      imageUrl: json['image_url'] ?? json['page_url'] ?? '',
     );
   }
 
@@ -43,9 +45,12 @@ class ChapterPages {
 
   factory ChapterPages.fromJson(Map<String, dynamic> json) {
     return ChapterPages(
-      chapter: ChapterInfo.fromJson(json['chapter']),
-      pages: List<Page>.from(json['pages'].map((x) => Page.fromJson(x))),
-      count: json['count'],
+      chapter: ChapterInfo.fromJson(json['chapter'] ?? {}),
+      pages: json['pages'] != null
+          ? List<Page>.from(
+              (json['pages'] as List).map((x) => Page.fromJson(x)))
+          : [],
+      count: json['count'] ?? 0,
     );
   }
 }
@@ -63,11 +68,11 @@ class ChapterInfo {
 
   factory ChapterInfo.fromJson(Map<String, dynamic> json) {
     return ChapterInfo(
-      id: json['id'],
+      id: json['id'] ?? '',
       chapterNumber: json['chapter_number'] is int
           ? (json['chapter_number'] as int).toDouble()
-          : json['chapter_number'],
-      comic: ComicInfo.fromJson(json['comic']),
+          : (json['chapter_number']?.toDouble() ?? 0.0),
+      comic: ComicInfo.fromJson(json['comic'] ?? {}),
     );
   }
 }
@@ -83,8 +88,8 @@ class ComicInfo {
 
   factory ComicInfo.fromJson(Map<String, dynamic> json) {
     return ComicInfo(
-      id: json['id'],
-      title: json['title'],
+      id: json['id'] ?? '',
+      title: json['title'] ?? 'Unknown Title',
     );
   }
 }
