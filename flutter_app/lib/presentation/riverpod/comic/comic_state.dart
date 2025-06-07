@@ -7,6 +7,8 @@ enum ComicStateStatus { initial, loading, success, error }
 
 @immutable
 class ComicState {
+  final String? comicId;
+
   // Comic detail state
   final ComicStateStatus detailStatus;
   final CompleteComic? selectedComic;
@@ -27,6 +29,7 @@ class ComicState {
   final bool hasMoreComments;
 
   const ComicState({
+    this.comicId,
     this.detailStatus = ComicStateStatus.initial,
     this.selectedComic,
     this.errorMessage,
@@ -41,6 +44,7 @@ class ComicState {
   });
 
   ComicState copyWith({
+    String? comicId,
     ComicStateStatus? detailStatus,
     CompleteComic? selectedComic,
     String? errorMessage,
@@ -54,6 +58,7 @@ class ComicState {
     bool? hasMoreComments,
   }) {
     return ComicState(
+      comicId: comicId ?? this.comicId,
       detailStatus: detailStatus ?? this.detailStatus,
       selectedComic: selectedComic ?? this.selectedComic,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -69,4 +74,11 @@ class ComicState {
       hasMoreComments: hasMoreComments ?? this.hasMoreComments,
     );
   }
+
+  // Helper methods for chapter pagination
+  int get currentChapterPage => chapterList?.meta.page ?? 0;
+  int get totalChapterPages => chapterList?.meta.totalPages ?? 0;
+  int get totalChapters => chapterList?.meta.total ?? 0;
+  bool get hasChapters => chapterList != null && chapterList!.data.isNotEmpty;
+  bool get canLoadMoreChapters => hasMoreChapters && !isLoadingMoreChapters;
 }

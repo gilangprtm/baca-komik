@@ -14,8 +14,11 @@ class InfoTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final comic = completeComic.comic;
-    final state = ref.watch(comicProvider);
-    final chapterCount = state.chapterList?.data.length ?? 0;
+
+    // Only watch chapterList length to optimize rebuilds
+    final chapterCount = ref.watch(
+      comicProvider.select((state) => state.chapterList?.data.length ?? 0),
+    );
 
     return SingleChildScrollView(
       child: Padding(

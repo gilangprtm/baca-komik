@@ -17,63 +17,61 @@ import 'widget/error_widget.dart';
 
 class ComicPage extends StatelessWidget {
   const ComicPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return Consumer(builder: (context, ref, _) {
-      // Watch the comic provider state
-      final comicState = ref.watch(comicProvider);
+    return Scaffold(
+      body: Consumer(
+        builder: (context, ref, _) {
+          // Only watch detailStatus to minimize rebuilds
+          final detailStatus = ref.watch(
+            comicProvider.select((state) => state.detailStatus),
+          );
 
-      return Scaffold(
-        body: _buildBody(context, comicState, ref),
-      );
-    });
+          switch (detailStatus) {
+            case ComicStateStatus.initial:
+            case ComicStateStatus.loading:
+              return const ComicDetailSkeleton();
+
+            case ComicStateStatus.success:
+              return const _ComicSuccessView();
+
+            case ComicStateStatus.error:
+              return Consumer(
+                builder: (context, ref, _) {
+                  final errorMessage = ref.watch(
+                    comicProvider.select((state) => state.errorMessage),
+                  );
+                  return ComicErrorWidget(errorMessage: errorMessage);
+                },
+              );
+          }
+        },
+      ),
+    );
   }
+}
 
-  Widget _buildBody(BuildContext context, ComicState state, WidgetRef ref) {
-    switch (state.detailStatus) {
-      case ComicStateStatus.initial:
-      case ComicStateStatus.loading:
-        return const ComicDetailSkeleton();
+/// Separate widget for success state to optimize rebuilds
+class _ComicSuccessView extends ConsumerWidget {
+  const _ComicSuccessView();
 
-      case ComicStateStatus.success:
-        if (state.selectedComic == null) {
-          return ComicErrorWidget(errorMessage: "Comic not found");
-        }
-        return _buildSuccessState(context, state, ref);
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only watch selectedComic for this view
+    final comic = ref.watch(
+      comicProvider.select((state) => state.selectedComic),
+    );
 
-      case ComicStateStatus.error:
-        return ComicErrorWidget(errorMessage: state.errorMessage);
+    if (comic == null) {
+      return const ComicErrorWidget(errorMessage: "Comic not found");
     }
-  }
-
-  Widget _buildSuccessState(
-      BuildContext context, ComicState state, WidgetRef ref) {
-    final CompleteComic? comic = state.selectedComic;
 
     return NestedScrollView(
       controller: ScrollController(),
       headerSliverBuilder: (context, innerBoxIsScrolled) {
         return [
-          SliverAppBar(
-            expandedHeight: 0,
-            pinned: true,
-            backgroundColor: AppColors.getBackgroundColor(context),
-            title: Text(
-              comic?.comic.title ?? 'Comic Detail',
-              style: TextStyle(
-                color: AppColors.getTextPrimaryColor(context),
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios,
-                color: AppColors.getTextPrimaryColor(context),
-              ),
-              onPressed: () => Mahas.back(),
-            ),
-          ),
+          _ComicAppBar(comic: comic),
         ];
       },
       body: SingleChildScrollView(
@@ -81,55 +79,91 @@ class ComicPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Comic header with cover image and title
-            if (comic != null) ComicHeader(completeComic: comic),
+            ComicHeader(completeComic: comic),
 
             // Action buttons (Read, Bookmark, Add to Reading List)
-            if (comic != null) ComicActionButtons(completeComic: comic),
+            ComicActionButtons(completeComic: comic),
 
             // Comic metadata (genres, authors, artists, format)
-            if (comic != null) ComicMetadata(completeComic: comic),
+            ComicMetadata(completeComic: comic),
 
             // Tab bar for chapters, info, and comments
             SizedBox(
-              height: MediaQuery.of(context).size.height * 0.5,
-              child: MahasPillTabBar(
-                borderRadius: 12,
-                tabLabels: const ['Chapters', 'Info', 'Comments'],
-                activeColor: AppColors.getCardColor(context),
-                backgroundColor: Colors.grey.shade200,
-                activeTextColor: Colors.white,
-                inactiveTextColor: Colors.black87,
-                tabViews: [
-                  // Chapters tab
-                  const ChaptersTab(),
-
-                  // Info tab (more detailed information)
-                  comic != null
-                      ? InfoTab(completeComic: comic)
-                      : const Center(child: Text('Comic info not available')),
-
-                  // Comments tab
-                  const CommentsTab(),
-                ],
-                onTabChanged: (index) {
-                  // Load data for the selected tab if needed
-                  if (index == 0) {
-                    // Chapters tab - already loaded in fetchComicDetails
-                    final String? comicId = Mahas.argument<String>('comicId');
-                    if (comicId != null) {
-                      // Refresh chapters if needed
-                      // ref.read(comicProvider.notifier).fetchComicChapters(comicId);
-                    }
-                  } else if (index == 2) {
-                    // Comments tab
-                    ref.read(comicProvider.notifier).fetchComments(1);
-                  }
-                },
-              ),
+              height: MediaQuery.of(context).size.height * 0.65,
+              child: _ComicTabBar(comic: comic),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Optimized AppBar widget
+class _ComicAppBar extends StatelessWidget {
+  final CompleteComic comic;
+
+  const _ComicAppBar({required this.comic});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverAppBar(
+      expandedHeight: 0,
+      pinned: true,
+      backgroundColor: AppColors.getBackgroundColor(context),
+      title: Text(
+        comic.comic.title,
+        style: TextStyle(
+          color: AppColors.getTextPrimaryColor(context),
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      leading: IconButton(
+        icon: Icon(
+          Icons.arrow_back_ios,
+          color: AppColors.getTextPrimaryColor(context),
+        ),
+        onPressed: () => Mahas.back(),
+      ),
+    );
+  }
+}
+
+/// Optimized TabBar widget
+class _ComicTabBar extends ConsumerWidget {
+  final CompleteComic comic;
+
+  const _ComicTabBar({required this.comic});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MahasPillTabBar(
+      borderRadius: 12,
+      tabLabels: const ['Chapters', 'Info', 'Comments'],
+      activeColor: AppColors.getCardColor(context),
+      backgroundColor: Colors.grey.shade200,
+      activeTextColor: Colors.white,
+      inactiveTextColor: Colors.black87,
+      tabViews: [
+        // Chapters tab
+        const ChaptersTab(),
+
+        // Info tab (more detailed information)
+        InfoTab(completeComic: comic),
+
+        // Comments tab
+        const CommentsTab(),
+      ],
+      onTabChanged: (index) {
+        // Load data for the selected tab if needed
+        if (index == 2) {
+          // Comments tab - only load when user switches to it
+          ref.read(comicProvider.notifier).fetchComments(1);
+        }
+        // Note: Chapters are already loaded in fetchComicDetails
+        // No need to reload unless specifically needed
+      },
     );
   }
 }
