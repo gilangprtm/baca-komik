@@ -47,52 +47,57 @@ class OptimizedComicService extends BaseService {
     );
   }
 
-  /// Get discover comics with filtering options
-  /// Uses the optimized /comics/discover endpoint
+  /// Get discover comics by calling popular and recommended endpoints separately
+  /// Uses /comics/popular and /comics/recommended endpoints
   Future<DiscoverComicsResponse> getDiscoverComics({
-    int page = 1,
     int limit = 10,
-    String? search,
-    String? country,
-    String? genre,
-    String? format,
   }) async {
     return await performanceAsync(
       operationName: 'getDiscoverComics',
       function: () async {
         try {
-          final result = await _repository.getDiscoverComics(
-            page: page,
-            limit: limit,
-            search: search,
-            country: country,
-            genre: genre,
-            format: format,
+          // Call both endpoints in parallel
+          final results = await Future.wait([
+            _repository.getPopularComics(limit: limit),
+            _repository.getRecommendedComics(limit: limit),
+          ]);
+
+          final popularResult = results[0];
+          final recommendedResult = results[1];
+
+          // Parse popular comics
+          final List<PopularComic> popularComics =
+              (popularResult['data'] as List)
+                  .map((comic) => PopularComic.fromJson(comic))
+                  .toList();
+
+          // Parse recommended comics
+          final List<RecommendedComic> recommendedComics =
+              (recommendedResult['data'] as List)
+                  .map((comic) => RecommendedComic.fromJson(comic))
+                  .toList();
+
+          // Create discover response
+          final discoverResponse = DiscoverComicsResponse(
+            popular: popularComics,
+            recommended: recommendedComics,
+            searchResults:
+                SearchResults.empty(), // No search results for discover
           );
 
-          // Convert result to DiscoverComicsResponse
-          final discoverResponse = DiscoverComicsResponse.fromJson(result);
-
-          // Apply additional sorting or filtering if needed
-          if (search != null && search.isNotEmpty) {
-            // For search results, improve relevance by prioritizing exact matches in title
-            discoverResponse.searchResults.data.sort((a, b) {
-              bool aExactMatch =
-                  a.title.toLowerCase().contains(search.toLowerCase());
-              bool bExactMatch =
-                  b.title.toLowerCase().contains(search.toLowerCase());
-
-              if (aExactMatch && !bExactMatch) return -1;
-              if (!aExactMatch && bExactMatch) return 1;
-              return 0;
-            });
-          }
+          // Log the successful fetch
+          logger.i(
+            'Successfully fetched discover comics: '
+            'Popular: ${discoverResponse.popular.length}, '
+            'Recommended: ${discoverResponse.recommended.length}',
+            tag: 'OptimizedComicService',
+          );
 
           return discoverResponse;
         } catch (e, stackTrace) {
           logger.e('Error fetching discover comics',
               error: e, stackTrace: stackTrace, tag: 'OptimizedComicService');
-          // Return empty result with pagination metadata to prevent UI crashes
+          // Return empty result to prevent UI crashes
           return DiscoverComicsResponse.empty();
         }
       },
@@ -121,45 +126,56 @@ class OptimizedComicService extends BaseService {
     );
   }
 
-  /// Get popular comics sorted by view count, vote count, or bookmark count
-  Future<List<HomeComic>> getPopularComics({
-    int page = 1,
+  /// Get popular comics from the popular endpoint
+  Future<List<PopularComic>> getPopularComics({
+    String type = 'all_time',
     int limit = 10,
-    String sortBy =
-        'view_count', // 'view_count', 'vote_count', 'bookmark_count'
   }) async {
     return await performanceAsync(
       operationName: 'getPopularComics',
       function: () async {
         try {
-          final result = await _repository.getDiscoverComics(
-            page: page,
+          final result = await _repository.getPopularComics(
+            type: type,
             limit: limit,
           );
 
-          final List<HomeComic> comics = (result['data'] as List<dynamic>)
-              .map((comic) => comic is HomeComic
-                  ? comic
-                  : HomeComic.fromJson(comic as Map<String, dynamic>))
+          final List<PopularComic> comics = (result['data'] as List<dynamic>)
+              .map((comic) =>
+                  PopularComic.fromJson(comic as Map<String, dynamic>))
               .toList();
-
-          // Sort comics based on the requested metric
-          switch (sortBy) {
-            case 'vote_count':
-              comics.sort((a, b) => b.voteCount.compareTo(a.voteCount));
-              break;
-            case 'bookmark_count':
-              comics.sort((a, b) => b.bookmarkCount.compareTo(a.bookmarkCount));
-              break;
-            case 'view_count':
-            default:
-              comics.sort((a, b) => b.viewCount.compareTo(a.viewCount));
-              break;
-          }
 
           return comics;
         } catch (e, stackTrace) {
           logger.e('Error fetching popular comics',
+              error: e, stackTrace: stackTrace, tag: 'OptimizedComicService');
+          return []; // Return empty list instead of throwing
+        }
+      },
+    );
+  }
+
+  /// Get recommended comics from the recommended endpoint
+  Future<List<RecommendedComic>> getRecommendedComics({
+    int limit = 10,
+  }) async {
+    return await performanceAsync(
+      operationName: 'getRecommendedComics',
+      function: () async {
+        try {
+          final result = await _repository.getRecommendedComics(
+            limit: limit,
+          );
+
+          final List<RecommendedComic> comics =
+              (result['data'] as List<dynamic>)
+                  .map((comic) =>
+                      RecommendedComic.fromJson(comic as Map<String, dynamic>))
+                  .toList();
+
+          return comics;
+        } catch (e, stackTrace) {
+          logger.e('Error fetching recommended comics',
               error: e, stackTrace: stackTrace, tag: 'OptimizedComicService');
           return []; // Return empty list instead of throwing
         }

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
@@ -8,6 +7,7 @@ class MahasSearchBar extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final Function(String)? onChanged;
+  final Function(String)? onSubmitted;
   final VoidCallback? onClear;
   final bool elevated;
 
@@ -16,6 +16,7 @@ class MahasSearchBar extends StatelessWidget {
     required this.controller,
     this.hintText = 'Search...',
     this.onChanged,
+    this.onSubmitted,
     this.onClear,
     this.elevated = true,
   });
@@ -28,16 +29,15 @@ class MahasSearchBar extends StatelessWidget {
         hintText: hintText,
         hintStyle: AppTypography.bodyText2,
         prefixIcon: const Icon(Icons.search, color: AppColors.grey),
-        suffixIcon:
-            controller.text.isNotEmpty
-                ? IconButton(
-                  icon: const Icon(Icons.clear, color: AppColors.grey),
-                  onPressed: () {
-                    controller.clear();
-                    onClear?.call();
-                  },
-                )
-                : null,
+        suffixIcon: controller.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, color: AppColors.grey),
+                onPressed: () {
+                  controller.clear();
+                  onClear?.call();
+                },
+              )
+            : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTheme.borderRadius),
           borderSide: const BorderSide(color: AppColors.grey),
@@ -52,6 +52,8 @@ class MahasSearchBar extends StatelessWidget {
         ),
       ),
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      textInputAction: TextInputAction.search,
     );
 
     if (!elevated) {

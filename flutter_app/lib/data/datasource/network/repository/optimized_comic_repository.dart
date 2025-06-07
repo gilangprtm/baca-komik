@@ -1,6 +1,5 @@
 import '../../../../core/base/base_network.dart';
 import '../../../models/home_comic_model.dart';
-import '../../../models/discover_comic_model.dart';
 import '../../../models/complete_comic_model.dart';
 import '../../../models/metadata_models.dart';
 
@@ -18,7 +17,8 @@ class OptimizedComicRepository extends BaseRepository {
         'limit': limit,
       };
 
-      final response = await dioService.get('/comics/home', queryParameters: queryParams);
+      final response =
+          await dioService.get('/comics/home', queryParameters: queryParams);
 
       final List<HomeComic> comics = (response.data['data'] as List)
           .map((comic) => HomeComic.fromJson(comic))
@@ -38,51 +38,47 @@ class OptimizedComicRepository extends BaseRepository {
     }
   }
 
-  /// Get discover comics with filtering options
-  /// Uses the optimized /comics/discover endpoint
-  Future<Map<String, dynamic>> getDiscoverComics({
-    int page = 1,
-    int limit = 10,
-    String? search,
-    String? country,
-    String? genre,
-    String? format,
+  /// Get popular comics from /comics/popular endpoint
+  Future<Map<String, dynamic>> getPopularComics({
+    String type = 'all_time',
+    int limit = 20,
   }) async {
     try {
       final queryParams = <String, dynamic>{
-        'page': page,
+        'type': type,
         'limit': limit,
       };
 
-      if (search != null && search.isNotEmpty) {
-        queryParams['search'] = search;
-      }
+      final response =
+          await dioService.get('/comics/popular', queryParameters: queryParams);
 
-      if (country != null && country.isNotEmpty) {
-        queryParams['country'] = country;
-      }
-
-      if (genre != null && genre.isNotEmpty) {
-        queryParams['genre'] = genre;
-      }
-
-      if (format != null && format.isNotEmpty) {
-        queryParams['format'] = format;
-      }
-
-      final response = await dioService.get('/comics/discover', queryParameters: queryParams);
-
-      final List<DiscoverComic> comics = (response.data['data'] as List)
-          .map((comic) => DiscoverComic.fromJson(comic))
-          .toList();
-
-      return {
-        'data': comics,
-        'meta': MetaData.fromJson(response.data['meta']),
-      };
+      return response.data;
     } catch (e, stackTrace) {
       logError(
-        'Error fetching discover comics',
+        'Error fetching popular comics',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  /// Get recommended comics from /comics/recommended endpoint
+  Future<Map<String, dynamic>> getRecommendedComics({
+    int limit = 20,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'limit': limit,
+      };
+
+      final response = await dioService.get('/comics/recommended',
+          queryParameters: queryParams);
+
+      return response.data;
+    } catch (e, stackTrace) {
+      logError(
+        'Error fetching recommended comics',
         error: e,
         stackTrace: stackTrace,
       );

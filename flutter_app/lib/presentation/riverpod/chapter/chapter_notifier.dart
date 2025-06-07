@@ -2,20 +2,32 @@ import 'package:flutter/material.dart';
 import '../../../core/base/base_state_notifier.dart';
 import '../../../core/utils/mahas_utils.dart';
 import '../../../data/datasource/network/service/chapter_service.dart';
+import '../../../data/models/chapter_model.dart';
+import '../../../data/models/page_model.dart';
 import 'chapter_state.dart';
 
 class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   final ChapterService _chapterService = ChapterService();
 
+  // Store initial state for easy reset
+  static final ChapterState _initialState = ChapterState();
+
   ChapterNotifier(super.initialState, super.ref);
+
+  /// Reset state to initial state (useful for clearing navigation data)
+  void _resetToInitialState() {
+    state = _initialState.copyWith(
+      status: ChapterStateStatus.loading,
+    );
+  }
 
   @override
   void onInit() {
     super.onInit();
-    
+
     // Get chapterId from route arguments
     final chapterId = Mahas.argument<String>('chapterId');
-    
+
     // Fetch chapter details if chapterId is available
     if (chapterId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -24,130 +36,64 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
     }
   }
 
-  /// Fetch chapter details by ID
+  /// Fetch chapter details by ID (optimized)
   Future<void> fetchChapterDetails(String chapterId) async {
-    try {
-      state = state.copyWith(status: ChapterStateStatus.loading);
+    runAsync('fetchChapterDetails', () async {
+      // Reset to initial state to clear all previous data
+      _resetToInitialState();
 
-      // Fetch chapter details and pages
-      final chapter = await _chapterService.getChapterDetails(chapterId);
-      final chapterPages = await _chapterService.getChapterPages(chapterId);
+      // Fetch chapter details and pages in parallel for better performance
+      final results = await Future.wait([
+        _chapterService.getChapterDetails(chapterId),
+        _chapterService.getChapterPages(chapterId),
+      ]);
 
-      // Get adjacent chapters for navigation
-      final adjacent = await _chapterService.getAdjacentChapters(
-          chapter.idKomik, chapter.chapterNumber.toDouble());
+      final chapter = results[0] as Chapter;
+      final chapterPages = results[1] as ChapterPages;
 
-      // Update state with chapter data
+      // Update state with new chapter data
       state = state.copyWith(
         status: ChapterStateStatus.success,
         chapter: chapter,
         pages: chapterPages.pages,
-        nextChapter: adjacent.next,
-        previousChapter: adjacent.previous,
         currentPageIndex: 0,
+        nextChapter: chapter.nextChapter,
+        previousChapter: chapter.prevChapter,
       );
-
-      // Track reading progress
-      _trackReadingProgress(chapterId);
-    } catch (e, stackTrace) {
-      logger.e('Error fetching chapter details',
-          error: e, stackTrace: stackTrace);
-      state = state.copyWith(
-        status: ChapterStateStatus.error,
-        errorMessage: 'Failed to load chapter: ${e.toString()}',
-      );
-    }
-  }
-
-  /// Navigate to the next page
-  void nextPage() {
-    if (state.isLastPage) {
-      // If on last page and there's a next chapter, load it
-      if (state.nextChapter != null) {
-        fetchChapterDetails(state.nextChapter!.id);
-      }
-      return;
-    }
-
-    state = state.copyWith(
-      currentPageIndex: state.currentPageIndex + 1,
-    );
-  }
-
-  /// Navigate to the previous page
-  void previousPage() {
-    if (state.isFirstPage) {
-      // If on first page and there's a previous chapter, load it
-      if (state.previousChapter != null) {
-        fetchChapterDetails(state.previousChapter!.id);
-        // After loading previous chapter, navigate to its last page
-        // This will be handled after the chapter is loaded
-      }
-      return;
-    }
-
-    state = state.copyWith(
-      currentPageIndex: state.currentPageIndex - 1,
-    );
-  }
-
-  /// Jump to a specific page
-  void jumpToPage(int pageIndex) {
-    if (pageIndex < 0 || pageIndex >= state.totalPages) return;
-
-    state = state.copyWith(
-      currentPageIndex: pageIndex,
-    );
+    });
   }
 
   /// Toggle reader controls visibility
   void toggleReaderControls() {
-    state = state.copyWith(
-      isReaderControlsVisible: !state.isReaderControlsVisible,
-    );
+    run('toggleReaderControls', () {
+      state = state.copyWith(
+        isReaderControlsVisible: !state.isReaderControlsVisible,
+      );
+    });
   }
 
-  /// Change zoom level
-  void setZoomLevel(double zoomLevel) {
-    // Limit zoom between 0.5 and 3.0
-    final newZoom = zoomLevel.clamp(0.5, 3.0);
-
-    state = state.copyWith(
-      zoomLevel: newZoom,
-    );
+  /// Navigate to next chapter
+  Future<void> nextChapter() async {
+    runAsync('nextChapter', () async {
+      if (state.nextChapter != null) {
+        await fetchChapterDetails(state.nextChapter!.id);
+      }
+    });
   }
 
-  /// Toggle reading direction (horizontal/vertical)
-  void toggleReadingDirection() {
-    state = state.copyWith(
-      isHorizontalReading: !state.isHorizontalReading,
-    );
+  /// Navigate to previous chapter
+  Future<void> previousChapter() async {
+    runAsync('previousChapter', () async {
+      if (state.previousChapter != null) {
+        await fetchChapterDetails(state.previousChapter!.id);
+      }
+    });
   }
 
-  /// Mark chapter as read and track progress
-  Future<void> _trackReadingProgress(String chapterId) async {
-    try {
-      await _chapterService.trackReadingProgress(chapterId);
-    } catch (e, stackTrace) {
-      logger.e('Error tracking reading progress',
-          error: e, stackTrace: stackTrace);
-      // Don't update state for tracking errors, just log them
-    }
-  }
-
-  /// Mark chapter as complete when user finishes reading
-  Future<void> markChapterAsRead() async {
-    if (state.chapter == null) return;
-
-    try {
-      final chapterId = state.chapter!.id;
-      // This method will be implemented in ChapterService
-      // For now, we just log it
-      logger.i('Marking chapter as read: $chapterId');
-    } catch (e, stackTrace) {
-      logger.e('Error marking chapter as read',
-          error: e, stackTrace: stackTrace);
-      // Don't update state for tracking errors, just log them
-    }
+  /// Navigate to specific chapter by ID
+  Future<void> goToChapter(String chapterId) async {
+    runAsync('goToChapter', () async {
+      await fetchChapterDetails(chapterId);
+    });
   }
 }
