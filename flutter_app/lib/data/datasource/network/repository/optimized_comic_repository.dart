@@ -1,6 +1,7 @@
 import '../../../../core/base/base_network.dart';
 import '../../../models/home_comic_model.dart';
-import '../../../models/discover_comic_model.dart';
+import '../../../models/discover_comics_response_model.dart';
+import '../../../models/comic_model.dart';
 import '../../../models/complete_comic_model.dart';
 import '../../../models/metadata_models.dart';
 
@@ -18,7 +19,8 @@ class OptimizedComicRepository extends BaseRepository {
         'limit': limit,
       };
 
-      final response = await dioService.get('/comics/home', queryParameters: queryParams);
+      final response =
+          await dioService.get('/comics/home', queryParameters: queryParams);
 
       final List<HomeComic> comics = (response.data['data'] as List)
           .map((comic) => HomeComic.fromJson(comic))
@@ -70,15 +72,43 @@ class OptimizedComicRepository extends BaseRepository {
         queryParams['format'] = format;
       }
 
-      final response = await dioService.get('/comics/discover', queryParameters: queryParams);
+      final response = await dioService.get('/comics/discover',
+          queryParameters: queryParams);
 
-      final List<DiscoverComic> comics = (response.data['data'] as List)
-          .map((comic) => DiscoverComic.fromJson(comic))
-          .toList();
+      // Parse the discover response structure
+      final responseData = response.data;
+
+      // Parse popular comics
+      final List<PopularComic> popularComics =
+          (responseData['popular'] as List? ?? [])
+              .map((comic) => PopularComic.fromJson(comic))
+              .toList();
+
+      // Parse recommended comics
+      final List<RecommendedComic> recommendedComics =
+          (responseData['recommended'] as List? ?? [])
+              .map((comic) => RecommendedComic.fromJson(comic))
+              .toList();
+
+      // Parse search results
+      final searchResultsData = responseData['search_results'] ?? {};
+      final List<Comic> searchResults =
+          (searchResultsData['data'] as List? ?? [])
+              .map((comic) => Comic.fromJson(comic))
+              .toList();
+
+      final MetaData meta = searchResultsData['meta'] != null
+          ? MetaData.fromJson(searchResultsData['meta'])
+          : MetaData(
+              page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false);
 
       return {
-        'data': comics,
-        'meta': MetaData.fromJson(response.data['meta']),
+        'popular': popularComics,
+        'recommended': recommendedComics,
+        'search_results': {
+          'data': searchResults,
+          'meta': meta,
+        },
       };
     } catch (e, stackTrace) {
       logError(

@@ -2,6 +2,8 @@ import '../../../../core/base/base_network.dart';
 import '../../../models/complete_comic_model.dart';
 import '../../../models/home_comic_model.dart';
 import '../../../models/discover_comics_response_model.dart';
+import '../../../models/comic_model.dart';
+import '../../../models/pagination_model.dart';
 import '../repository/optimized_comic_repository.dart';
 
 class OptimizedComicService extends BaseService {
@@ -70,8 +72,24 @@ class OptimizedComicService extends BaseService {
             format: format,
           );
 
-          // Convert result to DiscoverComicsResponse
-          final discoverResponse = DiscoverComicsResponse.fromJson(result);
+          // Create DiscoverComicsResponse from already parsed data
+          final searchResultsData = result['search_results'];
+          final metaData = searchResultsData['meta'];
+
+          final discoverResponse = DiscoverComicsResponse(
+            popular: result['popular'] as List<PopularComic>,
+            recommended: result['recommended'] as List<RecommendedComic>,
+            searchResults: SearchResults(
+              data: searchResultsData['data'] as List<Comic>,
+              meta: PaginationMeta(
+                page: metaData.page,
+                limit: metaData.limit,
+                total: metaData.total,
+                totalPages: metaData.totalPages,
+                hasMore: metaData.hasMore,
+              ),
+            ),
+          );
 
           // Apply additional sorting or filtering if needed
           if (search != null && search.isNotEmpty) {

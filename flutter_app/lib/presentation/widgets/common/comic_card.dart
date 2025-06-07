@@ -6,6 +6,7 @@ import '../../../core/utils/type_utils.dart';
 import '../../../data/models/comic_model.dart';
 import '../../../data/models/home_comic_model.dart';
 import '../../../data/models/discover_comic_model.dart';
+import '../../../data/models/discover_comics_response_model.dart';
 import '../../../core/base/global_state.dart';
 import '../../routes/app_routes.dart';
 
@@ -246,6 +247,10 @@ class ComicCard extends StatelessWidget {
       return (comic as HomeComic).title;
     } else if (comic is DiscoverComic) {
       return (comic as DiscoverComic).title;
+    } else if (comic is PopularComic) {
+      return (comic as PopularComic).title;
+    } else if (comic is RecommendedComic) {
+      return (comic as RecommendedComic).title;
     }
     return 'Unknown';
   }
@@ -258,6 +263,10 @@ class ComicCard extends StatelessWidget {
       coverUrl = (comic as HomeComic).coverImageUrl;
     } else if (comic is DiscoverComic) {
       coverUrl = (comic as DiscoverComic).coverImageUrl;
+    } else if (comic is PopularComic) {
+      coverUrl = (comic as PopularComic).coverImageUrl;
+    } else if (comic is RecommendedComic) {
+      coverUrl = (comic as RecommendedComic).coverImageUrl;
     }
 
     // Use default image if coverUrl is null
@@ -329,6 +338,10 @@ class ComicCard extends StatelessWidget {
       countryId = (comic as HomeComic).countryId;
     } else if (comic is DiscoverComic) {
       countryId = (comic as DiscoverComic).countryId;
+    } else if (comic is PopularComic) {
+      countryId = (comic as PopularComic).countryId;
+    } else if (comic is RecommendedComic) {
+      countryId = (comic as RecommendedComic).countryId;
     }
 
     // Map country_id to flag file name
