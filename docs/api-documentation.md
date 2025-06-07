@@ -181,79 +181,77 @@ Semua response menggunakan format JSON dengan struktur konsisten:
 
 ---
 
-### Get Discover Comics [Optimized]
+### Get Popular Comics
 
-**Endpoint:** `GET /comics/discover`
+**Endpoint:** `GET /comics/popular`
 
-**Deskripsi:** Menggabungkan data komik populer, rekomendasi, dan hasil pencarian dalam satu request.
+**Deskripsi:** Mendapatkan daftar komik populer berdasarkan tipe periode dari tabel `mPopular`.
 
 **Query Parameters:**
 
-- `page` (optional): Nomor halaman untuk search results (default: 1)
-- `limit` (optional): Jumlah komik per halaman untuk search results (default: 10)
-- `search` (optional): Kata kunci pencarian berdasarkan title
-- `genre` (optional): Filter berdasarkan genre ID
-- `format` (optional): Filter berdasarkan format ID
-- `country` (optional): Filter berdasarkan negara ('KR', 'JPN', 'CN')
+- `type` (optional): Tipe periode popular ('harian', 'mingguan', 'bulanan', 'all_time', default: 'all_time')
+- `limit` (optional): Jumlah komik yang dikembalikan (default: 20)
 
 **Response:**
 
 ```json
 {
-  "popular": [
+  "data": [
     {
       "id": "string",
       "title": "string",
+      "alternative_title": "string",
       "cover_image_url": "string",
-      "country_id": "string",
-      "view_count": 0
+      "country_id": "KR" | "JPN" | "CN",
+      "view_count": 0,
+      "vote_count": 0,
+      "bookmark_count": 0,
+      "status": "On Going" | "Completed" | "Break",
+      "created_date": "string",
+      "type": "harian" | "mingguan" | "bulanan" | "all_time"
     }
   ],
-  "recommended": [
+  "meta": {
+    "type": "all_time",
+    "limit": 20,
+    "total": 15
+  }
+}
+```
+
+---
+
+### Get Recommended Comics
+
+**Endpoint:** `GET /comics/recommended`
+
+**Deskripsi:** Mendapatkan daftar komik rekomendasi dari tabel `mRecomed`.
+
+**Query Parameters:**
+
+- `limit` (optional): Jumlah komik yang dikembalikan (default: 20)
+
+**Response:**
+
+```json
+{
+  "data": [
     {
       "id": "string",
       "title": "string",
+      "alternative_title": "string",
       "cover_image_url": "string",
-      "country_id": "string"
+      "country_id": "KR" | "JPN" | "CN",
+      "view_count": 0,
+      "vote_count": 0,
+      "bookmark_count": 0,
+      "status": "On Going" | "Completed" | "Break",
+      "created_date": "string"
     }
   ],
-  "search_results": {
-    "data": [
-      {
-        "id": "string",
-        "title": "string",
-        "alternative_title": "string",
-        "synopsis": "string",
-        "status": "string",
-        "country_id": "string",
-        "view_count": 0,
-        "vote_count": 0,
-        "bookmark_count": 0,
-        "cover_image_url": "string",
-        "created_date": "string",
-        "updated_date": "string",
-        "chapter_count": 42,
-        "genres": [
-          {
-            "id": "string",
-            "name": "string"
-          }
-        ],
-        "formats": [
-          {
-            "id": "string",
-            "name": "string"
-          }
-        ]
-      }
-    ],
-    "meta": {
-      "page": 1,
-      "limit": 10,
-      "total": 0,
-      "total_pages": 0,
-      "has_more": false
-    }
+  "meta": {
+    "limit": 20,
+    "total": 12
   }
 }
 ```
@@ -873,14 +871,62 @@ Semua response menggunakan format JSON dengan struktur konsisten:
 
 ---
 
+## 🔄 API Changes & Migration
+
+### Popular & Recommended Comics Update
+
+**Previous Implementation:**
+
+- ❌ `/comics/discover` - Menggabungkan popular, recommended, dan search dalam satu endpoint
+- ❌ Popular comics diambil dari `mKomik` berdasarkan `view_count`
+- ❌ Recommended comics diambil dari `mKomik` berdasarkan `rank`
+
+**New Implementation:**
+
+- ✅ `/comics/popular` - Endpoint terpisah untuk popular comics dari tabel `mPopular`
+- ✅ `/comics/recommended` - Endpoint terpisah untuk recommended comics dari tabel `mRecomed`
+- ✅ Data diambil dari tabel yang sesuai dengan foreign key ke `mKomik`
+
+### Flutter Implementation
+
+Untuk discover tab, panggil kedua endpoint secara parallel:
+
+```dart
+// Service layer
+Future<DiscoverComicsResponse> getDiscoverComics({int limit = 10}) async {
+  // Call both endpoints in parallel
+  final results = await Future.wait([
+    getPopularComics(type: 'all_time', limit: limit),
+    getRecommendedComics(limit: limit),
+  ]);
+
+  return DiscoverComicsResponse(
+    popular: results[0].data,
+    recommended: results[1].data,
+  );
+}
+
+// Usage examples
+final popularComics = await http.get('/api/comics/popular?type=harian&limit=15');
+final recommendedComics = await http.get('/api/comics/recommended?limit=10');
+```
+
+### Benefits
+
+1. **Clean Architecture** - Setiap endpoint memiliki purpose yang jelas
+2. **Database Optimization** - Query langsung ke tabel yang tepat
+3. **Flexibility** - Popular comics bisa difilter berdasarkan periode
+4. **No Redundancy** - Tidak ada endpoint yang overlap functionality
+
+---
+
 ## 📊 Data Types & Enums
 
 ### Comic Status
 
 - `"On Going"` - Komik masih berlanjut
-- `"End"` - Komik sudah selesai
-- `"Hiatus"` - Komik sedang hiatus
-- `"Break"` - Komik sedang break
+- `"Completed"` - Komik sudah selesai
+- `"Break"` - Komik sedang break/hiatus
 
 ### Country ID
 
@@ -902,8 +948,82 @@ Semua response menggunakan format JSON dengan struktur konsisten:
 Endpoint yang ditandai dengan **[Optimized]** telah dioptimasi untuk mengurangi jumlah request:
 
 1. **`/comics/home`** - Menggabungkan data komik dengan chapter terbaru
-2. **`/comics/discover`** - Menggabungkan popular, recommended, dan search results
-3. **`/comics/{id}/complete`** - Detail komik lengkap dengan user data
-4. **`/chapters/{id}/complete`** - Detail chapter lengkap dengan pages dan navigation
+2. **`/comics/popular`** - Data komik populer dari tabel `mPopular` dengan filter tipe periode
+3. **`/comics/recommended`** - Data komik rekomendasi dari tabel `mRecomed`
+4. **`/comics/{id}/complete`** - Detail komik lengkap dengan user data
+5. **`/chapters/{id}/complete`** - Detail chapter lengkap dengan pages dan navigation
+
+**Note:** Untuk discover tab di Flutter, panggil `/comics/popular` dan `/comics/recommended` secara parallel untuk mendapatkan data yang diperlukan.
 
 Gunakan endpoint optimized ini untuk performa yang lebih baik di Flutter app.
+
+---
+
+## 📝 Usage Examples
+
+### Popular Comics dengan Filter Tipe
+
+```bash
+# Popular comics harian
+curl "http://localhost:3000/api/comics/popular?type=harian&limit=15"
+
+# Popular comics mingguan
+curl "http://localhost:3000/api/comics/popular?type=mingguan&limit=20"
+
+# Popular comics bulanan
+curl "http://localhost:3000/api/comics/popular?type=bulanan&limit=10"
+
+# Popular comics all time (default)
+curl "http://localhost:3000/api/comics/popular?type=all_time&limit=25"
+```
+
+### Recommended Comics
+
+```bash
+# Get recommended comics
+curl "http://localhost:3000/api/comics/recommended?limit=10"
+```
+
+### Flutter Discover Tab Implementation
+
+```dart
+// Dalam DiscoverTab widget
+class DiscoverTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        return FutureBuilder(
+          future: _loadDiscoverContent(ref),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return CircularProgressIndicator();
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildPopularSection(snapshot.data?.popular ?? []),
+                  _buildRecommendedSection(snapshot.data?.recommended ?? []),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<DiscoverData> _loadDiscoverContent(WidgetRef ref) async {
+    final results = await Future.wait([
+      ref.read(comicServiceProvider).getPopularComics(type: 'all_time', limit: 10),
+      ref.read(comicServiceProvider).getRecommendedComics(limit: 10),
+    ]);
+
+    return DiscoverData(
+      popular: results[0].data,
+      recommended: results[1].data,
+    );
+  }
+}
+```
