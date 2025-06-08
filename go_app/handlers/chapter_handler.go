@@ -20,23 +20,29 @@ func NewChapterHandler(db *database.DB) *ChapterHandler {
 	}
 }
 
-// GetChapterDetails handles GET /api/chapters/:id
+// GetChapterDetails - EXACT COPY from Next.js /api/chapters/[id]/route.ts
 func (h *ChapterHandler) GetChapterDetails(c *gin.Context) {
 	id := c.Param("id")
+
+	// Validate ID - EXACTLY like Next.js lines 14-20
 	if id == "" {
-		utils.BadRequestResponse(c, "Chapter ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chapter ID"})
 		return
 	}
 
 	// Get chapter details from service
 	chapter, err := h.chapterService.GetChapterDetails(id)
 	if err != nil {
-		utils.NotFoundResponse(c, "Chapter not found")
+		if err.Error() == "chapter not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Chapter not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred"})
+		}
 		return
 	}
 
-	// Return chapter details
-	utils.SuccessResponse(c, chapter)
+	// Return chapter details directly - EXACTLY like Next.js line 99 (no wrapper)
+	c.JSON(http.StatusOK, chapter)
 }
 
 // GetCompleteChapterDetails - EXACT COPY from Next.js /api/chapters/[id]/complete handler
