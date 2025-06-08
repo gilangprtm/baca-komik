@@ -19,31 +19,29 @@ func Connect(cfg *config.Config) (*DB, error) {
 
 	// Build connection string for Supabase
 	var dsn string
+	var password string
+
+	// Determine password to use
 	if cfg.DBPassword != "" {
-		// Use traditional connection if password is provided
-		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s connect_timeout=10",
-			cfg.DBHost,
-			cfg.DBPort,
-			cfg.DBUser,
-			cfg.DBPassword,
-			cfg.DBName,
-			cfg.DBSSLMode,
-		)
-		log.Printf("Using traditional auth with user: %s", cfg.DBUser)
-	} else {
-		// Use Supabase service key as password
-		dsn = fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s connect_timeout=10",
-			cfg.DBHost,
-			cfg.DBPort,
-			cfg.DBUser,
-			cfg.SupabaseServiceKey,
-			cfg.DBName,
-			cfg.DBSSLMode,
-		)
+		password = cfg.DBPassword
+		log.Printf("Using DB_PASSWORD auth with user: %s", cfg.DBUser)
+	} else if cfg.SupabaseServiceKey != "" {
+		password = cfg.SupabaseServiceKey
 		log.Printf("Using Supabase service key auth with user: %s", cfg.DBUser)
+	} else {
+		return nil, fmt.Errorf("no password or service key provided for database connection")
 	}
+
+	// For pooler connections, always use the password-based auth
+	dsn = fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s connect_timeout=30",
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBUser,
+		password,
+		cfg.DBName,
+		cfg.DBSSLMode,
+	)
 
 	// Configure connection pool
 	poolConfig, err := pgxpool.ParseConfig(dsn)
@@ -51,12 +49,13 @@ func Connect(cfg *config.Config) (*DB, error) {
 		return nil, fmt.Errorf("failed to parse database config: %w", err)
 	}
 
-	// Set pool configuration
-	poolConfig.MaxConns = 30
-	poolConfig.MinConns = 5
-	poolConfig.MaxConnLifetime = time.Hour
-	poolConfig.MaxConnIdleTime = time.Minute * 30
-	poolConfig.HealthCheckPeriod = time.Minute * 5
+	// Set pool configuration for production
+	poolConfig.MaxConns = 10  // Reduced for Railway limits
+	poolConfig.MinConns = 2
+	poolConfig.MaxConnLifetime = time.Minute * 30
+	poolConfig.MaxConnIdleTime = time.Minute * 10
+	poolConfig.HealthCheckPeriod = time.Minute * 2
+	poolConfig.ConnConfig.ConnectTimeout = time.Second * 30
 
 	// Create connection pool
 	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
