@@ -73,23 +73,29 @@ func (h *ChapterHandler) GetCompleteChapterDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, chapter)
 }
 
-// GetChapterPages handles GET /api/chapters/:id/pages
+// GetChapterPages - EXACT COPY from Next.js /api/chapters/[id]/pages handler
 func (h *ChapterHandler) GetChapterPages(c *gin.Context) {
 	id := c.Param("id")
+
+	// Validate ID - EXACTLY like Next.js lines 15-20
 	if id == "" {
-		utils.BadRequestResponse(c, "Chapter ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chapter ID"})
 		return
 	}
 
 	// Get chapter pages from service
 	pages, err := h.chapterService.GetChapterPages(id)
 	if err != nil {
-		utils.NotFoundResponse(c, "Chapter not found")
+		if err.Error() == "chapter not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Chapter not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred"})
+		}
 		return
 	}
 
-	// Return chapter pages
-	utils.SuccessResponse(c, pages)
+	// Return response directly - EXACTLY like Next.js lines 64-72
+	c.JSON(http.StatusOK, pages)
 }
 
 // GetAdjacentChapters handles GET /api/chapters/:id/adjacent

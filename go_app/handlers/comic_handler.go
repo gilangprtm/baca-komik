@@ -58,24 +58,24 @@ func (h *ComicHandler) GetComics(c *gin.Context) {
 	utils.SuccessResponseWithMeta(c, comics, page, limit, total)
 }
 
-// GetHomeComics handles GET /api/comics/home
+// GetHomeComics - EXACT COPY from Next.js /api/comics/home/route.ts
 func (h *ComicHandler) GetHomeComics(c *gin.Context) {
-	// Parse query parameters
+	// Parse query parameters - EXACTLY like Next.js lines 10-15
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "10")
-	sort := c.DefaultQuery("sort", "latest_chapter")
+	sort := c.DefaultQuery("sort", "")
 	order := c.DefaultQuery("order", "desc")
 
 	// Convert page and limit to integers
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
-		utils.BadRequestResponse(c, "Invalid page parameter")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page parameter"})
 		return
 	}
 
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit < 1 {
-		utils.BadRequestResponse(c, "Invalid limit parameter")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit parameter"})
 		return
 	}
 
@@ -85,12 +85,20 @@ func (h *ComicHandler) GetHomeComics(c *gin.Context) {
 	// Get home comics from service
 	comics, total, err := h.comicService.GetHomeComics(page, limit, sort, order)
 	if err != nil {
-		utils.InternalServerErrorResponse(c, "Failed to retrieve home comics")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve home comics"})
 		return
 	}
 
-	// Return response with pagination meta
-	utils.SuccessResponseWithMeta(c, comics, page, limit, total)
+	// Return response - EXACTLY like Next.js lines 146-154
+	c.JSON(http.StatusOK, gin.H{
+		"data": comics,
+		"meta": gin.H{
+			"currentPage":   page,
+			"totalPages":    (total + limit - 1) / limit,
+			"totalItems":    total,
+			"itemsPerPage":  limit,
+		},
+	})
 }
 
 // GetPopularComics handles GET /api/comics/popular

@@ -245,8 +245,8 @@ func (s *ChapterService) GetCompleteChapterDetails(id string, userID *string) (*
 	return result, nil
 }
 
-// GetChapterPages retrieves pages for a specific chapter
-func (s *ChapterService) GetChapterPages(id string) (*models.ChapterPages, error) {
+// GetChapterPages - EXACT COPY from Next.js /api/chapters/[id]/pages/route.ts
+func (s *ChapterService) GetChapterPages(id string) (*models.ChapterPagesResponse, error) {
 	ctx, cancel := s.WithTimeout(30 * time.Second)
 	defer cancel()
 
@@ -254,36 +254,82 @@ func (s *ChapterService) GetChapterPages(id string) (*models.ChapterPages, error
 		"chapter_id": id,
 	})
 
-	// First, verify chapter exists and get basic info
+	// First, verify that the chapter exists - EXACTLY like Next.js lines 23-27
 	chapterQuery := `
-		SELECT c.id, c.chapter_number, k.id, k.title
-		FROM "mChapter" c
-		JOIN "mKomik" k ON c.id_komik = k.id
-		WHERE c.id = $1
+		SELECT id, chapter_number, id_komik
+		FROM "mChapter"
+		WHERE id = $1
 	`
 
-	var chapterBasic models.ChapterBasic
+	var chapter models.ChapterBasicInfo
 	err := s.GetDB().QueryRow(ctx, chapterQuery, id).Scan(
-		&chapterBasic.ID, &chapterBasic.ChapterNumber,
-		&chapterBasic.Comic.ID, &chapterBasic.Comic.Title,
+		&chapter.ID, &chapter.ChapterNumber, &chapter.IDKomik,
 	)
 	if err != nil {
-		s.LogError(err, "Chapter not found", logrus.Fields{
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("chapter not found")
+		}
+		s.LogError(err, "Failed to get chapter", logrus.Fields{
 			"chapter_id": id,
 		})
 		return nil, err
 	}
 
-	// Get pages
-	pages, err := s.getChapterPages(ctx, id)
+	// Fetch pages for the chapter, sorted by page number - EXACTLY like Next.js lines 43-47
+	pagesQuery := `
+		SELECT id_chapter, page_number, page_url
+		FROM "trChapter"
+		WHERE id_chapter = $1
+		ORDER BY page_number ASC
+	`
+
+	pagesRows, err := s.GetDB().Query(ctx, pagesQuery, id)
 	if err != nil {
+		s.LogError(err, "Failed to get chapter pages", logrus.Fields{
+			"chapter_id": id,
+		})
+		return nil, err
+	}
+	defer pagesRows.Close()
+
+	var pages []models.ChapterPage
+	for pagesRows.Next() {
+		var page models.ChapterPage
+		err := pagesRows.Scan(&page.IDChapter, &page.PageNumber, &page.PageURL)
+		if err != nil {
+			s.LogError(err, "Failed to scan page row", nil)
+			continue
+		}
+		pages = append(pages, page)
+	}
+
+	// Fetch comic information - EXACTLY like Next.js lines 54-58
+	comicQuery := `
+		SELECT id, title
+		FROM "mKomik"
+		WHERE id = $1
+	`
+
+	var comic models.ComicBasic
+	err = s.GetDB().QueryRow(ctx, comicQuery, chapter.IDKomik).Scan(
+		&comic.ID, &comic.Title,
+	)
+	if err != nil {
+		s.LogError(err, "Failed to get comic", logrus.Fields{
+			"comic_id": chapter.IDKomik,
+		})
 		return nil, err
 	}
 
-	result := &models.ChapterPages{
-		Chapter: chapterBasic.Comic, // Note: API documentation shows comic info here
-		Pages:   pages,
-		Count:   len(pages),
+	// Return response - EXACTLY like Next.js lines 64-72
+	result := &models.ChapterPagesResponse{
+		Chapter: models.ChapterInfo{
+			ID:            chapter.ID,
+			ChapterNumber: chapter.ChapterNumber,
+			Comic:         comic,
+		},
+		Pages: pages,
+		Count: len(pages),
 	}
 
 	s.LogInfo("Successfully retrieved chapter pages", logrus.Fields{
@@ -294,11 +340,11 @@ func (s *ChapterService) GetChapterPages(id string) (*models.ChapterPages, error
 	return result, nil
 }
 
-// getChapterPages is a helper function to get pages for a chapter
+// getChapterPages - EXACT COPY from Next.js: use "trChapter" table, not "mPage"
 func (s *ChapterService) getChapterPages(ctx context.Context, chapterID string) ([]models.Page, error) {
 	query := `
 		SELECT id_chapter, page_number, page_url
-		FROM "mPage"
+		FROM "trChapter"
 		WHERE id_chapter = $1
 		ORDER BY page_number ASC
 	`
