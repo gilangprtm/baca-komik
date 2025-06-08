@@ -132,3 +132,19 @@ type ChapterBasicInfo struct {
 	ChapterNumber float64 `json:"chapter_number"`
 	IDKomik       string  `json:"id_komik"`
 }
+
+// ChapterDetailsResponse - EXACT response format from Next.js /api/chapters/[id]
+type ChapterDetailsResponse struct {
+	ID                string       `json:"id"`
+	IDKomik           string       `json:"id_komik"`
+	ChapterNumber     float64      `json:"chapter_number"`
+	ReleaseDate       *time.Time   `json:"release_date"`
+	Rating            *float64     `json:"rating"`
+	ViewCount         *int         `json:"view_count"`
+	VoteCount         *int         `json:"vote_count"`
+	ThumbnailImageURL *string      `json:"thumbnail_image_url"`
+	CreatedDate       *time.Time   `json:"created_date"`
+	Comic             ComicBasic   `json:"comic"`
+	NextChapter       *ChapterNav  `json:"next_chapter"`
+	PrevChapter       *ChapterNav  `json:"prev_chapter"`
+}

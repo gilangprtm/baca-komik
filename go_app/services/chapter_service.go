@@ -23,8 +23,8 @@ func NewChapterService(db *database.DB) *ChapterService {
 	}
 }
 
-// GetChapterDetails retrieves detailed information about a specific chapter
-func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterWithComic, error) {
+// GetChapterDetails - EXACT COPY from Next.js /api/chapters/[id]/route.ts
+func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterDetailsResponse, error) {
 	ctx, cancel := s.WithTimeout(30 * time.Second)
 	defer cancel()
 
@@ -32,7 +32,7 @@ func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterWithComic,
 		"chapter_id": id,
 	})
 
-	// Get chapter with comic information - exactly like Next.js (no c.title column)
+	// Fetch chapter with comic information - EXACTLY like Next.js lines 23-37
 	query := `
 		SELECT
 			c.id, c.id_komik, c.chapter_number, c.release_date,
@@ -52,10 +52,72 @@ func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterWithComic,
 		&chapter.Comic.CoverImageURL,
 	)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("chapter not found")
+		}
 		s.LogError(err, "Failed to get chapter details", logrus.Fields{
 			"chapter_id": id,
 		})
 		return nil, err
+	}
+
+	// Increment view count - EXACTLY like Next.js line 54
+	_, err = s.GetDB().Exec(ctx, `SELECT increment_chapter_view_count($1)`, id)
+	if err != nil {
+		s.LogError(err, "Failed to increment view count", nil)
+		// Continue even if increment fails
+	}
+
+	// Fetch next and previous chapters for navigation - EXACTLY like Next.js lines 56-88
+	var prevChapter *models.ChapterNav
+	var nextChapter *models.ChapterNav
+
+	// Get previous chapter - EXACTLY like Next.js lines 60-73
+	prevQuery := `
+		SELECT id, chapter_number
+		FROM "mChapter"
+		WHERE id_komik = $1 AND chapter_number < $2
+		ORDER BY chapter_number DESC
+		LIMIT 1
+	`
+	var prev models.ChapterNav
+	err = s.GetDB().QueryRow(ctx, prevQuery, chapter.IDKomik, chapter.ChapterNumber).Scan(
+		&prev.ID, &prev.ChapterNumber,
+	)
+	if err == nil {
+		prevChapter = &prev
+	}
+
+	// Get next chapter - EXACTLY like Next.js lines 75-88
+	nextQuery := `
+		SELECT id, chapter_number
+		FROM "mChapter"
+		WHERE id_komik = $1 AND chapter_number > $2
+		ORDER BY chapter_number ASC
+		LIMIT 1
+	`
+	var next models.ChapterNav
+	err = s.GetDB().QueryRow(ctx, nextQuery, chapter.IDKomik, chapter.ChapterNumber).Scan(
+		&next.ID, &next.ChapterNumber,
+	)
+	if err == nil {
+		nextChapter = &next
+	}
+
+	// Format response - EXACTLY like Next.js lines 90-98
+	result := &models.ChapterDetailsResponse{
+		ID:                chapter.ID,
+		IDKomik:           chapter.IDKomik,
+		ChapterNumber:     chapter.ChapterNumber,
+		ReleaseDate:       chapter.ReleaseDate,
+		Rating:            chapter.Rating,
+		ViewCount:         chapter.ViewCount,
+		VoteCount:         chapter.VoteCount,
+		ThumbnailImageURL: chapter.ThumbnailImageURL,
+		CreatedDate:       chapter.CreatedDate,
+		Comic:             chapter.Comic,
+		NextChapter:       nextChapter,
+		PrevChapter:       prevChapter,
 	}
 
 	s.LogInfo("Successfully retrieved chapter details", logrus.Fields{
@@ -63,7 +125,7 @@ func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterWithComic,
 		"comic_id":   chapter.IDKomik,
 	})
 
-	return &chapter, nil
+	return result, nil
 }
 
 // GetCompleteChapterDetails - EXACT COPY from Next.js /api/chapters/[id]/complete/route.ts
