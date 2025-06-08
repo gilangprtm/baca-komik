@@ -32,10 +32,45 @@ type ComicWithDetails struct {
 	Formats         []Format        `json:"formats,omitempty"`
 }
 
-// ComicComplete represents complete comic response format
+// ComicComplete represents complete comic response format (old)
 type ComicComplete struct {
 	Comic    ComicWithDetails `json:"comic"`
 	UserData *UserData        `json:"user_data,omitempty"`
+}
+
+// ComicCompleteResponse - EXACT response format from Next.js /api/comics/[id]/complete
+type ComicCompleteResponse struct {
+	Comic    ComicCompleteData `json:"comic"`
+	UserData UserDataComplete  `json:"user_data"`
+}
+
+// ComicCompleteData - Comic data for /complete endpoint (NO chapter_count like Next.js)
+type ComicCompleteData struct {
+	ID               string     `json:"id"`
+	Title            string     `json:"title"`
+	AlternativeTitle *string    `json:"alternative_title"`
+	Description      *string    `json:"description"`
+	Status           string     `json:"status"`
+	CountryID        string     `json:"country_id"`
+	ViewCount        *int       `json:"view_count"`
+	VoteCount        *int       `json:"vote_count"`
+	BookmarkCount    *int       `json:"bookmark_count"`
+	CoverImageURL    *string    `json:"cover_image_url"`
+	CreatedDate      *time.Time `json:"created_date"`
+	Rank             *float64   `json:"rank"`
+	ReleaseYear      *int       `json:"release_year"`
+	// Relations - EXACTLY like Next.js formatting
+	Genres  []Genre  `json:"genres"`
+	Authors []Author `json:"authors"`
+	Artists []Artist `json:"artists"`
+	Formats []Format `json:"formats"`
+}
+
+// UserDataComplete - EXACT user data format from Next.js /api/comics/[id]/complete
+type UserDataComplete struct {
+	IsBookmarked    bool    `json:"is_bookmarked"`
+	IsVoted         bool    `json:"is_voted"`
+	LastReadChapter *string `json:"last_read_chapter"`
 }
 
 // UserData represents user-specific data for comics/chapters
@@ -79,4 +114,21 @@ type PopularComic struct {
 // RecommendedComic represents recommended comic from mRecomed table
 type RecommendedComic struct {
 	Comic
+}
+
+// SuccessResponse represents a generic success response
+type SuccessResponse struct {
+	Success bool `json:"success"`
+}
+
+// SetupResponse - EXACT response format from Next.js /api/setup
+type SetupResponse struct {
+	Message string    `json:"message"`
+	User    SetupUser `json:"user"`
+}
+
+// SetupUser - User data in setup response
+type SetupUser struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }

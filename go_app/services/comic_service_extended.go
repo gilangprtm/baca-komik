@@ -1,8 +1,11 @@
 package services
 
 import (
+	"context"
+	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
 	"baca-komik-api/models"
 )
@@ -65,12 +68,12 @@ func (s *ComicService) GetComicDetails(id string) (*models.ComicWithDetails, err
 		"comic_id": id,
 	})
 
-	// Get basic comic information
+	// Get basic comic information - EXACTLY like Next.js: SELECT * (include release_year!)
 	query := `
-		SELECT 
+		SELECT
 			k.id, k.title, k.alternative_title, k.description, k.status,
 			k.country_id, k.view_count, k.vote_count, k.bookmark_count,
-			k.cover_image_url, k.created_date, k.rank,
+			k.cover_image_url, k.created_date, k.rank, k.release_year,
 			(SELECT COUNT(*) FROM "mChapter" c WHERE c.id_komik = k.id) as chapter_count
 		FROM "mKomik" k
 		WHERE k.id = $1
@@ -81,7 +84,7 @@ func (s *ComicService) GetComicDetails(id string) (*models.ComicWithDetails, err
 		&comic.ID, &comic.Title, &comic.AlternativeTitle, &comic.Description,
 		&comic.Status, &comic.CountryID, &comic.ViewCount, &comic.VoteCount,
 		&comic.BookmarkCount, &comic.CoverImageURL, &comic.CreatedDate,
-		&comic.Rank, &comic.ChapterCount,
+		&comic.Rank, &comic.ReleaseYear, &comic.ChapterCount,
 	)
 	if err != nil {
 		s.LogError(err, "Failed to get comic details", logrus.Fields{
@@ -114,8 +117,8 @@ func (s *ComicService) GetComicDetails(id string) (*models.ComicWithDetails, err
 	return &comics[0], nil
 }
 
-// GetCompleteComicDetails retrieves complete comic details with user data
-func (s *ComicService) GetCompleteComicDetails(id string, userID *string) (*models.ComicComplete, error) {
+// GetCompleteComicDetails - EXACT COPY from Next.js /api/comics/[id]/complete/route.ts
+func (s *ComicService) GetCompleteComicDetails(id string, userID *string) (*models.ComicCompleteResponse, error) {
 	ctx, cancel := s.WithTimeout(30 * time.Second)
 	defer cancel()
 
@@ -124,27 +127,97 @@ func (s *ComicService) GetCompleteComicDetails(id string, userID *string) (*mode
 		"user_id":  userID,
 	})
 
-	// Get comic details
-	comic, err := s.GetComicDetails(id)
+	// Fetch comic with related data - EXACTLY like Next.js lines 31-51
+	query := `
+		SELECT
+			k.id, k.title, k.alternative_title, k.description, k.status,
+			k.country_id, k.view_count, k.vote_count, k.bookmark_count,
+			k.cover_image_url, k.created_date, k.rank, k.release_year
+		FROM "mKomik" k
+		WHERE k.id = $1
+	`
+
+	var comic models.ComicCompleteData
+	err := s.GetDB().QueryRow(ctx, query, id).Scan(
+		&comic.ID, &comic.Title, &comic.AlternativeTitle, &comic.Description,
+		&comic.Status, &comic.CountryID, &comic.ViewCount, &comic.VoteCount,
+		&comic.BookmarkCount, &comic.CoverImageURL, &comic.CreatedDate,
+		&comic.Rank, &comic.ReleaseYear,
+	)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("comic not found")
+		}
+		s.LogError(err, "Failed to fetch comic", logrus.Fields{
+			"comic_id": id,
+		})
 		return nil, err
 	}
 
-	result := &models.ComicComplete{
-		Comic: *comic,
+	// Load trGenre, trAuthor, trArtist, trFormat - EXACTLY like Next.js lines 36-47
+	if err := s.loadComicRelationsForComplete(ctx, &comic); err != nil {
+		s.LogError(err, "Failed to load comic relations", nil)
+		// Continue even if relations fail
 	}
 
-	// Load user data if user is authenticated
+	// Initialize user data - EXACTLY like Next.js lines 78-83
+	userData := models.UserDataComplete{
+		IsBookmarked:    false,
+		IsVoted:         false,
+		LastReadChapter: nil,
+	}
+
+	// If user is authenticated, fetch user-specific data - EXACTLY like Next.js lines 85-118
 	if userID != nil {
-		userData, err := s.loadUserComicData(ctx, id, *userID)
+		// Check if comic is bookmarked - EXACTLY like Next.js lines 87-93
+		var bookmarkExists bool
+		bookmarkQuery := `SELECT EXISTS(SELECT 1 FROM "trUserBookmark" WHERE id_user = $1 AND id_komik = $2)`
+		err = s.GetDB().QueryRow(ctx, bookmarkQuery, *userID, id).Scan(&bookmarkExists)
 		if err != nil {
-			s.LogError(err, "Failed to load user comic data", logrus.Fields{
-				"comic_id": id,
-				"user_id":  *userID,
-			})
-		} else {
-			result.UserData = userData
+			s.LogError(err, "Failed to check bookmark", nil)
 		}
+
+		// Check if comic is voted - EXACTLY like Next.js lines 95-101
+		var voteExists bool
+		voteQuery := `SELECT EXISTS(SELECT 1 FROM "mKomikVote" WHERE id_user = $1 AND id_komik = $2)`
+		err = s.GetDB().QueryRow(ctx, voteQuery, *userID, id).Scan(&voteExists)
+		if err != nil {
+			s.LogError(err, "Failed to check vote", nil)
+		}
+
+		// Get last read chapter - EXACTLY like Next.js lines 103-111
+		var lastReadChapter *string
+		lastReadQuery := `
+			SELECT id_chapter
+			FROM "trUserHistory"
+			WHERE id_user = $1 AND id_komik = $2
+			ORDER BY created_date DESC
+			LIMIT 1
+		`
+		err = s.GetDB().QueryRow(ctx, lastReadQuery, *userID, id).Scan(&lastReadChapter)
+		if err != nil && err != pgx.ErrNoRows {
+			s.LogError(err, "Failed to get last read chapter", nil)
+		}
+
+		// Set user data - EXACTLY like Next.js lines 113-117
+		userData = models.UserDataComplete{
+			IsBookmarked:    bookmarkExists,
+			IsVoted:         voteExists,
+			LastReadChapter: lastReadChapter,
+		}
+	}
+
+	// Increment view count - EXACTLY like Next.js line 121
+	_, err = s.GetDB().Exec(ctx, `SELECT increment_comic_view_count($1)`, id)
+	if err != nil {
+		s.LogError(err, "Failed to increment view count", nil)
+		// Continue even if increment fails
+	}
+
+	// Return response - EXACTLY like Next.js lines 124-127
+	result := &models.ComicCompleteResponse{
+		Comic:    comic,
+		UserData: userData,
 	}
 
 	s.LogInfo("Successfully retrieved complete comic details", logrus.Fields{
@@ -257,4 +330,307 @@ func (s *ComicService) GetComicChapters(id string, page, limit int, sort, order 
 	})
 
 	return response, total, nil
+}
+
+// loadComicRelationsComplete loads trGenre, trAuthor, trArtist, trFormat - EXACTLY like Next.js lines 36-47
+func (s *ComicService) loadComicRelationsComplete(ctx context.Context, comic *models.ComicWithDetails) error {
+	// Load trGenre - EXACTLY like Next.js trGenre!trGenre_id_komik_fkey (mGenre!inner (id, name))
+	genreQuery := `
+		SELECT g.id, g.name
+		FROM "trGenre" tg
+		JOIN "mGenre" g ON tg.id_genre = g.id
+		WHERE tg.id_komik = $1
+		ORDER BY g.name
+	`
+	genreRows, err := s.GetDB().Query(ctx, genreQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer genreRows.Close()
+
+	var genres []models.Genre
+	for genreRows.Next() {
+		var genre models.Genre
+		if err := genreRows.Scan(&genre.ID, &genre.Name); err != nil {
+			continue
+		}
+		genres = append(genres, genre)
+	}
+	comic.Genres = genres
+
+	// Load trAuthor - EXACTLY like Next.js trAuthor!trAuthor_id_komik_fkey (mAuthor!inner (id, name))
+	authorQuery := `
+		SELECT a.id, a.name
+		FROM "trAuthor" ta
+		JOIN "mAuthor" a ON ta.id_author = a.id
+		WHERE ta.id_komik = $1
+		ORDER BY a.name
+	`
+	authorRows, err := s.GetDB().Query(ctx, authorQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer authorRows.Close()
+
+	var authors []models.Author
+	for authorRows.Next() {
+		var author models.Author
+		if err := authorRows.Scan(&author.ID, &author.Name); err != nil {
+			continue
+		}
+		authors = append(authors, author)
+	}
+	comic.Authors = authors
+
+	// Load trArtist - EXACTLY like Next.js trArtist!trArtist_id_komik_fkey (mArtist!inner (id, name))
+	artistQuery := `
+		SELECT a.id, a.name
+		FROM "trArtist" ta
+		JOIN "mArtist" a ON ta.id_artist = a.id
+		WHERE ta.id_komik = $1
+		ORDER BY a.name
+	`
+	artistRows, err := s.GetDB().Query(ctx, artistQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer artistRows.Close()
+
+	var artists []models.Artist
+	for artistRows.Next() {
+		var artist models.Artist
+		if err := artistRows.Scan(&artist.ID, &artist.Name); err != nil {
+			continue
+		}
+		artists = append(artists, artist)
+	}
+	comic.Artists = artists
+
+	// Load trFormat - EXACTLY like Next.js trFormat!trFormat_id_komik_fkey (mFormat!inner (id, name))
+	formatQuery := `
+		SELECT f.id, f.name
+		FROM "trFormat" tf
+		JOIN "mFormat" f ON tf.id_format = f.id
+		WHERE tf.id_komik = $1
+		ORDER BY f.name
+	`
+	formatRows, err := s.GetDB().Query(ctx, formatQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer formatRows.Close()
+
+	var formats []models.Format
+	for formatRows.Next() {
+		var format models.Format
+		if err := formatRows.Scan(&format.ID, &format.Name); err != nil {
+			continue
+		}
+		formats = append(formats, format)
+	}
+	comic.Formats = formats
+
+	return nil
+}
+
+// loadComicRelationsForComplete loads relations for ComicCompleteData - EXACTLY like Next.js
+func (s *ComicService) loadComicRelationsForComplete(ctx context.Context, comic *models.ComicCompleteData) error {
+	// Load trGenre - EXACTLY like Next.js trGenre!trGenre_id_komik_fkey (mGenre!inner (id, name))
+	genreQuery := `
+		SELECT g.id, g.name
+		FROM "trGenre" tg
+		JOIN "mGenre" g ON tg.id_genre = g.id
+		WHERE tg.id_komik = $1
+		ORDER BY g.name
+	`
+	genreRows, err := s.GetDB().Query(ctx, genreQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer genreRows.Close()
+
+	var genres []models.Genre
+	for genreRows.Next() {
+		var genre models.Genre
+		if err := genreRows.Scan(&genre.ID, &genre.Name); err != nil {
+			continue
+		}
+		genres = append(genres, genre)
+	}
+	comic.Genres = genres
+
+	// Load trAuthor - EXACTLY like Next.js trAuthor!trAuthor_id_komik_fkey (mAuthor!inner (id, name))
+	authorQuery := `
+		SELECT a.id, a.name
+		FROM "trAuthor" ta
+		JOIN "mAuthor" a ON ta.id_author = a.id
+		WHERE ta.id_komik = $1
+		ORDER BY a.name
+	`
+	authorRows, err := s.GetDB().Query(ctx, authorQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer authorRows.Close()
+
+	var authors []models.Author
+	for authorRows.Next() {
+		var author models.Author
+		if err := authorRows.Scan(&author.ID, &author.Name); err != nil {
+			continue
+		}
+		authors = append(authors, author)
+	}
+	comic.Authors = authors
+
+	// Load trArtist - EXACTLY like Next.js trArtist!trArtist_id_komik_fkey (mArtist!inner (id, name))
+	artistQuery := `
+		SELECT a.id, a.name
+		FROM "trArtist" ta
+		JOIN "mArtist" a ON ta.id_artist = a.id
+		WHERE ta.id_komik = $1
+		ORDER BY a.name
+	`
+	artistRows, err := s.GetDB().Query(ctx, artistQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer artistRows.Close()
+
+	var artists []models.Artist
+	for artistRows.Next() {
+		var artist models.Artist
+		if err := artistRows.Scan(&artist.ID, &artist.Name); err != nil {
+			continue
+		}
+		artists = append(artists, artist)
+	}
+	comic.Artists = artists
+
+	// Load trFormat - EXACTLY like Next.js trFormat!trFormat_id_komik_fkey (mFormat!inner (id, name))
+	formatQuery := `
+		SELECT f.id, f.name
+		FROM "trFormat" tf
+		JOIN "mFormat" f ON tf.id_format = f.id
+		WHERE tf.id_komik = $1
+		ORDER BY f.name
+	`
+	formatRows, err := s.GetDB().Query(ctx, formatQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer formatRows.Close()
+
+	var formats []models.Format
+	for formatRows.Next() {
+		var format models.Format
+		if err := formatRows.Scan(&format.ID, &format.Name); err != nil {
+			continue
+		}
+		formats = append(formats, format)
+	}
+	comic.Formats = formats
+
+	return nil
+}
+
+// loadComicRelationsOld loads genres, authors, artists, formats for a comic - exactly like Next.js
+func (s *ComicService) loadComicRelationsOld(ctx context.Context, comic *models.ComicWithDetails) error {
+	// Load genres
+	genreQuery := `
+		SELECT g.id, g.name
+		FROM "trGenre" tg
+		JOIN "mGenre" g ON tg.id_genre = g.id
+		WHERE tg.id_komik = $1
+		ORDER BY g.name
+	`
+	genreRows, err := s.GetDB().Query(ctx, genreQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer genreRows.Close()
+
+	var genres []models.Genre
+	for genreRows.Next() {
+		var genre models.Genre
+		if err := genreRows.Scan(&genre.ID, &genre.Name); err != nil {
+			continue
+		}
+		genres = append(genres, genre)
+	}
+	comic.Genres = genres
+
+	// Load authors
+	authorQuery := `
+		SELECT a.id, a.name
+		FROM "trAuthor" ta
+		JOIN "mAuthor" a ON ta.id_author = a.id
+		WHERE ta.id_komik = $1
+		ORDER BY a.name
+	`
+	authorRows, err := s.GetDB().Query(ctx, authorQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer authorRows.Close()
+
+	var authors []models.Author
+	for authorRows.Next() {
+		var author models.Author
+		if err := authorRows.Scan(&author.ID, &author.Name); err != nil {
+			continue
+		}
+		authors = append(authors, author)
+	}
+	comic.Authors = authors
+
+	// Load artists
+	artistQuery := `
+		SELECT a.id, a.name
+		FROM "trArtist" ta
+		JOIN "mArtist" a ON ta.id_artist = a.id
+		WHERE ta.id_komik = $1
+		ORDER BY a.name
+	`
+	artistRows, err := s.GetDB().Query(ctx, artistQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer artistRows.Close()
+
+	var artists []models.Artist
+	for artistRows.Next() {
+		var artist models.Artist
+		if err := artistRows.Scan(&artist.ID, &artist.Name); err != nil {
+			continue
+		}
+		artists = append(artists, artist)
+	}
+	comic.Artists = artists
+
+	// Load formats
+	formatQuery := `
+		SELECT f.id, f.name
+		FROM "trFormat" tf
+		JOIN "mFormat" f ON tf.id_format = f.id
+		WHERE tf.id_komik = $1
+		ORDER BY f.name
+	`
+	formatRows, err := s.GetDB().Query(ctx, formatQuery, comic.ID)
+	if err != nil {
+		return err
+	}
+	defer formatRows.Close()
+
+	var formats []models.Format
+	for formatRows.Next() {
+		var format models.Format
+		if err := formatRows.Scan(&format.ID, &format.Name); err != nil {
+			continue
+		}
+		formats = append(formats, format)
+	}
+	comic.Formats = formats
+
+	return nil
 }

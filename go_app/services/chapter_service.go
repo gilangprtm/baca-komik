@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
 	"baca-komik-api/database"
 	"baca-komik-api/models"
@@ -64,8 +66,8 @@ func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterWithComic,
 	return &chapter, nil
 }
 
-// GetCompleteChapterDetails retrieves complete chapter details with pages, navigation, and user data
-func (s *ChapterService) GetCompleteChapterDetails(id string, userID *string) (*models.ChapterComplete, error) {
+// GetCompleteChapterDetails - EXACT COPY from Next.js /api/chapters/[id]/complete/route.ts
+func (s *ChapterService) GetCompleteChapterDetails(id string, userID *string) (*models.ChapterCompleteResponse, error) {
 	ctx, cancel := s.WithTimeout(30 * time.Second)
 	defer cancel()
 
@@ -74,54 +76,169 @@ func (s *ChapterService) GetCompleteChapterDetails(id string, userID *string) (*
 		"user_id":    userID,
 	})
 
-	// Get chapter details
-	chapter, err := s.GetChapterDetails(id)
+	// Fetch chapter with comic information - EXACTLY like Next.js lines 28-42
+	chapterQuery := `
+		SELECT
+			c.id, c.id_komik, c.chapter_number, c.release_date,
+			c.rating, c.view_count, c.vote_count, c.thumbnail_image_url, c.created_date,
+			k.id, k.title, k.alternative_title, k.cover_image_url
+		FROM "mChapter" c
+		JOIN "mKomik" k ON c.id_komik = k.id
+		WHERE c.id = $1
+	`
+
+	var chapterData models.ChapterWithComic
+	err := s.GetDB().QueryRow(ctx, chapterQuery, id).Scan(
+		&chapterData.ID, &chapterData.IDKomik, &chapterData.ChapterNumber,
+		&chapterData.ReleaseDate, &chapterData.Rating, &chapterData.ViewCount,
+		&chapterData.VoteCount, &chapterData.ThumbnailImageURL, &chapterData.CreatedDate,
+		&chapterData.Comic.ID, &chapterData.Comic.Title,
+		&chapterData.Comic.AlternativeTitle, &chapterData.Comic.CoverImageURL,
+	)
 	if err != nil {
-		return nil, err
-	}
-
-	result := &models.ChapterComplete{
-		Chapter: *chapter,
-	}
-
-	// Load pages
-	pages, err := s.getChapterPages(ctx, id)
-	if err != nil {
-		s.LogError(err, "Failed to load chapter pages", logrus.Fields{
-			"chapter_id": id,
-		})
-		return nil, err
-	}
-	result.Pages = pages
-
-	// Load navigation (next/prev chapters)
-	navigation, err := s.getChapterNavigation(ctx, chapter.IDKomik, chapter.ChapterNumber)
-	if err != nil {
-		s.LogError(err, "Failed to load chapter navigation", logrus.Fields{
-			"chapter_id": id,
-			"comic_id":   chapter.IDKomik,
-		})
-		// Don't return error, just log it
-	} else {
-		result.Navigation = *navigation
-	}
-
-	// Load user data if user is authenticated
-	if userID != nil {
-		userData, err := s.loadUserChapterData(ctx, id, *userID)
-		if err != nil {
-			s.LogError(err, "Failed to load user chapter data", logrus.Fields{
-				"chapter_id": id,
-				"user_id":    *userID,
-			})
-		} else {
-			result.UserData = userData
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("chapter not found")
 		}
+		s.LogError(err, "Failed to fetch chapter", logrus.Fields{
+			"chapter_id": id,
+		})
+		return nil, err
+	}
+
+	// Fetch pages for the chapter - EXACTLY like Next.js lines 58-63
+	pagesQuery := `
+		SELECT id_chapter, page_number, page_url
+		FROM "trChapter"
+		WHERE id_chapter = $1
+		ORDER BY page_number ASC
+	`
+
+	pagesRows, err := s.GetDB().Query(ctx, pagesQuery, id)
+	if err != nil {
+		s.LogError(err, "Failed to fetch pages", logrus.Fields{
+			"chapter_id": id,
+		})
+		return nil, err
+	}
+	defer pagesRows.Close()
+
+	var pagesData []models.ChapterPage
+	for pagesRows.Next() {
+		var page models.ChapterPage
+		err := pagesRows.Scan(&page.IDChapter, &page.PageNumber, &page.PageURL)
+		if err != nil {
+			continue
+		}
+		pagesData = append(pagesData, page)
+	}
+
+	// Fetch next and previous chapters for navigation - EXACTLY like Next.js lines 69-101
+	var prevChapter *models.ChapterNav
+	var nextChapter *models.ChapterNav
+
+	// Get previous chapter - EXACTLY like Next.js lines 74-86
+	prevQuery := `
+		SELECT id, chapter_number
+		FROM "mChapter"
+		WHERE id_komik = $1 AND chapter_number < $2
+		ORDER BY chapter_number DESC
+		LIMIT 1
+	`
+	var prev models.ChapterNav
+	err = s.GetDB().QueryRow(ctx, prevQuery, chapterData.IDKomik, chapterData.ChapterNumber).Scan(
+		&prev.ID, &prev.ChapterNumber,
+	)
+	if err == nil {
+		prevChapter = &prev
+	}
+
+	// Get next chapter - EXACTLY like Next.js lines 88-100
+	nextQuery := `
+		SELECT id, chapter_number
+		FROM "mChapter"
+		WHERE id_komik = $1 AND chapter_number > $2
+		ORDER BY chapter_number ASC
+		LIMIT 1
+	`
+	var next models.ChapterNav
+	err = s.GetDB().QueryRow(ctx, nextQuery, chapterData.IDKomik, chapterData.ChapterNumber).Scan(
+		&next.ID, &next.ChapterNumber,
+	)
+	if err == nil {
+		nextChapter = &next
+	}
+
+	// Initialize user data - EXACTLY like Next.js lines 103-107
+	userData := models.ChapterUserData{
+		IsVoted: false,
+		IsRead:  false,
+	}
+
+	// If user is authenticated, fetch user-specific data - EXACTLY like Next.js lines 109-152
+	if userID != nil {
+		// Check if chapter is voted - EXACTLY like Next.js lines 111-117
+		var voteExists bool
+		voteQuery := `SELECT EXISTS(SELECT 1 FROM "trChapterVote" WHERE id_user = $1 AND id_chapter = $2)`
+		err = s.GetDB().QueryRow(ctx, voteQuery, *userID, id).Scan(&voteExists)
+		if err != nil {
+			s.LogError(err, "Failed to check vote", nil)
+		}
+
+		// Check if chapter is marked as read - EXACTLY like Next.js lines 119-125
+		var isRead bool
+		readQuery := `SELECT COALESCE(is_read, false) FROM "trUserHistory" WHERE id_user = $1 AND id_chapter = $2`
+		err = s.GetDB().QueryRow(ctx, readQuery, *userID, id).Scan(&isRead)
+		if err != nil && err != pgx.ErrNoRows {
+			s.LogError(err, "Failed to check read status", nil)
+		}
+
+		userData = models.ChapterUserData{
+			IsVoted: voteExists,
+			IsRead:  isRead,
+		}
+
+		// Update reading history - EXACTLY like Next.js lines 132-151
+		var existingHistory bool
+		historyCheckQuery := `SELECT EXISTS(SELECT 1 FROM "trUserHistory" WHERE id_user = $1 AND id_chapter = $2)`
+		err = s.GetDB().QueryRow(ctx, historyCheckQuery, *userID, id).Scan(&existingHistory)
+		if err != nil {
+			s.LogError(err, "Failed to check history", nil)
+		}
+
+		if !existingHistory {
+			// Create new reading history - EXACTLY like Next.js lines 143-149
+			insertHistoryQuery := `
+				INSERT INTO "trUserHistory" (id_user, id_komik, id_chapter, is_read, created_date)
+				VALUES ($1, $2, $3, false, NOW())
+			`
+			_, err = s.GetDB().Exec(ctx, insertHistoryQuery, *userID, chapterData.IDKomik, id)
+			if err != nil {
+				s.LogError(err, "Failed to create reading history", nil)
+			}
+		}
+	}
+
+	// Increment view count - EXACTLY like Next.js line 155
+	_, err = s.GetDB().Exec(ctx, `SELECT increment_chapter_view_count($1)`, id)
+	if err != nil {
+		s.LogError(err, "Failed to increment view count", nil)
+		// Continue even if increment fails
+	}
+
+	// Format response - EXACTLY like Next.js lines 158-172
+	result := &models.ChapterCompleteResponse{
+		Chapter: chapterData,
+		Pages:   pagesData,
+		Navigation: models.ChapterNavigation{
+			PrevChapter: prevChapter,
+			NextChapter: nextChapter,
+		},
+		UserData: userData,
 	}
 
 	s.LogInfo("Successfully retrieved complete chapter details", logrus.Fields{
 		"chapter_id":  id,
-		"pages_count": len(result.Pages),
+		"pages_count": len(pagesData),
 		"user_id":     userID,
 	})
 

@@ -39,15 +39,17 @@ func (h *ChapterHandler) GetChapterDetails(c *gin.Context) {
 	utils.SuccessResponse(c, chapter)
 }
 
-// GetCompleteChapterDetails handles GET /api/chapters/:id/complete
+// GetCompleteChapterDetails - EXACT COPY from Next.js /api/chapters/[id]/complete handler
 func (h *ChapterHandler) GetCompleteChapterDetails(c *gin.Context) {
 	id := c.Param("id")
+
+	// Validate ID - EXACTLY like Next.js lines 14-20
 	if id == "" {
-		utils.BadRequestResponse(c, "Chapter ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid chapter ID"})
 		return
 	}
 
-	// Get user ID from context (optional auth)
+	// Get user ID from context (optional auth) - EXACTLY like Next.js lines 22-25
 	userID, _ := c.Get("user_id")
 	var userIDStr *string
 	if userID != nil {
@@ -59,11 +61,15 @@ func (h *ChapterHandler) GetCompleteChapterDetails(c *gin.Context) {
 	// Get complete chapter details from service
 	chapter, err := h.chapterService.GetCompleteChapterDetails(id, userIDStr)
 	if err != nil {
-		utils.NotFoundResponse(c, "Chapter not found")
+		if err.Error() == "chapter not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Chapter not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred"})
+		}
 		return
 	}
 
-	// Return complete chapter details
+	// Return response - EXACTLY like Next.js lines 164-172
 	c.JSON(http.StatusOK, chapter)
 }
 

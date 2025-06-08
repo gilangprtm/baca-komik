@@ -20,6 +20,7 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 	var bookmarkHandler *handlers.BookmarkHandler
 	var voteHandler *handlers.VoteHandler
 	var commentHandler *handlers.CommentHandler
+	var setupHandler *handlers.SetupHandler
 
 	if db != nil {
 		comicHandler = handlers.NewComicHandler(db)
@@ -27,6 +28,7 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 		bookmarkHandler = handlers.NewBookmarkHandler(db)
 		voteHandler = handlers.NewVoteHandler(db)
 		commentHandler = handlers.NewCommentHandler(db)
+		setupHandler = handlers.NewSetupHandler(db)
 	}
 
 	// Health check endpoint
@@ -91,20 +93,20 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 		protected := v1.Group("")
 		protected.Use(middleware.AuthRequired(cfg))
 		{
-			// Bookmarks routes
+			// Bookmarks routes - exactly like Next.js
 			bookmarks := protected.Group("/bookmarks")
 			{
 				bookmarks.GET("", bookmarkHandler.GetUserBookmarks)
 				bookmarks.GET("/details", bookmarkHandler.GetDetailedBookmarks)
 				bookmarks.POST("", bookmarkHandler.AddBookmark)
-				bookmarks.DELETE("/:id", bookmarkHandler.RemoveBookmark)
+				bookmarks.DELETE("/:id", bookmarkHandler.RemoveBookmark) // id = comic_id like Next.js
 			}
 
-			// Votes routes
+			// Votes routes - exactly like Next.js
 			votes := protected.Group("/votes")
 			{
 				votes.POST("", voteHandler.AddVote)
-				votes.DELETE("/:id", voteHandler.RemoveVote)
+				votes.DELETE("/:id", voteHandler.RemoveVote) // id = comic_id/chapter_id + ?type=comic like Next.js
 			}
 
 			// Comments routes (POST requires auth, GET is public)
@@ -116,5 +118,10 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 
 		// Public comments route (no auth required for reading)
 		v1.GET("/comments/:id", commentHandler.GetComments)
+
+		// Setup route - EXACTLY like Next.js /api/setup
+		if setupHandler != nil {
+			v1.GET("/setup", setupHandler.CreateAdminUser)
+		}
 	}
 }

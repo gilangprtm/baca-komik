@@ -113,13 +113,12 @@ func (s *ComicService) loadUserComicData(ctx context.Context, comicID, userID st
 		return nil, err
 	}
 
-	// Get last read chapter
+	// Get last read chapter - exactly like Next.js
 	lastReadQuery := `
-		SELECT c.id
-		FROM "trUserReadHistory" urh
-		JOIN "mChapter" c ON urh.id_chapter = c.id
-		WHERE urh.id_user = $1 AND c.id_komik = $2
-		ORDER BY urh.read_at DESC
+		SELECT id_chapter
+		FROM "trUserHistory"
+		WHERE id_user = $1 AND id_komik = $2
+		ORDER BY created_date DESC
 		LIMIT 1
 	`
 	var lastReadChapter string

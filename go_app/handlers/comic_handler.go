@@ -163,34 +163,42 @@ func (h *ComicHandler) GetRecommendedComics(c *gin.Context) {
 	})
 }
 
-// GetComicDetails handles GET /api/comics/:id
+// GetComicDetails - EXACT COPY from Next.js /api/comics/[id]/route.ts
 func (h *ComicHandler) GetComicDetails(c *gin.Context) {
 	id := c.Param("id")
+
+	// Validate ID - EXACTLY like Next.js
 	if id == "" {
-		utils.BadRequestResponse(c, "Comic ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comic ID"})
 		return
 	}
 
 	// Get comic details from service
 	comic, err := h.comicService.GetComicDetails(id)
 	if err != nil {
-		utils.NotFoundResponse(c, "Comic not found")
+		if err.Error() == "comic not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Comic not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred"})
+		}
 		return
 	}
 
-	// Return comic details
-	utils.SuccessResponse(c, comic)
+	// Return comic details directly - EXACTLY like Next.js (no wrapper)
+	c.JSON(http.StatusOK, comic)
 }
 
-// GetCompleteComicDetails handles GET /api/comics/:id/complete
+// GetCompleteComicDetails - EXACT COPY from Next.js /api/comics/[id]/complete handler
 func (h *ComicHandler) GetCompleteComicDetails(c *gin.Context) {
 	id := c.Param("id")
+
+	// Validate ID - EXACTLY like Next.js lines 20-23
 	if id == "" {
-		utils.BadRequestResponse(c, "Comic ID is required")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comic ID"})
 		return
 	}
 
-	// Get user ID from context (optional auth)
+	// Get user ID from context (optional auth) - EXACTLY like Next.js lines 25-28
 	userID, _ := c.Get("user_id")
 	var userIDStr *string
 	if userID != nil {
@@ -202,11 +210,15 @@ func (h *ComicHandler) GetCompleteComicDetails(c *gin.Context) {
 	// Get complete comic details from service
 	comic, err := h.comicService.GetCompleteComicDetails(id, userIDStr)
 	if err != nil {
-		utils.NotFoundResponse(c, "Comic not found")
+		if err.Error() == "comic not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Comic not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "An unexpected error occurred"})
+		}
 		return
 	}
 
-	// Return complete comic details
+	// Return response - EXACTLY like Next.js lines 124-127
 	c.JSON(http.StatusOK, comic)
 }
 
