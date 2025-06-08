@@ -30,11 +30,11 @@ func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterWithComic,
 		"chapter_id": id,
 	})
 
-	// Get chapter with comic information
+	// Get chapter with comic information - exactly like Next.js (no c.title column)
 	query := `
-		SELECT 
-			c.id, c.id_komik, c.chapter_number, c.title, c.release_date,
-			c.rating, c.view_count, c.vote_count, c.thumbnail_image_url,
+		SELECT
+			c.id, c.id_komik, c.chapter_number, c.release_date,
+			c.rating, c.view_count, c.vote_count, c.thumbnail_image_url, c.created_date,
 			k.id, k.title, k.alternative_title, k.cover_image_url
 		FROM "mChapter" c
 		JOIN "mKomik" k ON c.id_komik = k.id
@@ -43,9 +43,9 @@ func (s *ChapterService) GetChapterDetails(id string) (*models.ChapterWithComic,
 
 	var chapter models.ChapterWithComic
 	err := s.GetDB().QueryRow(ctx, query, id).Scan(
-		&chapter.ID, &chapter.IDKomik, &chapter.ChapterNumber, &chapter.Title,
+		&chapter.ID, &chapter.IDKomik, &chapter.ChapterNumber,
 		&chapter.ReleaseDate, &chapter.Rating, &chapter.ViewCount, &chapter.VoteCount,
-		&chapter.ThumbnailImageURL,
+		&chapter.ThumbnailImageURL, &chapter.CreatedDate,
 		&chapter.Comic.ID, &chapter.Comic.Title, &chapter.Comic.AlternativeTitle,
 		&chapter.Comic.CoverImageURL,
 	)
@@ -318,9 +318,9 @@ func (s *ChapterService) GetAdjacentChapters(chapterID string, limit int) (*mode
 		return nil, err
 	}
 
-	// Get previous chapters
+	// Get previous chapters - exactly like Next.js (no title column)
 	prevQuery := `
-		SELECT id, chapter_number, title, release_date, thumbnail_image_url
+		SELECT id, chapter_number, release_date, thumbnail_image_url, created_date
 		FROM "mChapter"
 		WHERE id_komik = $1 AND chapter_number < $2
 		ORDER BY chapter_number DESC
@@ -338,8 +338,8 @@ func (s *ChapterService) GetAdjacentChapters(chapterID string, limit int) (*mode
 	for prevRows.Next() {
 		var chapter models.Chapter
 		err := prevRows.Scan(
-			&chapter.ID, &chapter.ChapterNumber, &chapter.Title,
-			&chapter.ReleaseDate, &chapter.ThumbnailImageURL,
+			&chapter.ID, &chapter.ChapterNumber,
+			&chapter.ReleaseDate, &chapter.ThumbnailImageURL, &chapter.CreatedDate,
 		)
 		if err != nil {
 			continue
@@ -348,9 +348,9 @@ func (s *ChapterService) GetAdjacentChapters(chapterID string, limit int) (*mode
 		prevChapters = append(prevChapters, chapter)
 	}
 
-	// Get next chapters
+	// Get next chapters - exactly like Next.js (no title column)
 	nextQuery := `
-		SELECT id, chapter_number, title, release_date, thumbnail_image_url
+		SELECT id, chapter_number, release_date, thumbnail_image_url, created_date
 		FROM "mChapter"
 		WHERE id_komik = $1 AND chapter_number > $2
 		ORDER BY chapter_number ASC
@@ -368,8 +368,8 @@ func (s *ChapterService) GetAdjacentChapters(chapterID string, limit int) (*mode
 	for nextRows.Next() {
 		var chapter models.Chapter
 		err := nextRows.Scan(
-			&chapter.ID, &chapter.ChapterNumber, &chapter.Title,
-			&chapter.ReleaseDate, &chapter.ThumbnailImageURL,
+			&chapter.ID, &chapter.ChapterNumber,
+			&chapter.ReleaseDate, &chapter.ThumbnailImageURL, &chapter.CreatedDate,
 		)
 		if err != nil {
 			continue

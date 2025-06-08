@@ -182,17 +182,15 @@ func (s *ComicService) GetComicChapters(id string, page, limit int, sort, order 
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Build order clause
+	// Build order clause - exactly like Next.js
 	orderClause := "ORDER BY "
 	switch sort {
 	case "chapter_number":
 		orderClause += "c.chapter_number"
 	case "release_date":
 		orderClause += "c.release_date"
-	case "title":
-		orderClause += "c.title"
 	default:
-		orderClause += "c.chapter_number"
+		orderClause += "c.chapter_number" // default like Next.js
 	}
 
 	if order == "asc" {
@@ -201,11 +199,11 @@ func (s *ComicService) GetComicChapters(id string, page, limit int, sort, order 
 		orderClause += " DESC"
 	}
 
-	// Get chapters
+	// Get chapters - exactly like Next.js: SELECT * from mChapter (no title column exists)
 	chaptersQuery := `
-		SELECT 
-			c.id, c.id_komik, c.chapter_number, c.title, c.release_date,
-			c.rating, c.view_count, c.vote_count, c.thumbnail_image_url
+		SELECT
+			c.id, c.id_komik, c.chapter_number, c.release_date,
+			c.rating, c.view_count, c.vote_count, c.thumbnail_image_url, c.created_date
 		FROM "mChapter" c
 		WHERE c.id_komik = $1
 		` + orderClause + `
@@ -225,9 +223,9 @@ func (s *ComicService) GetComicChapters(id string, page, limit int, sort, order 
 	for rows.Next() {
 		var chapter models.Chapter
 		err := rows.Scan(
-			&chapter.ID, &chapter.IDKomik, &chapter.ChapterNumber, &chapter.Title,
+			&chapter.ID, &chapter.IDKomik, &chapter.ChapterNumber,
 			&chapter.ReleaseDate, &chapter.Rating, &chapter.ViewCount,
-			&chapter.VoteCount, &chapter.ThumbnailImageURL,
+			&chapter.VoteCount, &chapter.ThumbnailImageURL, &chapter.CreatedDate,
 		)
 		if err != nil {
 			s.LogError(err, "Failed to scan chapter row", nil)

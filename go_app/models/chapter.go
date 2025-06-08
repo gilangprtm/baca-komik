@@ -4,17 +4,17 @@ import (
 	"time"
 )
 
-// Chapter represents the mChapter table structure
+// Chapter represents the mChapter table structure (exact match with Next.js database types)
 type Chapter struct {
-	ID                 string    `json:"id" db:"id"`
-	IDKomik            string    `json:"id_komik" db:"id_komik"`
-	ChapterNumber      float64   `json:"chapter_number" db:"chapter_number"`
-	Title              *string   `json:"title" db:"title"`
-	ReleaseDate        time.Time `json:"release_date" db:"release_date"`
-	Rating             *float64  `json:"rating" db:"rating"`
-	ViewCount          int       `json:"view_count" db:"view_count"`
-	VoteCount          int       `json:"vote_count" db:"vote_count"`
-	ThumbnailImageURL  *string   `json:"thumbnail_image_url" db:"thumbnail_image_url"`
+	ID                 string   `json:"id" db:"id"`
+	IDKomik            string   `json:"id_komik" db:"id_komik"`
+	ChapterNumber      float64  `json:"chapter_number" db:"chapter_number"`
+	ReleaseDate        *time.Time `json:"release_date" db:"release_date"`
+	Rating             *float64 `json:"rating" db:"rating"`
+	ViewCount          *int     `json:"view_count" db:"view_count"`
+	VoteCount          *int     `json:"vote_count" db:"vote_count"`
+	ThumbnailImageURL  *string  `json:"thumbnail_image_url" db:"thumbnail_image_url"`
+	CreatedDate        *time.Time `json:"created_date" db:"created_date"`
 }
 
 // ChapterWithComic represents chapter with comic information
