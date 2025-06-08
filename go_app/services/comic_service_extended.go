@@ -340,7 +340,6 @@ func (s *ComicService) loadComicRelationsComplete(ctx context.Context, comic *mo
 		FROM "trGenre" tg
 		JOIN "mGenre" g ON tg.id_genre = g.id
 		WHERE tg.id_komik = $1
-		ORDER BY g.name
 	`
 	genreRows, err := s.GetDB().Query(ctx, genreQuery, comic.ID)
 	if err != nil {
@@ -441,7 +440,6 @@ func (s *ComicService) loadComicRelationsForComplete(ctx context.Context, comic 
 		FROM "trGenre" tg
 		JOIN "mGenre" g ON tg.id_genre = g.id
 		WHERE tg.id_komik = $1
-		ORDER BY g.name
 	`
 	genreRows, err := s.GetDB().Query(ctx, genreQuery, comic.ID)
 	if err != nil {
@@ -536,13 +534,12 @@ func (s *ComicService) loadComicRelationsForComplete(ctx context.Context, comic 
 
 // loadComicRelationsOld loads genres, authors, artists, formats for a comic - exactly like Next.js
 func (s *ComicService) loadComicRelationsOld(ctx context.Context, comic *models.ComicWithDetails) error {
-	// Load genres
+	// Load genres - EXACTLY like Next.js (NO ORDER BY)
 	genreQuery := `
 		SELECT g.id, g.name
 		FROM "trGenre" tg
 		JOIN "mGenre" g ON tg.id_genre = g.id
 		WHERE tg.id_komik = $1
-		ORDER BY g.name
 	`
 	genreRows, err := s.GetDB().Query(ctx, genreQuery, comic.ID)
 	if err != nil {

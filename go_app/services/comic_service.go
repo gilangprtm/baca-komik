@@ -189,13 +189,13 @@ func (s *ComicService) loadComicsGenres(ctx context.Context, comics []models.Com
 		comicIDs = append(comicIDs, comic.ID)
 	}
 
-	// Build query to get all genres for these comics
+	// Build query to get all genres for these comics - EXACTLY like Next.js (NO ORDER BY)
 	query := `
 		SELECT tg.id_komik, g.id, g.name
 		FROM "trGenre" tg
 		JOIN "mGenre" g ON tg.id_genre = g.id
 		WHERE tg.id_komik = ANY($1)
-		ORDER BY tg.id_komik, g.name
+		ORDER BY tg.id_komik
 	`
 
 	rows, err := s.GetDB().Query(ctx, query, comicIDs)

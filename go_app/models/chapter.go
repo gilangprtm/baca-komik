@@ -111,3 +111,24 @@ type ChapterUserData struct {
 	IsVoted bool `json:"is_voted"`
 	IsRead  bool `json:"is_read"`
 }
+
+// ChapterPagesResponse - EXACT response format from Next.js /api/chapters/[id]/pages
+type ChapterPagesResponse struct {
+	Chapter ChapterInfo   `json:"chapter"`
+	Pages   []ChapterPage `json:"pages"`
+	Count   int           `json:"count"`
+}
+
+// ChapterInfo - Chapter info for pages response
+type ChapterInfo struct {
+	ID            string     `json:"id"`
+	ChapterNumber float64    `json:"chapter_number"`
+	Comic         ComicBasic `json:"comic"`
+}
+
+// ChapterBasicInfo - Basic chapter info from database
+type ChapterBasicInfo struct {
+	ID            string  `json:"id"`
+	ChapterNumber float64 `json:"chapter_number"`
+	IDKomik       string  `json:"id_komik"`
+}
