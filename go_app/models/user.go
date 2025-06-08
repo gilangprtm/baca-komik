@@ -84,7 +84,7 @@ type CreateCommentRequest struct {
 	ParentID  *string `json:"parent_id,omitempty"`
 }
 
-// SuccessResponse represents simple success response
-type SuccessResponse struct {
+// UserSuccessResponse represents simple success response for user operations
+type UserSuccessResponse struct {
 	Success bool `json:"success"`
 }

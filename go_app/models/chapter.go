@@ -84,3 +84,30 @@ type AdjacentChaptersResponse struct {
 	PrevChapters     []Chapter `json:"prev_chapters"`
 	NextChapters     []Chapter `json:"next_chapters"`
 }
+
+// ChapterCompleteResponse - EXACT response format from Next.js /api/chapters/[id]/complete
+type ChapterCompleteResponse struct {
+	Chapter    ChapterWithComic  `json:"chapter"`
+	Pages      []ChapterPage     `json:"pages"`
+	Navigation ChapterNavigation `json:"navigation"`
+	UserData   ChapterUserData   `json:"user_data"`
+}
+
+// ChapterPage - EXACT page format from Next.js trChapter table
+type ChapterPage struct {
+	IDChapter  string `json:"id_chapter"`
+	PageNumber int    `json:"page_number"`
+	PageURL    string `json:"page_url"`
+}
+
+// ChapterNavigation - EXACT navigation format from Next.js
+type ChapterNavigation struct {
+	PrevChapter *ChapterNav `json:"prev_chapter"`
+	NextChapter *ChapterNav `json:"next_chapter"`
+}
+
+// ChapterUserData - EXACT user data format from Next.js /api/chapters/[id]/complete
+type ChapterUserData struct {
+	IsVoted bool `json:"is_voted"`
+	IsRead  bool `json:"is_read"`
+}
