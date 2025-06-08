@@ -4,21 +4,21 @@ import (
 	"time"
 )
 
-// Comic represents the mKomik table structure
+// Comic represents the mKomik table structure (exact match with Next.js database types)
 type Comic struct {
 	ID               string    `json:"id" db:"id"`
 	Title            string    `json:"title" db:"title"`
 	AlternativeTitle *string   `json:"alternative_title" db:"alternative_title"`
-	Description      *string   `json:"synopsis" db:"description"`
+	Description      *string   `json:"description" db:"description"`
 	Status           string    `json:"status" db:"status"`
 	CountryID        string    `json:"country_id" db:"country_id"`
-	ViewCount        int       `json:"view_count" db:"view_count"`
-	VoteCount        int       `json:"vote_count" db:"vote_count"`
-	BookmarkCount    int       `json:"bookmark_count" db:"bookmark_count"`
+	ViewCount        *int      `json:"view_count" db:"view_count"`
+	VoteCount        *int      `json:"vote_count" db:"vote_count"`
+	BookmarkCount    *int      `json:"bookmark_count" db:"bookmark_count"`
 	CoverImageURL    *string   `json:"cover_image_url" db:"cover_image_url"`
-	CreatedDate      time.Time `json:"created_date" db:"created_date"`
-
-	Rank             *float64  `json:"rank,omitempty" db:"rank"`
+	CreatedDate      *time.Time `json:"created_date" db:"created_date"`
+	Rank             *float64  `json:"rank" db:"rank"`
+	ReleaseYear      *int      `json:"release_year" db:"release_year"`
 }
 
 // ComicWithDetails represents comic with additional details

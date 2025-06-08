@@ -41,12 +41,12 @@ func (s *ComicService) GetComics(page, limit int, search, genre, country, sort, 
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Build base query
+	// Build base query - exactly like Next.js: SELECT *, mChapter count, trGenre
 	baseQuery := `
 		SELECT DISTINCT
 			k.id, k.title, k.alternative_title, k.description, k.status,
 			k.country_id, k.view_count, k.vote_count, k.bookmark_count,
-			k.cover_image_url, k.created_date, k.rank,
+			k.cover_image_url, k.created_date, k.rank, k.release_year,
 			(SELECT COUNT(*) FROM "mChapter" c WHERE c.id_komik = k.id) as chapter_count
 		FROM "mKomik" k
 	`
@@ -56,11 +56,12 @@ func (s *ComicService) GetComics(page, limit int, search, genre, country, sort, 
 	var args []interface{}
 	argIndex := 1
 
-	// Search condition
+	// Search condition - exactly like Next.js: title.ilike OR alternative_title.ilike
 	if search != "" {
-		conditions = append(conditions, fmt.Sprintf("(k.title ILIKE $%d OR k.alternative_title ILIKE $%d)", argIndex, argIndex))
-		args = append(args, "%"+search+"%")
-		argIndex++
+		conditions = append(conditions, fmt.Sprintf("(k.title ILIKE $%d OR k.alternative_title ILIKE $%d)", argIndex, argIndex+1))
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
 	}
 
 	// Genre filter
@@ -135,7 +136,7 @@ func (s *ComicService) GetComics(page, limit int, search, genre, country, sort, 
 			&comic.ID, &comic.Title, &comic.AlternativeTitle, &comic.Description,
 			&comic.Status, &comic.CountryID, &comic.ViewCount, &comic.VoteCount,
 			&comic.BookmarkCount, &comic.CoverImageURL, &comic.CreatedDate,
-			&comic.Rank, &comic.ChapterCount,
+			&comic.Rank, &comic.ReleaseYear, &comic.ChapterCount,
 		)
 		if err != nil {
 			s.LogError(err, "Failed to scan comic row", nil)
@@ -148,7 +149,7 @@ func (s *ComicService) GetComics(page, limit int, search, genre, country, sort, 
 	countQuery := strings.Replace(baseQuery, `SELECT DISTINCT
 			k.id, k.title, k.alternative_title, k.description, k.status,
 			k.country_id, k.view_count, k.vote_count, k.bookmark_count,
-			k.cover_image_url, k.created_date, k.rank,
+			k.cover_image_url, k.created_date, k.rank, k.release_year,
 			(SELECT COUNT(*) FROM "mChapter" c WHERE c.id_komik = k.id) as chapter_count`, "SELECT COUNT(DISTINCT k.id)", 1)
 
 	var total int
@@ -237,20 +238,15 @@ func (s *ComicService) GetHomeComics(page, limit int, sort, order string) ([]mod
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Query for home comics with latest chapters
+	// Query for home comics - exactly like Next.js: order by created_date, then sort by latest chapters
 	query := `
-		SELECT DISTINCT
+		SELECT
 			k.id, k.title, k.alternative_title, k.description, k.status,
 			k.country_id, k.view_count, k.vote_count, k.bookmark_count,
-			k.cover_image_url, k.created_date, k.rank,
+			k.cover_image_url, k.created_date, k.rank, k.release_year,
 			(SELECT COUNT(*) FROM "mChapter" c WHERE c.id_komik = k.id) as chapter_count
 		FROM "mKomik" k
-		WHERE EXISTS (SELECT 1 FROM "mChapter" c WHERE c.id_komik = k.id)
-		ORDER BY (
-			SELECT MAX(c.release_date)
-			FROM "mChapter" c
-			WHERE c.id_komik = k.id
-		) DESC
+		ORDER BY k.created_date DESC
 		LIMIT $1 OFFSET $2
 	`
 
@@ -268,7 +264,7 @@ func (s *ComicService) GetHomeComics(page, limit int, sort, order string) ([]mod
 			&comic.ID, &comic.Title, &comic.AlternativeTitle, &comic.Description,
 			&comic.Status, &comic.CountryID, &comic.ViewCount, &comic.VoteCount,
 			&comic.BookmarkCount, &comic.CoverImageURL, &comic.CreatedDate,
-			&comic.Rank, &comic.ChapterCount,
+			&comic.Rank, &comic.ReleaseYear, &comic.ChapterCount,
 		)
 		if err != nil {
 			s.LogError(err, "Failed to scan home comic row", nil)
@@ -278,11 +274,7 @@ func (s *ComicService) GetHomeComics(page, limit int, sort, order string) ([]mod
 	}
 
 	// Get total count
-	countQuery := `
-		SELECT COUNT(DISTINCT k.id)
-		FROM "mKomik" k
-		WHERE EXISTS (SELECT 1 FROM "mChapter" c WHERE c.id_komik = k.id)
-	`
+	countQuery := `SELECT COUNT(*) FROM "mKomik"`
 
 	var total int
 	err = s.GetDB().QueryRow(ctx, countQuery).Scan(&total)
@@ -321,10 +313,10 @@ func (s *ComicService) loadLatestChapters(ctx context.Context, comics []models.C
 		comicIDs = append(comicIDs, comic.ID)
 	}
 
-	// Query to get latest chapters for each comic
+	// Query to get latest chapters for each comic - exactly like Next.js (no title column)
 	query := `
 		SELECT DISTINCT ON (c.id_komik)
-			c.id_komik, c.id, c.chapter_number, c.title, c.release_date, c.thumbnail_image_url
+			c.id_komik, c.id, c.chapter_number, c.release_date, c.thumbnail_image_url, c.created_date
 		FROM "mChapter" c
 		WHERE c.id_komik = ANY($1)
 		ORDER BY c.id_komik, c.release_date DESC, c.chapter_number DESC
@@ -341,7 +333,7 @@ func (s *ComicService) loadLatestChapters(ctx context.Context, comics []models.C
 	for rows.Next() {
 		var comicID string
 		var chapter models.Chapter
-		if err := rows.Scan(&comicID, &chapter.ID, &chapter.ChapterNumber, &chapter.Title, &chapter.ReleaseDate, &chapter.ThumbnailImageURL); err != nil {
+		if err := rows.Scan(&comicID, &chapter.ID, &chapter.ChapterNumber, &chapter.ReleaseDate, &chapter.ThumbnailImageURL, &chapter.CreatedDate); err != nil {
 			continue
 		}
 		chapter.IDKomik = comicID

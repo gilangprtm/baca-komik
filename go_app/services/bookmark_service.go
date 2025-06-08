@@ -106,18 +106,18 @@ func (s *BookmarkService) GetDetailedBookmarks(userID string, page, limit int) (
 	// Calculate offset
 	offset := (page - 1) * limit
 
-	// Get bookmarks with comic details and latest chapter
+	// Get bookmarks with comic details and latest chapter - exactly like Next.js (no title column)
 	query := `
-		SELECT 
+		SELECT
 			b.id_user || '-' || b.id_komik as bookmark_id,
 			k.id, k.title, k.alternative_title, k.description, k.status,
 			k.country_id, k.view_count, k.vote_count, k.bookmark_count,
-			k.cover_image_url, k.created_date,
-			lc.id, lc.chapter_number, lc.title, lc.release_date
+			k.cover_image_url, k.created_date, k.rank, k.release_year,
+			lc.id, lc.chapter_number, lc.release_date, lc.created_date
 		FROM "trUserBookmark" b
 		JOIN "mKomik" k ON b.id_komik = k.id
 		LEFT JOIN LATERAL (
-			SELECT id, chapter_number, title, release_date
+			SELECT id, chapter_number, release_date, created_date
 			FROM "mChapter" c
 			WHERE c.id_komik = k.id
 			ORDER BY c.release_date DESC, c.chapter_number DESC
@@ -148,8 +148,8 @@ func (s *BookmarkService) GetDetailedBookmarks(userID string, page, limit int) (
 			&bookmark.Comic.ID, &bookmark.Comic.Title, &bookmark.Comic.AlternativeTitle,
 			&bookmark.Comic.Description, &bookmark.Comic.Status, &bookmark.Comic.CountryID,
 			&bookmark.Comic.ViewCount, &bookmark.Comic.VoteCount, &bookmark.Comic.BookmarkCount,
-			&bookmark.Comic.CoverImageURL, &bookmark.Comic.CreatedDate,
-			&latestChapter.ID, &latestChapter.ChapterNumber, &latestChapter.Title, &latestChapter.ReleaseDate,
+			&bookmark.Comic.CoverImageURL, &bookmark.Comic.CreatedDate, &bookmark.Comic.Rank, &bookmark.Comic.ReleaseYear,
+			&latestChapter.ID, &latestChapter.ChapterNumber, &latestChapter.ReleaseDate, &latestChapter.CreatedDate,
 		)
 		if err != nil {
 			s.LogError(err, "Failed to scan detailed bookmark row", nil)
