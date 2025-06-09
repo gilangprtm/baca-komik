@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"baca-komik-api/database"
 )
 
 // saveGenres saves genres to database
@@ -512,28 +515,55 @@ func (c *Crawler) saveChaptersList(chapters []ExternalChapter, mangaID string) e
 	}
 
 	for _, chapter := range chapters {
-		query := `
-			INSERT INTO "mChapter" (
-				id, id_komik, chapter_number, chapter_title, release_date,
-				view_count, thumbnail_image_url, created_date, external_id
-			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-			ON CONFLICT (external_id) DO UPDATE SET
-				chapter_number = EXCLUDED.chapter_number,
-				chapter_title = EXCLUDED.chapter_title,
-				release_date = EXCLUDED.release_date,
-				view_count = EXCLUDED.view_count,
-				thumbnail_image_url = EXCLUDED.thumbnail_image_url,
-				updated_at = NOW()
+		// Check if chapter already exists by external_id OR by (id_komik, chapter_number)
+		var existingID string
+		checkQuery := `
+			SELECT id FROM "mChapter"
+			WHERE external_id = $1 OR (id_komik = $2 AND chapter_number = $3)
+			LIMIT 1
 		`
+		err := tx.QueryRow(ctx, checkQuery, chapter.ID, internalMangaID, chapter.ChapterNumber).Scan(&existingID)
 
-		newID := generateUUID()
-		if _, err := tx.Exec(ctx, query,
-			newID, internalMangaID, chapter.ChapterNumber, chapter.ChapterTitle,
-			chapter.ReleaseDate, chapter.ViewCount, chapter.ThumbnailImageURL,
-			chapter.CreatedAt, chapter.ID,
-		); err != nil {
-			return fmt.Errorf("failed to insert chapter %s: %w", chapter.ID, err)
+		if err != nil && err != pgx.ErrNoRows {
+			return fmt.Errorf("failed to check existing chapter %s: %w", chapter.ID, err)
+		}
+
+		if existingID != "" {
+			// Update existing chapter
+			updateQuery := `
+				UPDATE "mChapter" SET
+					chapter_number = $1,
+					chapter_title = $2,
+					release_date = $3,
+					view_count = $4,
+					thumbnail_image_url = $5,
+					external_id = $6,
+					updated_at = NOW()
+				WHERE id = $7
+			`
+			if _, err := tx.Exec(ctx, updateQuery,
+				chapter.ChapterNumber, chapter.ChapterTitle, chapter.ReleaseDate,
+				chapter.ViewCount, chapter.ThumbnailImageURL, chapter.ID, existingID,
+			); err != nil {
+				return fmt.Errorf("failed to update chapter %s: %w", chapter.ID, err)
+			}
+		} else {
+			// Insert new chapter
+			insertQuery := `
+				INSERT INTO "mChapter" (
+					id, id_komik, chapter_number, chapter_title, release_date,
+					view_count, thumbnail_image_url, created_date, external_id
+				)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			`
+			newID := generateUUID()
+			if _, err := tx.Exec(ctx, insertQuery,
+				newID, internalMangaID, chapter.ChapterNumber, chapter.ChapterTitle,
+				chapter.ReleaseDate, chapter.ViewCount, chapter.ThumbnailImageURL,
+				chapter.CreatedAt, chapter.ID,
+			); err != nil {
+				return fmt.Errorf("failed to insert chapter %s: %w", chapter.ID, err)
+			}
 		}
 	}
 
@@ -568,7 +598,7 @@ func (c *Crawler) crawlPagesForChapter(chapterID string) error {
 	return c.saveChapterPages(chapterID, &response.Data)
 }
 
-// saveChapterPages saves chapter pages data to database
+// saveChapterPages saves chapter pages data to trChapter table
 func (c *Crawler) saveChapterPages(externalChapterID string, detail *ExternalChapterDetail) error {
 	ctx := context.Background()
 	tx, err := c.db.Pool.Begin(ctx)
@@ -584,29 +614,37 @@ func (c *Crawler) saveChapterPages(externalChapterID string, detail *ExternalCha
 		return fmt.Errorf("failed to get internal chapter ID for %s: %w", externalChapterID, err)
 	}
 
-	// Prepare pages data as JSON
-	pagesData := map[string]interface{}{
-		"base_url":     detail.BaseURL,
-		"base_url_low": detail.BaseURLLow,
-		"path":         detail.Chapter.Path,
-		"data":         detail.Chapter.Data,
+	log.Printf("Found internal chapter ID %s for external ID %s", internalChapterID, externalChapterID)
+
+	// Delete existing pages for this chapter
+	deleteQuery := `DELETE FROM "trChapter" WHERE id_chapter = $1`
+	if _, err := tx.Exec(ctx, deleteQuery, internalChapterID); err != nil {
+		return fmt.Errorf("failed to delete existing pages: %w", err)
 	}
 
-	pagesJSON, err := json.Marshal(pagesData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal pages data: %w", err)
-	}
-
-	// Update chapter with pages data
-	query := `
-		UPDATE "mChapter"
-		SET pages_data = $1, updated_at = NOW()
-		WHERE id = $2
+	// Insert each page as separate record in trChapter
+	insertQuery := `
+		INSERT INTO "trChapter" (
+			id, id_chapter, page_number, image_url, image_url_low, created_date
+		) VALUES ($1, $2, $3, $4, $5, NOW())
 	`
 
-	if _, err := tx.Exec(ctx, query, pagesJSON, internalChapterID); err != nil {
-		return fmt.Errorf("failed to update chapter pages: %w", err)
+	for i, filename := range detail.Chapter.Data {
+		pageID := generateUUID()
+		pageNumber := i + 1
+
+		// Construct full image URLs
+		imageURL := detail.BaseURL + detail.Chapter.Path + filename
+		imageURLLow := detail.BaseURLLow + detail.Chapter.Path + filename
+
+		if _, err := tx.Exec(ctx, insertQuery,
+			pageID, internalChapterID, pageNumber, imageURL, imageURLLow,
+		); err != nil {
+			return fmt.Errorf("failed to insert page %d for chapter %s: %w", pageNumber, externalChapterID, err)
+		}
 	}
+
+	log.Printf("Inserted %d pages for chapter %s", len(detail.Chapter.Data), externalChapterID)
 
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
@@ -638,7 +676,14 @@ func (c *Crawler) getAllMangaIDs() ([]string, error) {
 
 func (c *Crawler) getAllChapterIDs() ([]string, error) {
 	ctx := context.Background()
-	rows, err := c.db.Pool.Query(ctx, `SELECT external_id FROM "mChapter" WHERE external_id IS NOT NULL AND pages_data IS NULL`)
+	query := `
+		SELECT mc.external_id
+		FROM "mChapter" mc
+		LEFT JOIN "trChapter" tc ON mc.id = tc.id_chapter
+		WHERE mc.external_id IS NOT NULL
+		AND tc.id_chapter IS NULL
+	`
+	rows, err := c.db.Pool.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -654,4 +699,9 @@ func (c *Crawler) getAllChapterIDs() ([]string, error) {
 	}
 
 	return ids, rows.Err()
+}
+
+// Helper function to generate UUID
+func generateUUID() string {
+	return uuid.New().String()
 }
