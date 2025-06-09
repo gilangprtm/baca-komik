@@ -153,6 +153,7 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 				crawler.POST("/stop", crawlerHandler.StopCrawling)
 				crawler.POST("/resume", crawlerHandler.ResumeCrawling)
 				crawler.GET("/history", crawlerHandler.GetCrawlHistory)
+				crawler.GET("/jobs/:id", crawlerHandler.GetJobStatus)
 			}
 		}
 	}

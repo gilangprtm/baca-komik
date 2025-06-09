@@ -32,9 +32,13 @@ Start a new crawling job.
 ```json
 {
   "success": true,
-  "message": "Crawling job started: manga",
+  "message": "Crawling job started in background: manga",
   "start_time": "2025-06-09T12:00:00Z",
-  "job_id": "crawl_manga_1717934400"
+  "job_id": "crawl_manga_1717934400",
+  "data": {
+    "job_id": "crawl_manga_1717934400",
+    "status": "running"
+  }
 }
 ```
 
@@ -156,7 +160,55 @@ curl -X POST https://baca-komik-production.up.railway.app/api/crawler/resume
 
 **GET** `/history`
 
-Get crawling history and statistics (coming soon).
+Get crawling history and statistics.
+
+#### Response:
+
+```json
+{
+  "success": true,
+  "message": "Crawl history retrieved",
+  "data": {
+    "jobs": [
+      {
+        "id": "crawl_chapters_1717934400",
+        "mode": "chapters",
+        "status": "running",
+        "start_time": "2025-06-09T12:00:00Z",
+        "progress": {
+          "current_step": "Processing chapters...",
+          "percentage": 45.5
+        }
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+### 6. 🔍 Get Job Status
+
+**GET** `/jobs/{job_id}`
+
+Get status of specific crawling job.
+
+#### Response:
+
+```json
+{
+  "success": true,
+  "message": "Job status retrieved",
+  "data": {
+    "job_id": "crawl_chapters_1717934400",
+    "mode": "chapters",
+    "status": "running",
+    "current_step": "Processing chapters...",
+    "progress_percent": 45.5,
+    "elapsed_time": "15m30s",
+    "start_time": "2025-06-09T12:00:00Z"
+  }
+}
+```
 
 ## 🎯 Crawling Modes
 
