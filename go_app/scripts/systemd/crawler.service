@@ -1,0 +1,34 @@
+[Unit]
+Description=Baca Komik Crawler Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/baca-komik-crawler
+ExecStart=/opt/baca-komik-crawler/crawler --mode=all --verbose
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=crawler
+
+# Environment
+Environment=NODE_ENV=production
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/baca-komik-crawler
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=2G
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target
