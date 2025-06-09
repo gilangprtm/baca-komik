@@ -633,9 +633,10 @@ func (c *Crawler) CrawlAllChapters() error {
 		log.Printf("Processing chapters for manga %d/%d (ID: %s)...", i+1, len(mangaIDs), mangaID)
 
 		if err := c.CrawlChaptersForManga(mangaID); err != nil {
-			log.Printf("Failed to crawl chapters for manga %s: %v", mangaID, err)
+			log.Printf("ERROR: Failed to crawl chapters for manga %s: %v", mangaID, err)
 			totalFailed++
 		} else {
+			log.Printf("SUCCESS: Crawled chapters for manga %s", mangaID)
 			totalSuccess++
 		}
 		totalProcessed++
@@ -651,6 +652,7 @@ func (c *Crawler) CrawlAllChapters() error {
 
 // CrawlChaptersForManga crawls chapters for specific manga
 func (c *Crawler) CrawlChaptersForManga(mangaID string) error {
+	log.Printf("Starting to crawl chapters for manga: %s", mangaID)
 	page := 1
 	totalChapters := 0
 
@@ -658,23 +660,19 @@ func (c *Crawler) CrawlChaptersForManga(mangaID string) error {
 		url := fmt.Sprintf("%s/chapter/%s/list?page=%d&page_size=24&sort_by=chapter_number&sort_order=desc",
 			c.config.BaseURL, mangaID, page)
 
-		var response PaginatedResponse
-		if err := c.fetchJSON(url, &response); err != nil {
+		log.Printf("Fetching chapters from URL: %s", url)
+
+		// Chapters API returns array directly, not paginated response
+		var chapters []ExternalChapter
+		if err := c.fetchJSON(url, &chapters); err != nil {
+			log.Printf("ERROR: Failed to fetch from URL %s: %v", url, err)
 			return fmt.Errorf("failed to fetch chapters for manga %s page %d: %w", mangaID, page, err)
 		}
 
-		// Parse chapters data
-		chaptersData, err := json.Marshal(response.Data.Data)
-		if err != nil {
-			return fmt.Errorf("failed to marshal chapters data: %w", err)
-		}
-
-		var chapters []ExternalChapter
-		if err := json.Unmarshal(chaptersData, &chapters); err != nil {
-			return fmt.Errorf("failed to unmarshal chapters: %w", err)
-		}
+		log.Printf("Found %d chapters on page %d for manga %s", len(chapters), page, mangaID)
 
 		if len(chapters) == 0 {
+			log.Printf("No more chapters found, breaking loop")
 			break // No more chapters
 		}
 
@@ -691,8 +689,9 @@ func (c *Crawler) CrawlChaptersForManga(mangaID string) error {
 		totalChapters += len(chapters)
 		page++
 
-		// Check if we've reached the last page
-		if page > response.Data.Pagination.TotalPage {
+		// If we got less than page_size chapters, we've reached the end
+		if len(chapters) < 24 {
+			log.Printf("Reached end of chapters (got %d < 24), breaking loop", len(chapters))
 			break
 		}
 
