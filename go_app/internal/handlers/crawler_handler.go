@@ -55,39 +55,52 @@ func (h *CrawlerHandler) StartCrawling(c *gin.Context) {
 
 	jobID := fmt.Sprintf("crawl_%s_%d", req.Mode, time.Now().Unix())
 	
-	// Start crawling in background goroutine
-	go func() {
-		switch req.Mode {
-		case "genres":
-			h.crawler.CrawlGenres()
-		case "formats":
-			h.crawler.CrawlFormats()
-		case "types":
-			h.crawler.CrawlTypes()
-		case "authors":
-			h.crawler.CrawlAuthors()
-		case "artists":
-			h.crawler.CrawlArtists()
-		case "manga":
-			h.crawler.CrawlManga(req.StartPage, req.EndPage)
-		case "chapters":
-			if req.MangaID == "all" {
-				h.crawler.CrawlAllChapters()
-			} else if req.MangaID != "" {
-				h.crawler.CrawlChaptersForManga(req.MangaID)
-			}
-		case "pages":
-			h.crawler.CrawlAllPages()
-		case "all":
-			h.crawler.CrawlAll()
-		case "auto":
-			h.crawler.CrawlAllMasterData()
+	// Start crawling immediately (not in goroutine for Railway compatibility)
+	var err error
+	switch req.Mode {
+	case "genres":
+		err = h.crawler.CrawlGenres()
+	case "formats":
+		err = h.crawler.CrawlFormats()
+	case "types":
+		err = h.crawler.CrawlTypes()
+	case "authors":
+		err = h.crawler.CrawlAuthors()
+	case "artists":
+		err = h.crawler.CrawlArtists()
+	case "manga":
+		err = h.crawler.CrawlManga(req.StartPage, req.EndPage)
+	case "chapters":
+		if req.MangaID == "all" {
+			err = h.crawler.CrawlAllChapters()
+		} else if req.MangaID != "" {
+			err = h.crawler.CrawlChaptersForManga(req.MangaID)
 		}
-	}()
+	case "pages":
+		err = h.crawler.CrawlAllPages()
+	case "all":
+		err = h.crawler.CrawlAll()
+	case "auto":
+		err = h.crawler.CrawlAllMasterData()
+	default:
+		c.JSON(http.StatusBadRequest, CrawlResponse{
+			Success: false,
+			Message: fmt.Sprintf("Unknown mode: %s", req.Mode),
+		})
+		return
+	}
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, CrawlResponse{
+			Success: false,
+			Message: fmt.Sprintf("Crawling failed: %v", err),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, CrawlResponse{
 		Success:   true,
-		Message:   fmt.Sprintf("Crawling job started: %s", req.Mode),
+		Message:   fmt.Sprintf("Crawling completed successfully: %s", req.Mode),
 		StartTime: time.Now(),
 		JobID:     jobID,
 	})
