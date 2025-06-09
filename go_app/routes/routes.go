@@ -7,6 +7,7 @@ import (
 	"baca-komik-api/config"
 	"baca-komik-api/database"
 	"baca-komik-api/handlers"
+	"baca-komik-api/internal/crawler"
 	"baca-komik-api/middleware"
 )
 
@@ -21,6 +22,7 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 	var voteHandler *handlers.VoteHandler
 	var commentHandler *handlers.CommentHandler
 	var setupHandler *handlers.SetupHandler
+	var crawlerHandler *handlers.CrawlerHandler
 
 	if db != nil {
 		comicHandler = handlers.NewComicHandler(db)
@@ -29,6 +31,23 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 		voteHandler = handlers.NewVoteHandler(db)
 		commentHandler = handlers.NewCommentHandler(db)
 		setupHandler = handlers.NewSetupHandler(db)
+
+		// Initialize crawler
+		crawlerConfig := &crawler.Config{
+			BaseURL:   "https://api.shngm.io/v1",
+			BatchSize: 10,
+			DryRun:    false,
+			Verbose:   true,
+			Headers: map[string]string{
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+				"Origin":     "https://app.shinigami.asia",
+				"Referer":    "https://app.shinigami.asia/",
+				"Sec-Fetch-Mode": "cors",
+				"Sec-Fetch-Site": "cross-site",
+			},
+		}
+		crawlerInstance := crawler.New(db, crawlerConfig)
+		crawlerHandler = handlers.NewCrawlerHandler(crawlerInstance)
 	}
 
 	// Health check endpoint
@@ -122,6 +141,18 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 		// Setup route - EXACTLY like Next.js /api/setup
 		if setupHandler != nil {
 			v1.GET("/setup", setupHandler.CreateAdminUser)
+		}
+
+		// Crawler routes (admin only)
+		if crawlerHandler != nil {
+			crawler := v1.Group("/crawler")
+			{
+				crawler.POST("/start", crawlerHandler.StartCrawling)
+				crawler.GET("/status", crawlerHandler.GetCrawlStatus)
+				crawler.POST("/stop", crawlerHandler.StopCrawling)
+				crawler.POST("/resume", crawlerHandler.ResumeCrawling)
+				crawler.GET("/history", crawlerHandler.GetCrawlHistory)
+			}
 		}
 	}
 }
