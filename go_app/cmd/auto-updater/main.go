@@ -44,7 +44,7 @@ func main() {
 	cfg := config.Load()
 
 	// Initialize database
-	db, err := database.NewConnection(cfg)
+	db, err := database.Connect(cfg)
 	if err != nil {
 		log.Fatalf("❌ Failed to connect to database: %v", err)
 	}

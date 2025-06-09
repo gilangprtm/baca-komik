@@ -169,6 +169,11 @@ func (c *Crawler) saveArtists(artists []ExternalArtist) error {
 	return nil
 }
 
+// SaveMangaList saves manga list to database with duplicate detection (public method)
+func (c *Crawler) SaveMangaList(mangaList []ExternalManga) error {
+	return c.saveMangaList(mangaList)
+}
+
 // saveMangaList saves manga list to database with duplicate detection
 func (c *Crawler) saveMangaList(mangaList []ExternalManga) error {
 	ctx := context.Background()
@@ -568,6 +573,11 @@ func (c *Crawler) saveChaptersList(chapters []ExternalChapter, mangaID string) e
 	}
 
 	return nil
+}
+
+// CrawlPagesForChapter crawls and saves pages for a specific chapter (public method)
+func (c *Crawler) CrawlPagesForChapter(chapterID string) error {
+	return c.crawlPagesForChapter(chapterID)
 }
 
 // crawlPagesForChapter crawls and saves pages for a specific chapter

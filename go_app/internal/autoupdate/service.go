@@ -14,7 +14,7 @@ import (
 
 // AutoUpdateService handles automatic updates from external API
 type AutoUpdateService struct {
-	db       *database.Database
+	db       *database.DB
 	crawler  *crawler.Crawler
 	config   *Config
 	stopChan chan bool
@@ -80,7 +80,7 @@ type UpdatedManga struct {
 }
 
 // NewAutoUpdateService creates a new auto-update service
-func NewAutoUpdateService(db *database.Database, crawler *crawler.Crawler) *AutoUpdateService {
+func NewAutoUpdateService(db *database.DB, crawler *crawler.Crawler) *AutoUpdateService {
 	config := &Config{
 		BaseURL:       "https://api.shngm.io/v1",
 		Interval:      5 * time.Minute,
@@ -295,21 +295,50 @@ func (s *AutoUpdateService) crawlNewManga(manga UpdatedManga) error {
 	log.Printf("🚀 Crawling new manga: %s", manga.Title)
 
 	// Convert to crawler format and save
+	// Helper function to convert string to *string
+	stringPtr := func(s string) *string {
+		if s == "" {
+			return nil
+		}
+		return &s
+	}
+
+	// Helper function to convert int to *int
+	intPtr := func(i int) *int {
+		return &i
+	}
+
+	// Convert status string to int
+	statusInt := 1 // Default to "On Going"
+	switch manga.Status {
+	case "On Going":
+		statusInt = 1
+	case "End":
+		statusInt = 2
+	case "Hiatus":
+		statusInt = 3
+	case "Break":
+		statusInt = 4
+	}
+
+	// Convert release year to string pointer
+	releaseYearStr := fmt.Sprintf("%d", manga.ReleaseYear)
+
 	mangaList := []crawler.ExternalManga{
 		{
 			ID:               manga.ID,
 			Title:            manga.Title,
-			AlternativeTitle: manga.AlternativeTitle,
-			Description:      manga.Description,
-			Status:           manga.Status,
-			Country:          manga.Country,
-			ViewCount:        manga.ViewCount,
-			VoteCount:        manga.VoteCount,
-			BookmarkCount:    manga.BookmarkCount,
-			CoverImageURL:    manga.CoverImageURL,
-			CreatedAt:        manga.CreatedAt,
-			Rank:             manga.Rank,
-			ReleaseYear:      manga.ReleaseYear,
+			AlternativeTitle: stringPtr(manga.AlternativeTitle),
+			Description:      stringPtr(manga.Description),
+			Status:           statusInt,
+			CountryID:        manga.Country,
+			ViewCount:        intPtr(manga.ViewCount),
+			VoteCount:        intPtr(manga.VoteCount),
+			BookmarkCount:    intPtr(manga.BookmarkCount),
+			CoverImageURL:    stringPtr(manga.CoverImageURL),
+			CreatedAt:        &manga.CreatedAt,
+			Rank:             nil, // Set to nil for now
+			ReleaseYear:      &releaseYearStr,
 		},
 	}
 
