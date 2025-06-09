@@ -7,6 +7,7 @@ import (
 	"baca-komik-api/config"
 	"baca-komik-api/database"
 	"baca-komik-api/handlers"
+	"baca-komik-api/internal/autoupdate"
 	"baca-komik-api/internal/crawler"
 	crawlerHandlers "baca-komik-api/internal/handlers"
 	"baca-komik-api/middleware"
@@ -24,6 +25,7 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 	var commentHandler *handlers.CommentHandler
 	var setupHandler *handlers.SetupHandler
 	var crawlerHandler *crawlerHandlers.CrawlerHandler
+	var autoUpdateHandler *crawlerHandlers.AutoUpdateHandler
 
 	if db != nil {
 		comicHandler = handlers.NewComicHandler(db)
@@ -49,6 +51,10 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 		}
 		crawlerInstance := crawler.New(db, crawlerConfig)
 		crawlerHandler = crawlerHandlers.NewCrawlerHandler(crawlerInstance)
+
+		// Initialize auto-update service
+		autoUpdateService := autoupdate.NewAutoUpdateService(db, crawlerInstance)
+		autoUpdateHandler = crawlerHandlers.NewAutoUpdateHandler(autoUpdateService)
 	}
 
 	// Health check endpoint
@@ -154,6 +160,18 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 				crawler.POST("/resume", crawlerHandler.ResumeCrawling)
 				crawler.GET("/history", crawlerHandler.GetCrawlHistory)
 				crawler.GET("/jobs/:id", crawlerHandler.GetJobStatus)
+			}
+		}
+
+		// Auto-Update routes (admin only)
+		if autoUpdateHandler != nil {
+			autoUpdate := v1.Group("/auto-update")
+			{
+				autoUpdate.POST("/start", autoUpdateHandler.StartAutoUpdate)
+				autoUpdate.POST("/stop", autoUpdateHandler.StopAutoUpdate)
+				autoUpdate.GET("/status", autoUpdateHandler.GetAutoUpdateStatus)
+				autoUpdate.PUT("/config", autoUpdateHandler.UpdateAutoUpdateConfig)
+				autoUpdate.POST("/trigger", autoUpdateHandler.TriggerManualUpdate)
 			}
 		}
 	}
