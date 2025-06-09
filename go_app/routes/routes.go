@@ -8,6 +8,7 @@ import (
 	"baca-komik-api/database"
 	"baca-komik-api/handlers"
 	"baca-komik-api/internal/crawler"
+	crawlerHandlers "baca-komik-api/internal/handlers"
 	"baca-komik-api/middleware"
 )
 
@@ -22,7 +23,7 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 	var voteHandler *handlers.VoteHandler
 	var commentHandler *handlers.CommentHandler
 	var setupHandler *handlers.SetupHandler
-	var crawlerHandler *handlers.CrawlerHandler
+	var crawlerHandler *crawlerHandlers.CrawlerHandler
 
 	if db != nil {
 		comicHandler = handlers.NewComicHandler(db)
@@ -47,7 +48,7 @@ func Setup(router *gin.Engine, db *database.DB, cfg *config.Config) {
 			},
 		}
 		crawlerInstance := crawler.New(db, crawlerConfig)
-		crawlerHandler = handlers.NewCrawlerHandler(crawlerInstance)
+		crawlerHandler = crawlerHandlers.NewCrawlerHandler(crawlerInstance)
 	}
 
 	// Health check endpoint
