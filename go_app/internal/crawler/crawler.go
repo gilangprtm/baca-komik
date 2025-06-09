@@ -657,17 +657,21 @@ func (c *Crawler) CrawlChaptersForManga(mangaID string) error {
 	totalChapters := 0
 
 	for {
-		url := fmt.Sprintf("%s/chapter/%s/list?page=%d&page_size=24&sort_by=chapter_number&sort_order=desc",
+		url := fmt.Sprintf("%s/v1/chapter/%s/list?page=%d&page_size=24&sort_by=chapter_number&sort_order=desc",
 			c.config.BaseURL, mangaID, page)
 
 		log.Printf("Fetching chapters from URL: %s", url)
 
-		// Chapters API returns array directly, not paginated response
-		var chapters []ExternalChapter
-		if err := c.fetchJSON(url, &chapters); err != nil {
+		var response ChaptersResponse
+		if err := c.fetchJSON(url, &response); err != nil {
 			log.Printf("ERROR: Failed to fetch from URL %s: %v", url, err)
 			return fmt.Errorf("failed to fetch chapters for manga %s page %d: %w", mangaID, page, err)
 		}
+
+		log.Printf("API Response retcode: %d, message: %s", response.RetCode, response.Message)
+
+		// Chapters are directly in response.Data
+		chapters := response.Data
 
 		log.Printf("Found %d chapters on page %d for manga %s", len(chapters), page, mangaID)
 
@@ -689,9 +693,9 @@ func (c *Crawler) CrawlChaptersForManga(mangaID string) error {
 		totalChapters += len(chapters)
 		page++
 
-		// If we got less than page_size chapters, we've reached the end
-		if len(chapters) < 24 {
-			log.Printf("Reached end of chapters (got %d < 24), breaking loop", len(chapters))
+		// Check if we've reached the last page using pagination metadata from Meta
+		if response.Meta.TotalPage != nil && page > *response.Meta.TotalPage {
+			log.Printf("Reached last page (%d/%d), breaking loop", page-1, *response.Meta.TotalPage)
 			break
 		}
 

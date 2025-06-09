@@ -546,7 +546,7 @@ func (c *Crawler) saveChaptersList(chapters []ExternalChapter, mangaID string) e
 
 // crawlPagesForChapter crawls and saves pages for a specific chapter
 func (c *Crawler) crawlPagesForChapter(chapterID string) error {
-	url := fmt.Sprintf("%s/chapter/detail/%s", c.config.BaseURL, chapterID)
+	url := fmt.Sprintf("%s/v1/chapter/detail/%s", c.config.BaseURL, chapterID)
 
 	var response struct {
 		RetCode int     `json:"retcode"`

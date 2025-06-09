@@ -32,6 +32,14 @@ type PaginatedResponse struct {
 	} `json:"data"`
 }
 
+// Chapters response structure (different from manga list)
+type ChaptersResponse struct {
+	RetCode int               `json:"retcode"`
+	Message string            `json:"message"`
+	Meta    APIMeta           `json:"meta"`
+	Data    []ExternalChapter `json:"data"`
+}
+
 // Manga list response (different structure)
 type MangaListResponse struct {
 	RetCode int             `json:"retcode"`
