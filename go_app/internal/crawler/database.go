@@ -2,15 +2,11 @@ package crawler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"baca-komik-api/database"
 )
 
 // saveGenres saves genres to database
@@ -701,7 +697,4 @@ func (c *Crawler) getAllChapterIDs() ([]string, error) {
 	return ids, rows.Err()
 }
 
-// Helper function to generate UUID
-func generateUUID() string {
-	return uuid.New().String()
-}
+
