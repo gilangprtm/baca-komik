@@ -621,20 +621,18 @@ func (c *Crawler) saveChapterPages(externalChapterID string, detail *ExternalCha
 	// Insert each page as separate record in trChapter
 	insertQuery := `
 		INSERT INTO "trChapter" (
-			id, id_chapter, page_number, image_url, image_url_low, created_date
-		) VALUES ($1, $2, $3, $4, $5, NOW())
+			id_chapter, page_number, page_url
+		) VALUES ($1, $2, $3)
 	`
 
 	for i, filename := range detail.Chapter.Data {
-		pageID := generateUUID()
 		pageNumber := i + 1
 
-		// Construct full image URLs
-		imageURL := detail.BaseURL + detail.Chapter.Path + filename
-		imageURLLow := detail.BaseURLLow + detail.Chapter.Path + filename
+		// Construct full image URL (use base URL, not low quality for pages)
+		pageURL := detail.BaseURL + detail.Chapter.Path + filename
 
 		if _, err := tx.Exec(ctx, insertQuery,
-			pageID, internalChapterID, pageNumber, imageURL, imageURLLow,
+			internalChapterID, pageNumber, pageURL,
 		); err != nil {
 			return fmt.Errorf("failed to insert page %d for chapter %s: %w", pageNumber, externalChapterID, err)
 		}
