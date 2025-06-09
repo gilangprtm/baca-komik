@@ -657,7 +657,7 @@ func (c *Crawler) CrawlChaptersForManga(mangaID string) error {
 	totalChapters := 0
 
 	for {
-		url := fmt.Sprintf("%s/v1/chapter/%s/list?page=%d&page_size=24&sort_by=chapter_number&sort_order=desc",
+		url := fmt.Sprintf("%s/chapter/%s/list?page=%d&page_size=24&sort_by=chapter_number&sort_order=desc",
 			c.config.BaseURL, mangaID, page)
 
 		log.Printf("Fetching chapters from URL: %s", url)
