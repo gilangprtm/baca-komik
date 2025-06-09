@@ -306,3 +306,60 @@ curl -X POST .../api/crawler/start -d '{"mode": "manga", "start_page": 1, "end_p
 - ✅ Status returns "No active crawling session"
 - ✅ Database contains new records
 - ✅ No checkpoint file exists
+
+## 🔄 **AUTO-UPDATE SERVICE**
+
+### **Real-time Updates (5 menit interval):**
+
+Monitors Shinigami API for new manga and chapters automatically.
+
+```bash
+# Start auto-updater as background service
+go run cmd/auto-updater/main.go
+
+# Custom interval (2 minutes)
+go run cmd/auto-updater/main.go -interval=2m
+
+# With pages crawling enabled
+go run cmd/auto-updater/main.go -crawl-pages
+```
+
+### **API Endpoints:**
+
+```bash
+# Start auto-update service
+POST /api/auto-update/start
+
+# Stop auto-update service
+POST /api/auto-update/stop
+
+# Get service status
+GET /api/auto-update/status
+
+# Update configuration
+PUT /api/auto-update/config
+
+# Trigger manual update
+POST /api/auto-update/trigger
+```
+
+### **Features:**
+
+- ✅ **Automatic Detection**: New manga & chapters
+- ✅ **Real-time Updates**: 5 menit interval (configurable)
+- ✅ **Smart Crawling**: Only crawl new content
+- ✅ **Background Service**: Runs continuously
+- ✅ **API Control**: Start/stop via REST API
+
+### **Monitoring Endpoint:**
+
+```
+https://api.shngm.io/v1/manga/list?is_update=true&sort=latest&sort_order=desc
+```
+
+### **How It Works:**
+
+1. **Fetch Updates**: Query external API every 5 minutes
+2. **Compare Database**: Check for new manga/chapters
+3. **Auto-Crawl**: Automatically crawl new content
+4. **Background Processing**: Runs continuously without manual intervention
