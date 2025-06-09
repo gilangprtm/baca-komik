@@ -9,6 +9,9 @@ High-performance Go API for BacaKomik application, migrated from Next.js for bet
 - **Compatible**: Maintains exact same response format as Next.js API
 - **Secure**: JWT authentication with Supabase Auth integration
 - **Production Ready**: Optimized for Railway deployment
+- **🤖 Automated Crawler**: Built-in manga data crawler with HTTP API
+- **📊 Real-time Monitoring**: Progress tracking and checkpoint system
+- **🔄 Resume Capability**: Auto-resume interrupted crawling jobs
 
 ## 📁 Project Structure
 
@@ -22,7 +25,13 @@ go_app/
 ├── models/               # Data models and structures
 ├── routes/               # Route definitions
 ├── services/             # Business logic layer
-└── utils/                # Utility functions
+├── utils/                # Utility functions
+├── internal/
+│   ├── crawler/          # Automated crawler system
+│   └── handlers/         # Crawler HTTP handlers
+├── cmd/
+│   └── crawler/          # Standalone crawler CLI
+└── scripts/              # Deployment and testing scripts
 ```
 
 ## 🛠️ Setup
@@ -36,17 +45,20 @@ go_app/
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd go_app
 ```
 
 2. Install dependencies:
+
 ```bash
 go mod tidy
 ```
 
 3. Copy environment file:
+
 ```bash
 cp .env.example .env
 ```
@@ -54,6 +66,7 @@ cp .env.example .env
 4. Configure environment variables in `.env`
 
 5. Run the application:
+
 ```bash
 go run main.go
 ```
@@ -62,18 +75,18 @@ go run main.go
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `8080` |
-| `GIN_MODE` | Gin mode (debug/release) | `debug` |
-| `SUPABASE_URL` | Supabase project URL | - |
-| `SUPABASE_ANON_KEY` | Supabase anonymous key | - |
-| `SUPABASE_SERVICE_KEY` | Supabase service role key | - |
-| `DB_HOST` | Database host | - |
-| `DB_PORT` | Database port | `5432` |
-| `DB_NAME` | Database name | `postgres` |
-| `DB_USER` | Database user | `postgres` |
-| `DB_PASSWORD` | Database password | - |
+| Variable               | Description               | Default    |
+| ---------------------- | ------------------------- | ---------- |
+| `PORT`                 | Server port               | `8080`     |
+| `GIN_MODE`             | Gin mode (debug/release)  | `debug`    |
+| `SUPABASE_URL`         | Supabase project URL      | -          |
+| `SUPABASE_ANON_KEY`    | Supabase anonymous key    | -          |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key | -          |
+| `DB_HOST`              | Database host             | -          |
+| `DB_PORT`              | Database port             | `5432`     |
+| `DB_NAME`              | Database name             | `postgres` |
+| `DB_USER`              | Database user             | `postgres` |
+| `DB_PASSWORD`          | Database password         | -          |
 
 ## 📚 API Documentation
 
@@ -89,6 +102,17 @@ The API maintains the exact same endpoints and response format as the Next.js ve
 - And more...
 
 See [API Documentation](../docs/api-documentation.md) for complete details.
+
+### 🤖 Crawler API
+
+The built-in crawler system provides HTTP endpoints for automated data collection:
+
+- `POST /api/crawler/start` - Start crawling job
+- `GET /api/crawler/status` - Check progress
+- `POST /api/crawler/stop` - Stop crawling
+- `POST /api/crawler/resume` - Resume from checkpoint
+
+See [Crawler API Documentation](API_CRAWLER.md) for complete details.
 
 ## 🚀 Deployment
 
@@ -122,6 +146,12 @@ go test -cover ./...
 
 # Health check
 curl http://localhost:8080/health
+
+# Test crawler API
+./scripts/test-api-complete.sh
+
+# Monitor crawling progress
+./scripts/monitor-crawling.sh
 ```
 
 ## 📊 Performance
@@ -137,7 +167,7 @@ Expected performance improvements over Next.js API:
 
 - [x] **Phase 1**: Project setup and infrastructure
 - [ ] **Phase 2**: Core Comics API
-- [ ] **Phase 3**: Chapters API  
+- [ ] **Phase 3**: Chapters API
 - [ ] **Phase 4**: User interactions API
 - [ ] **Phase 5**: Comments API
 - [ ] **Phase 6**: Testing and validation
