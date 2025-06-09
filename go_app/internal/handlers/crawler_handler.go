@@ -71,9 +71,11 @@ func (h *CrawlerHandler) StartCrawling(c *gin.Context) {
 	case "manga":
 		err = h.crawler.CrawlManga(req.StartPage, req.EndPage)
 	case "chapters":
-		if req.MangaID == "all" {
+		if req.MangaID == "all" || req.MangaID == "" {
+			// Auto-crawl chapters for all manga in database
 			err = h.crawler.CrawlAllChapters()
-		} else if req.MangaID != "" {
+		} else {
+			// Crawl chapters for specific manga ID
 			err = h.crawler.CrawlChaptersForManga(req.MangaID)
 		}
 	case "pages":
