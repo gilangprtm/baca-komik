@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"baca-komik-api/internal/crawler"
@@ -10,11 +11,33 @@ import (
 )
 
 type CrawlerHandler struct {
-	crawler *crawler.Crawler
+	crawler       *crawler.Crawler
+	activeJobs    map[string]*CrawlJob
+	jobsMutex     sync.RWMutex
+}
+
+type CrawlJob struct {
+	ID        string    `json:"id"`
+	Mode      string    `json:"mode"`
+	Status    string    `json:"status"` // "running", "completed", "failed"
+	StartTime time.Time `json:"start_time"`
+	EndTime   *time.Time `json:"end_time,omitempty"`
+	Progress  *CrawlProgress `json:"progress,omitempty"`
+	Error     string    `json:"error,omitempty"`
+}
+
+type CrawlProgress struct {
+	CurrentStep   string `json:"current_step"`
+	TotalSteps    int    `json:"total_steps"`
+	CompletedSteps int   `json:"completed_steps"`
+	Percentage    float64 `json:"percentage"`
 }
 
 func NewCrawlerHandler(c *crawler.Crawler) *CrawlerHandler {
-	return &CrawlerHandler{crawler: c}
+	return &CrawlerHandler{
+		crawler:    c,
+		activeJobs: make(map[string]*CrawlJob),
+	}
 }
 
 type CrawlRequest struct {
@@ -54,62 +77,103 @@ func (h *CrawlerHandler) StartCrawling(c *gin.Context) {
 	}
 
 	jobID := fmt.Sprintf("crawl_%s_%d", req.Mode, time.Now().Unix())
-	
-	// Start crawling immediately (not in goroutine for Railway compatibility)
-	var err error
-	switch req.Mode {
-	case "genres":
-		err = h.crawler.CrawlGenres()
-	case "formats":
-		err = h.crawler.CrawlFormats()
-	case "types":
-		err = h.crawler.CrawlTypes()
-	case "authors":
-		err = h.crawler.CrawlAuthors()
-	case "artists":
-		err = h.crawler.CrawlArtists()
-	case "manga":
-		err = h.crawler.CrawlManga(req.StartPage, req.EndPage)
-	case "chapters":
-		if req.MangaID == "all" || req.MangaID == "" {
-			// Auto-crawl chapters for all manga in database
-			err = h.crawler.CrawlAllChapters()
-		} else {
-			// Crawl chapters for specific manga ID
-			err = h.crawler.CrawlChaptersForManga(req.MangaID)
-		}
-	case "pages":
-		err = h.crawler.CrawlAllPages()
-	case "all":
-		err = h.crawler.CrawlAll()
-	case "auto":
-		err = h.crawler.CrawlAllMasterData()
-	default:
-		c.JSON(http.StatusBadRequest, CrawlResponse{
-			Success: false,
-			Message: fmt.Sprintf("Unknown mode: %s", req.Mode),
-		})
-		return
+
+	// Create job entry
+	job := &CrawlJob{
+		ID:        jobID,
+		Mode:      req.Mode,
+		Status:    "running",
+		StartTime: time.Now(),
+		Progress: &CrawlProgress{
+			CurrentStep: "Starting...",
+			TotalSteps:  1,
+			CompletedSteps: 0,
+			Percentage: 0,
+		},
 	}
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, CrawlResponse{
-			Success: false,
-			Message: fmt.Sprintf("Crawling failed: %v", err),
-		})
-		return
-	}
+	// Store job in active jobs
+	h.jobsMutex.Lock()
+	h.activeJobs[jobID] = job
+	h.jobsMutex.Unlock()
+
+	// Start crawling in background goroutine
+	go func() {
+		var err error
+
+		// Update job status
+		h.updateJobProgress(jobID, "Running crawling...", 0, 1)
+
+		switch req.Mode {
+		case "genres":
+			err = h.crawler.CrawlGenres()
+		case "formats":
+			err = h.crawler.CrawlFormats()
+		case "types":
+			err = h.crawler.CrawlTypes()
+		case "authors":
+			err = h.crawler.CrawlAuthors()
+		case "artists":
+			err = h.crawler.CrawlArtists()
+		case "manga":
+			err = h.crawler.CrawlManga(req.StartPage, req.EndPage)
+		case "chapters":
+			if req.MangaID == "all" || req.MangaID == "" {
+				// Auto-crawl chapters for all manga in database
+				err = h.crawler.CrawlAllChapters()
+			} else {
+				// Crawl chapters for specific manga ID
+				err = h.crawler.CrawlChaptersForManga(req.MangaID)
+			}
+		case "pages":
+			err = h.crawler.CrawlAllPages()
+		case "all":
+			err = h.crawler.CrawlAll()
+		case "auto":
+			err = h.crawler.CrawlAllMasterData()
+		default:
+			err = fmt.Errorf("unknown mode: %s", req.Mode)
+		}
+
+		// Update job completion
+		h.completeJob(jobID, err)
+	}()
 
 	c.JSON(http.StatusOK, CrawlResponse{
 		Success:   true,
-		Message:   fmt.Sprintf("Crawling completed successfully: %s", req.Mode),
+		Message:   fmt.Sprintf("Crawling job started in background: %s", req.Mode),
 		StartTime: time.Now(),
 		JobID:     jobID,
+		Data:      map[string]string{"job_id": jobID, "status": "running"},
 	})
 }
 
 // GetCrawlStatus returns current crawling status
 func (h *CrawlerHandler) GetCrawlStatus(c *gin.Context) {
+	// Check for active background jobs first
+	activeJob := h.getActiveJob()
+	if activeJob != nil {
+		elapsed := time.Since(activeJob.StartTime)
+
+		statusData := map[string]interface{}{
+			"job_id":           activeJob.ID,
+			"mode":             activeJob.Mode,
+			"status":           activeJob.Status,
+			"current_step":     activeJob.Progress.CurrentStep,
+			"progress_percent": activeJob.Progress.Percentage,
+			"elapsed_time":     elapsed.Round(time.Second).String(),
+			"start_time":       activeJob.StartTime,
+		}
+
+		c.JSON(http.StatusOK, CrawlResponse{
+			Success: true,
+			Message: "Active crawling job found",
+			Data:    statusData,
+		})
+		return
+	}
+
+	// Fallback to checkpoint system
 	checkpoint, err := h.crawler.LoadCheckpoint()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, CrawlResponse{
@@ -222,10 +286,104 @@ func (h *CrawlerHandler) ResumeCrawling(c *gin.Context) {
 
 // GetCrawlHistory returns crawling statistics
 func (h *CrawlerHandler) GetCrawlHistory(c *gin.Context) {
-	// TODO: Implement crawl history from database
+	h.jobsMutex.RLock()
+	jobs := make([]*CrawlJob, 0, len(h.activeJobs))
+	for _, job := range h.activeJobs {
+		jobs = append(jobs, job)
+	}
+	h.jobsMutex.RUnlock()
+
 	c.JSON(http.StatusOK, CrawlResponse{
 		Success: true,
-		Message: "Crawl history feature coming soon",
-		Data:    map[string]string{"status": "not_implemented"},
+		Message: "Crawl history retrieved",
+		Data:    map[string]interface{}{"jobs": jobs, "total": len(jobs)},
+	})
+}
+
+// Helper functions for job management
+func (h *CrawlerHandler) updateJobProgress(jobID, step string, completed, total int) {
+	h.jobsMutex.Lock()
+	defer h.jobsMutex.Unlock()
+
+	if job, exists := h.activeJobs[jobID]; exists {
+		job.Progress.CurrentStep = step
+		job.Progress.CompletedSteps = completed
+		job.Progress.TotalSteps = total
+		if total > 0 {
+			job.Progress.Percentage = float64(completed) / float64(total) * 100
+		}
+	}
+}
+
+func (h *CrawlerHandler) completeJob(jobID string, err error) {
+	h.jobsMutex.Lock()
+	defer h.jobsMutex.Unlock()
+
+	if job, exists := h.activeJobs[jobID]; exists {
+		now := time.Now()
+		job.EndTime = &now
+
+		if err != nil {
+			job.Status = "failed"
+			job.Error = err.Error()
+		} else {
+			job.Status = "completed"
+			job.Progress.Percentage = 100
+			job.Progress.CurrentStep = "Completed"
+		}
+	}
+}
+
+func (h *CrawlerHandler) getActiveJob() *CrawlJob {
+	h.jobsMutex.RLock()
+	defer h.jobsMutex.RUnlock()
+
+	for _, job := range h.activeJobs {
+		if job.Status == "running" {
+			return job
+		}
+	}
+	return nil
+}
+
+// GetJobStatus returns status of specific job
+func (h *CrawlerHandler) GetJobStatus(c *gin.Context) {
+	jobID := c.Param("id")
+
+	h.jobsMutex.RLock()
+	job, exists := h.activeJobs[jobID]
+	h.jobsMutex.RUnlock()
+
+	if !exists {
+		c.JSON(http.StatusNotFound, CrawlResponse{
+			Success: false,
+			Message: fmt.Sprintf("Job not found: %s", jobID),
+		})
+		return
+	}
+
+	var elapsed time.Duration
+	if job.EndTime != nil {
+		elapsed = job.EndTime.Sub(job.StartTime)
+	} else {
+		elapsed = time.Since(job.StartTime)
+	}
+
+	statusData := map[string]interface{}{
+		"job_id":           job.ID,
+		"mode":             job.Mode,
+		"status":           job.Status,
+		"current_step":     job.Progress.CurrentStep,
+		"progress_percent": job.Progress.Percentage,
+		"elapsed_time":     elapsed.Round(time.Second).String(),
+		"start_time":       job.StartTime,
+		"end_time":         job.EndTime,
+		"error":            job.Error,
+	}
+
+	c.JSON(http.StatusOK, CrawlResponse{
+		Success: true,
+		Message: "Job status retrieved",
+		Data:    statusData,
 	})
 }
