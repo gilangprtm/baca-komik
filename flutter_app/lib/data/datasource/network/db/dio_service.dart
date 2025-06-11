@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
@@ -6,6 +5,7 @@ import '../../../../core/base/global_state.dart';
 
 enum UrlType {
   baseUrl,
+  shinigamiApi,
   customUrl, // For handling complete URLs
 }
 
@@ -16,6 +16,8 @@ class DioService {
     switch (urlType) {
       case UrlType.baseUrl:
         return GlobalState.baseUrl;
+      case UrlType.shinigamiApi:
+        return GlobalState.shinigamiUrl;
       case UrlType.customUrl:
         return ""; // Empty string as we'll use the full path for custom URLs
     }

@@ -63,13 +63,6 @@ class ComicCardSkeleton extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          // Chapter number placeholder
-          ShimmerLoading(
-            child: ShimmerContainer(
-              width: double.infinity,
-              height: 20,
-            ),
-          ),
         ],
       ),
     );

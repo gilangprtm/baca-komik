@@ -1,13 +1,12 @@
-
 import 'package:flutter/foundation.dart';
-import '../../../data/models/home_comic_model.dart';
+import '../../../data/models/shinigami/shinigami_models.dart';
 
 enum HomeStatus { initial, loading, success, error }
 
 @immutable
 class HomeState {
   final HomeStatus status;
-  final List<HomeComic> comics;
+  final List<ShinigamiManga> comics;
   final bool isLoading;
   final bool isLoadingMore;
   final String? errorMessage;
@@ -28,7 +27,7 @@ class HomeState {
 
   HomeState copyWith({
     HomeStatus? status,
-    List<HomeComic>? comics,
+    List<ShinigamiManga>? comics,
     bool? isLoading,
     bool? isLoadingMore,
     String? errorMessage,

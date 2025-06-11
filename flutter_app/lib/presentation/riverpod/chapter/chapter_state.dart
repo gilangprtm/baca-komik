@@ -1,59 +1,118 @@
 import 'package:flutter/foundation.dart';
-import '../../../data/models/chapter_model.dart';
-import '../../../data/models/page_model.dart';
+import '../../../data/models/shinigami/shinigami_models.dart';
 
 enum ChapterStateStatus { initial, loading, success, error }
 
 @immutable
 class ChapterState {
-  final ChapterStateStatus status;
-  final Chapter? chapter;
-  final List<Page> pages;
-  final ChapterNavigation? nextChapter;
-  final ChapterNavigation? previousChapter;
-  final String? errorMessage;
+  // Status
+  final ChapterStateStatus detailStatus;
+  final ChapterStateStatus pagesStatus;
+  final ChapterStateStatus navigationStatus;
+
+  // Data
+  final ShinigamiChapter? selectedChapter;
+  final List<ShinigamiPage> pages;
+  final ShinigamiChapterNavigation? navigation;
+  final ShinigamiMeta? chapterMeta;
+
+  // Current state
   final int currentPageIndex;
-  final bool isReaderControlsVisible;
+  final bool isFullscreen;
+  final bool showControls;
   final double zoomLevel;
   final bool isHorizontalReading;
 
+  // Navigation state
+  final String? nextChapterId;
+  final String? prevChapterId;
+  final int? nextChapterNumber;
+  final int? prevChapterNumber;
+  final bool isFirstChapter;
+  final bool isLastChapter;
+
+  // Loading states
+  final Map<String, bool> loadingStates;
+
+  // Error handling
+  final String? errorMessage;
+
+  // Reading progress
+  final bool isTrackingProgress;
+  final DateTime? lastReadAt;
+
   const ChapterState({
-    this.status = ChapterStateStatus.initial,
-    this.chapter,
+    this.detailStatus = ChapterStateStatus.initial,
+    this.pagesStatus = ChapterStateStatus.initial,
+    this.navigationStatus = ChapterStateStatus.initial,
+    this.selectedChapter,
     this.pages = const [],
-    this.nextChapter,
-    this.previousChapter,
-    this.errorMessage,
+    this.navigation,
+    this.chapterMeta,
     this.currentPageIndex = 0,
-    this.isReaderControlsVisible = true,
+    this.isFullscreen = false,
+    this.showControls = true,
     this.zoomLevel = 1.0,
     this.isHorizontalReading = true,
+    this.nextChapterId,
+    this.prevChapterId,
+    this.nextChapterNumber,
+    this.prevChapterNumber,
+    this.isFirstChapter = false,
+    this.isLastChapter = false,
+    this.loadingStates = const {},
+    this.errorMessage,
+    this.isTrackingProgress = false,
+    this.lastReadAt,
   });
 
   ChapterState copyWith({
-    ChapterStateStatus? status,
-    Chapter? chapter,
-    List<Page>? pages,
-    ChapterNavigation? nextChapter,
-    ChapterNavigation? previousChapter,
-    String? errorMessage,
+    ChapterStateStatus? detailStatus,
+    ChapterStateStatus? pagesStatus,
+    ChapterStateStatus? navigationStatus,
+    ShinigamiChapter? selectedChapter,
+    List<ShinigamiPage>? pages,
+    ShinigamiChapterNavigation? navigation,
+    ShinigamiMeta? chapterMeta,
     int? currentPageIndex,
-    bool? isReaderControlsVisible,
+    bool? isFullscreen,
+    bool? showControls,
     double? zoomLevel,
     bool? isHorizontalReading,
+    String? nextChapterId,
+    String? prevChapterId,
+    int? nextChapterNumber,
+    int? prevChapterNumber,
+    bool? isFirstChapter,
+    bool? isLastChapter,
+    Map<String, bool>? loadingStates,
+    String? errorMessage,
+    bool? isTrackingProgress,
+    DateTime? lastReadAt,
   }) {
     return ChapterState(
-      status: status ?? this.status,
-      chapter: chapter ?? this.chapter,
+      detailStatus: detailStatus ?? this.detailStatus,
+      pagesStatus: pagesStatus ?? this.pagesStatus,
+      navigationStatus: navigationStatus ?? this.navigationStatus,
+      selectedChapter: selectedChapter ?? this.selectedChapter,
       pages: pages ?? this.pages,
-      nextChapter: nextChapter ?? this.nextChapter,
-      previousChapter: previousChapter ?? this.previousChapter,
-      errorMessage: errorMessage ?? this.errorMessage,
+      navigation: navigation ?? this.navigation,
+      chapterMeta: chapterMeta ?? this.chapterMeta,
       currentPageIndex: currentPageIndex ?? this.currentPageIndex,
-      isReaderControlsVisible:
-          isReaderControlsVisible ?? this.isReaderControlsVisible,
+      isFullscreen: isFullscreen ?? this.isFullscreen,
+      showControls: showControls ?? this.showControls,
       zoomLevel: zoomLevel ?? this.zoomLevel,
       isHorizontalReading: isHorizontalReading ?? this.isHorizontalReading,
+      nextChapterId: nextChapterId ?? this.nextChapterId,
+      prevChapterId: prevChapterId ?? this.prevChapterId,
+      nextChapterNumber: nextChapterNumber ?? this.nextChapterNumber,
+      prevChapterNumber: prevChapterNumber ?? this.prevChapterNumber,
+      isFirstChapter: isFirstChapter ?? this.isFirstChapter,
+      isLastChapter: isLastChapter ?? this.isLastChapter,
+      loadingStates: loadingStates ?? this.loadingStates,
+      errorMessage: errorMessage ?? this.errorMessage,
+      isTrackingProgress: isTrackingProgress ?? this.isTrackingProgress,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
     );
   }
 
@@ -68,11 +127,59 @@ class ChapterState {
   int get totalPages => pages.length;
 
   // Helper methods for chapter navigation
-  bool get isFirstChapter => previousChapter == null;
+  bool get hasNextChapter => nextChapterId != null && !isLastChapter;
+  bool get hasPreviousChapter => prevChapterId != null && !isFirstChapter;
 
-  bool get isLastChapter => nextChapter == null;
+  // Status helpers
+  bool get isLoadingDetail => detailStatus == ChapterStateStatus.loading;
+  bool get isLoadingPages => pagesStatus == ChapterStateStatus.loading;
+  bool get isLoadingNavigation =>
+      navigationStatus == ChapterStateStatus.loading;
+  bool get hasError =>
+      detailStatus == ChapterStateStatus.error ||
+      pagesStatus == ChapterStateStatus.error ||
+      navigationStatus == ChapterStateStatus.error;
+  bool get isSuccess =>
+      detailStatus == ChapterStateStatus.success &&
+      pagesStatus == ChapterStateStatus.success;
 
-  bool get hasNextChapter => nextChapter != null;
+  // Data helpers
+  bool get hasChapter => selectedChapter != null;
+  bool get hasPages => pages.isNotEmpty;
+  bool get hasNavigation => navigation != null;
+  bool get canGoToNextPage => currentPageIndex < totalPages - 1;
+  bool get canGoToPrevPage => currentPageIndex > 0;
 
-  bool get hasPreviousChapter => previousChapter != null;
+  // Chapter info helpers
+  String get chapterTitle => selectedChapter?.chapterTitle ?? '';
+  int get chapterNumber => selectedChapter?.chapterNumber ?? 0;
+  String get mangaId => selectedChapter?.mangaId ?? '';
+  String get chapterId => selectedChapter?.chapterId ?? '';
+
+  // Progress helpers
+  double get readingProgress =>
+      totalPages > 0 ? (currentPageIndex + 1) / totalPages : 0.0;
+  String get progressText => '${currentPageIndex + 1} / $totalPages';
+
+  // Loading state helpers
+  bool isLoading(String key) => loadingStates[key] ?? false;
+  bool get isLoadingNextChapter => isLoading('next_chapter');
+  bool get isLoadingPrevChapter => isLoading('prev_chapter');
+  bool get isLoadingProgress => isLoading('progress');
+
+  // Page helpers
+  ShinigamiPage? get currentPage => hasPages && currentPageIndex < pages.length
+      ? pages[currentPageIndex]
+      : null;
+  String? get currentPageUrl => currentPage?.imageUrl;
+  String? get currentPageLowUrl => currentPage?.lowQualityImageUrl;
+
+  // Chapter navigation helpers
+  String get displayTitle =>
+      chapterTitle.isNotEmpty ? chapterTitle : 'Chapter $chapterNumber';
+  String get fullTitle =>
+      'Chapter $chapterNumber${chapterTitle.isNotEmpty ? ': $chapterTitle' : ''}';
+
+  /// Initial state factory
+  factory ChapterState.initial() => const ChapterState();
 }

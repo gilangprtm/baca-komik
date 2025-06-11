@@ -3,10 +3,7 @@ import 'package:flutter_project/core/mahas/widget/mahas_image.dart';
 import 'package:flutter_project/core/theme/app_colors.dart';
 import '../../../core/utils/mahas_utils.dart';
 import '../../../core/utils/type_utils.dart';
-import '../../../data/models/comic_model.dart';
-import '../../../data/models/home_comic_model.dart';
-import '../../../data/models/discover_comic_model.dart';
-import '../../../data/models/discover_comics_response_model.dart';
+import '../../../data/models/shinigami/shinigami_models.dart';
 import '../../../core/base/global_state.dart';
 import '../../routes/app_routes.dart';
 
@@ -41,7 +38,7 @@ class ComicCard extends StatelessWidget {
     final String coverUrl = _getCoverUrl();
     final String? genre = showGenre ? _getGenre() : null;
     final double? rating = showRating ? _getRating() : null;
-    final List<dynamic> latestChapters =
+    final List<ShinigamiChapterListItem> latestChapters =
         showChapters ? _getLatestChapters() : [];
 
     // Check if any of the latest chapters was released today
@@ -107,6 +104,29 @@ class ComicCard extends StatelessWidget {
                       borderRadius: MahasBorderRadius.small,
                     ),
                   ),
+
+                  // Badge "UP" only if has chapters released today
+                  if (hasChapterReleasedToday)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'UP',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
 
                   // Rating badge
                   if (showRating && rating != null)
@@ -188,29 +208,22 @@ class ComicCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Badge "UP" only if has chapters released today
-                    if (hasChapterReleasedToday)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'UP',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                     if (hasChapterReleasedToday) const SizedBox(height: 6),
                     // Chapter list
-                    ...latestChapters
-                        .map((chapter) => _buildChapterItem(chapter))
-                        .toList(),
+                    // ...latestChapters
+                    //     .map((chapter) => _buildChapterItem(chapter))
+                    //     .toList(),
+
+                    // gunakan list view dengan count cuman 2
+                    ListView.builder(
+                      itemCount:
+                          latestChapters.length > 2 ? 2 : latestChapters.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        return _buildChapterItem(latestChapters[index]);
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -221,13 +234,15 @@ class ComicCard extends StatelessWidget {
   }
 
   // Check if any chapter was released today
-  bool _hasChapterReleasedToday(List<dynamic> chapters) {
+  bool _hasChapterReleasedToday(List<ShinigamiChapterListItem> chapters) {
     if (chapters.isEmpty) return false;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    final releaseDate = chapters[0].releaseDate;
+    final firstChapter = chapters[0];
+    final releaseDate = firstChapter.createdAt;
+
     if (releaseDate != null) {
       final releaseDay =
           DateTime(releaseDate.year, releaseDate.month, releaseDate.day);
@@ -241,89 +256,50 @@ class ComicCard extends StatelessWidget {
 
   // Helper methods to extract properties based on comic type
   String _getTitle() {
-    if (comic is Comic) {
-      return (comic as Comic).title;
-    } else if (comic is HomeComic) {
-      return (comic as HomeComic).title;
-    } else if (comic is DiscoverComic) {
-      return (comic as DiscoverComic).title;
-    } else if (comic is PopularComic) {
-      return (comic as PopularComic).title;
-    } else if (comic is RecommendedComic) {
-      return (comic as RecommendedComic).title;
+    if (comic is ShinigamiManga) {
+      return (comic as ShinigamiManga).title;
     }
     return 'Unknown';
   }
 
   String _getCoverUrl() {
     String? coverUrl;
-    if (comic is Comic) {
-      coverUrl = (comic as Comic).coverImageUrl;
-    } else if (comic is HomeComic) {
-      coverUrl = (comic as HomeComic).coverImageUrl;
-    } else if (comic is DiscoverComic) {
-      coverUrl = (comic as DiscoverComic).coverImageUrl;
-    } else if (comic is PopularComic) {
-      coverUrl = (comic as PopularComic).coverImageUrl;
-    } else if (comic is RecommendedComic) {
-      coverUrl = (comic as RecommendedComic).coverImageUrl;
+    if (comic is ShinigamiManga) {
+      coverUrl = (comic as ShinigamiManga).coverImageUrl;
     }
 
-    // Use default image if coverUrl is null
-    if (coverUrl == null) {
+    // Use default image if coverUrl is null or empty
+    if (coverUrl == null || coverUrl.isEmpty) {
       return '${GlobalState.baseUrl}/images/default-cover.jpg';
     }
 
-    // If URL doesn't start with http, prepend the base URL
-    if (!coverUrl.startsWith('http')) {
-      coverUrl = '${GlobalState.baseUrl}$coverUrl';
-    }
-
+    // Shinigami API already provides full URLs, so return as-is
     return coverUrl;
   }
 
   String? _getGenre() {
-    if (comic is Comic) {
-      final genres = (comic as Comic).genres;
-      return genres != null && genres.isNotEmpty ? genres.first.name : null;
-    } else if (comic is HomeComic) {
-      final genres = (comic as HomeComic).genres;
-      return genres.isNotEmpty ? genres.first.name : null;
-    } else if (comic is DiscoverComic) {
-      final genres = (comic as DiscoverComic).genres;
+    if (comic is ShinigamiManga) {
+      final genres = (comic as ShinigamiManga).taxonomy.genre;
       return genres.isNotEmpty ? genres.first.name : null;
     }
     return null;
   }
 
   double? _getRating() {
-    // Calculate rating based on vote count and bookmark count
-    // This is a simplified calculation, you might want to adjust it
-    if (comic is Comic) {
-      final voteCount = (comic as Comic).voteCount;
-      final bookmarkCount = (comic as Comic).bookmarkCount;
-      if (voteCount > 0) {
-        return (voteCount * 0.8 + bookmarkCount * 0.2) / 100;
-      }
-    } else if (comic is HomeComic) {
-      final voteCount = (comic as HomeComic).voteCount;
-      final bookmarkCount = (comic as HomeComic).bookmarkCount;
-      if (voteCount > 0) {
-        return (voteCount * 0.8 + bookmarkCount * 0.2) / 100;
-      }
-    } else if (comic is DiscoverComic) {
-      final voteCount = (comic as DiscoverComic).voteCount;
-      final bookmarkCount = (comic as DiscoverComic).bookmarkCount;
-      if (voteCount > 0) {
-        return (voteCount * 0.8 + bookmarkCount * 0.2) / 100;
-      }
+    if (comic is ShinigamiManga) {
+      // Shinigami API provides userRate directly
+      return (comic as ShinigamiManga).userRate;
     }
     return null;
   }
 
-  List<dynamic> _getLatestChapters() {
-    if (comic is HomeComic) {
-      return (comic as HomeComic).latestChapters;
+  List<ShinigamiChapterListItem> _getLatestChapters() {
+    if (comic is ShinigamiManga) {
+      // ShinigamiManga has chapters array from is_update=true response
+      final chapters = (comic as ShinigamiManga).chapters;
+      if (chapters != null && chapters.isNotEmpty) {
+        return chapters;
+      }
     }
     return [];
   }
@@ -332,23 +308,15 @@ class ComicCard extends StatelessWidget {
   String _getCountryFlagName() {
     String? countryId;
 
-    if (comic is Comic) {
-      countryId = (comic as Comic).countryId;
-    } else if (comic is HomeComic) {
-      countryId = (comic as HomeComic).countryId;
-    } else if (comic is DiscoverComic) {
-      countryId = (comic as DiscoverComic).countryId;
-    } else if (comic is PopularComic) {
-      countryId = (comic as PopularComic).countryId;
-    } else if (comic is RecommendedComic) {
-      countryId = (comic as RecommendedComic).countryId;
+    if (comic is ShinigamiManga) {
+      countryId = (comic as ShinigamiManga).countryId;
     }
 
     // Map country_id to flag file name
     switch (countryId) {
       case 'KR':
         return 'kr';
-      case 'JPN':
+      case 'JP':
         return 'jpn';
       case 'CN':
         return 'cn';
@@ -357,10 +325,11 @@ class ComicCard extends StatelessWidget {
     }
   }
 
-  Widget _buildChapterItem(dynamic chapter) {
-    // Extract chapter info
+  Widget _buildChapterItem(ShinigamiChapterListItem chapter) {
+    // Extract chapter info from model
     final String chapterNumber = chapter.chapterNumber.toString();
-    final DateTime? releaseDate = chapter.releaseDate;
+    final String chapterId = chapter.chapterId;
+    final DateTime? releaseDate = chapter.createdAt;
 
     // Calculate time difference for display
     String timeAgo = '';
@@ -376,8 +345,7 @@ class ComicCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         // Navigate to chapter detail page
-        // Navigator.pushNamed(context, '/chapter/${comic.id}');
-        Mahas.routeTo(AppRoutes.chapter, arguments: {'chapterId': chapter.id});
+        Mahas.routeTo(AppRoutes.chapter, arguments: {'chapterId': chapterId});
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 6),

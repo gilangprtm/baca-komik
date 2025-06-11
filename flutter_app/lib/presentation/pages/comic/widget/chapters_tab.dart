@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/utils/mahas_utils.dart';
-import '../../../../data/models/complete_comic_model.dart';
+import '../../../../data/models/shinigami/shinigami_models.dart';
 import '../../../riverpod/comic/comic_provider.dart';
+import '../../../riverpod/comic/comic_state.dart';
 import '../../../routes/app_routes.dart';
 
 class ChaptersTab extends ConsumerWidget {
@@ -10,32 +11,31 @@ class ChaptersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only watch chapterList to optimize rebuilds
-    final chapterList = ref.watch(
-      comicProvider.select((state) => state.chapterList),
-    );
+    // Only watch chapters to optimize rebuilds
+    final chapters = ref.watch(comicChaptersProvider);
+    final chapterStatus = ref.watch(comicChapterStatusProvider);
 
     // Check if we have chapters to display
-    if (chapterList != null && chapterList.data.isNotEmpty) {
+    if (chapters.isNotEmpty) {
       return RefreshIndicator(
         onRefresh: () async {
           // Refresh chapters from page 1
           await ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
         },
-        child: _ChapterListView(chapterList: chapterList),
+        child: _ChapterListView(chapters: chapters),
       );
     }
 
     // Show loading or empty state
-    return const _ChapterEmptyState();
+    return _ChapterEmptyState(status: chapterStatus);
   }
 }
 
 /// Optimized chapter list view with pagination support
 class _ChapterListView extends ConsumerStatefulWidget {
-  final ChapterList chapterList;
+  final List<ShinigamiChapter> chapters;
 
-  const _ChapterListView({required this.chapterList});
+  const _ChapterListView({required this.chapters});
 
   @override
   ConsumerState<_ChapterListView> createState() => _ChapterListViewState();
@@ -89,28 +89,65 @@ class _ChapterListViewState extends ConsumerState<_ChapterListView> {
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            itemCount:
-                widget.chapterList.data.length + (hasMoreChapters ? 1 : 0),
+            itemCount: widget.chapters.length + (hasMoreChapters ? 1 : 0),
             itemBuilder: (context, index) {
               // Show loading indicator at the end if there are more chapters
-              if (index == widget.chapterList.data.length) {
+              if (index == widget.chapters.length) {
                 return _buildLoadingIndicator(isLoadingMore);
               }
 
-              final chapter = widget.chapterList.data[index];
-              return ListTile(
-                title: Text('Chapter ${chapter.chapterNumber}'),
-                subtitle: chapter.title != null ? Text(chapter.title!) : null,
-                trailing: Text(
-                  chapter.releaseDate != null
-                      ? '${chapter.releaseDate!.day}/${chapter.releaseDate!.month}/${chapter.releaseDate!.year}'
-                      : 'No date',
+              final chapter = widget.chapters[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: ListTile(
+                  leading: chapter.thumbnailImageUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.network(
+                            chapter.thumbnailImageUrl!,
+                            width: 40,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              width: 40,
+                              height: 60,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image_not_supported),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: 40,
+                          height: 60,
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.image_not_supported),
+                        ),
+                  title: Text('Chapter ${chapter.chapterNumber}'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (chapter.chapterTitle?.isNotEmpty == true)
+                        Text(
+                          chapter.chapterTitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      Text(
+                        '${_formatViewCount(chapter.viewCount)} views • ${_formatRelativeTime(chapter.releaseDate)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                  onTap: () {
+                    // Navigate to chapter
+                    Mahas.routeTo(AppRoutes.chapter,
+                        arguments: {'chapterId': chapter.chapterId});
+                  },
                 ),
-                onTap: () {
-                  // Navigate to chapter
-                  Mahas.routeTo(AppRoutes.chapter,
-                      arguments: {'chapterId': chapter.id});
-                },
               );
             },
           ),
@@ -145,23 +182,47 @@ class _ChapterListViewState extends ConsumerState<_ChapterListView> {
       );
     }
   }
+
+  String _formatViewCount(int viewCount) {
+    if (viewCount >= 1000000) {
+      return '${(viewCount / 1000000).toStringAsFixed(1)}M';
+    } else if (viewCount >= 1000) {
+      return '${(viewCount / 1000).toStringAsFixed(1)}K';
+    } else {
+      return viewCount.toString();
+    }
+  }
+
+  String _formatRelativeTime(DateTime? releaseDate) {
+    if (releaseDate == null) return 'Unknown';
+
+    final now = DateTime.now();
+    final difference = now.difference(releaseDate);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} hari yang lalu';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} jam yang lalu';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} menit yang lalu';
+    } else {
+      return 'Baru saja';
+    }
+  }
 }
 
 /// Optimized empty state widget
 class _ChapterEmptyState extends ConsumerWidget {
-  const _ChapterEmptyState();
+  final ComicStateStatus status;
+
+  const _ChapterEmptyState({required this.status});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get comic ID from arguments
     final String? comicId = Mahas.argument<String>('comicId');
 
-    // Watch loading state to show appropriate message
-    final isLoadingChapters = ref.watch(
-      comicProvider.select((state) => state.isLoadingMoreChapters),
-    );
-
-    if (isLoadingChapters) {
+    if (status == ComicStateStatus.loading) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -169,6 +230,36 @@ class _ChapterEmptyState extends ConsumerWidget {
             CircularProgressIndicator(),
             SizedBox(height: 16),
             Text('Loading chapters...'),
+          ],
+        ),
+      );
+    }
+
+    if (status == ComicStateStatus.error) {
+      final errorMessage = ref.watch(comicErrorProvider);
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to load chapters',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage ?? 'Unknown error occurred',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
+              },
+              child: const Text('Retry'),
+            ),
           ],
         ),
       );
@@ -192,12 +283,9 @@ class _ChapterEmptyState extends ConsumerWidget {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              // Reload chapters from page 1
-              if (comicId != null) {
-                ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
-              }
+              ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
             },
-            child: const Text('Reload Chapters'),
+            child: const Text('Load Chapters'),
           ),
         ],
       ),

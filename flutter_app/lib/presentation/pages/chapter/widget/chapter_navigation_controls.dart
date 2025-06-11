@@ -13,10 +13,10 @@ class ChapterNavigationControls extends ConsumerWidget {
 
   /// Show chapter list modal for navigation
   void _showChapterList(BuildContext context, WidgetRef ref) {
-    final chapter = ref.read(chapterProvider.select((state) => state.chapter));
-    final notifier = ref.read(chapterProvider.notifier);
+    final chapter =
+        ref.read(chapterProvider.select((state) => state.selectedChapter));
 
-    if (chapter?.idKomik == null) return;
+    if (chapter?.mangaId == null) return;
 
     MahasBottomSheet.show(
       context: context,
@@ -25,11 +25,11 @@ class ChapterNavigationControls extends ConsumerWidget {
       child: Container(
         height: 500,
         child: ChapterListWidget(
-          comicId: chapter!.idKomik,
-          currentChapterId: chapter.id,
+          comicId: chapter!.mangaId,
+          currentChapterId: chapter.chapterId,
           onChapterSelected: (selectedChapter) {
             Navigator.of(context).pop(); // Close bottom sheet
-            notifier.goToChapter(selectedChapter.id);
+            // notifier.goToChapter(selectedChapter.chapterId);
           },
         ),
       ),
@@ -38,14 +38,13 @@ class ChapterNavigationControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final nextChapter = ref.watch(
-      chapterProvider.select((state) => state.nextChapter),
+    final hasNextChapter = ref.watch(
+      chapterProvider.select((state) => state.hasNextChapter),
     );
-    final previousChapter = ref.watch(
-      chapterProvider.select((state) => state.previousChapter),
+    final hasPreviousChapter = ref.watch(
+      chapterProvider.select((state) => state.hasPreviousChapter),
     );
     final notifier = ref.read(chapterProvider.notifier);
-
     return Positioned(
       bottom: 0,
       left: 0,
@@ -57,7 +56,7 @@ class ChapterNavigationControls extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             // Previous chapter button
-            if (previousChapter != null)
+            if (hasPreviousChapter)
               SizedBox(
                 width: 60,
                 height: 60,
@@ -70,7 +69,9 @@ class ChapterNavigationControls extends ConsumerWidget {
                     color: Colors.white,
                     size: 24,
                   ),
-                  onPressed: () => notifier.previousChapter(),
+                  onPressed: () {
+                    notifier.previousChapter();
+                  },
                 ),
               ),
             // Chapter list button
@@ -90,7 +91,7 @@ class ChapterNavigationControls extends ConsumerWidget {
               ),
             ),
             // Next chapter button
-            if (nextChapter != null)
+            if (hasNextChapter)
               SizedBox(
                 width: 60,
                 height: 60,
@@ -103,7 +104,9 @@ class ChapterNavigationControls extends ConsumerWidget {
                     color: Colors.white,
                     size: 24,
                   ),
-                  onPressed: () => notifier.nextChapter(),
+                  onPressed: () {
+                    notifier.nextChapter();
+                  },
                 ),
               ),
           ],
