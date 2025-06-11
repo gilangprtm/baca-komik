@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/mahas_utils.dart';
-import '../../../data/models/complete_comic_model.dart';
+import '../../../data/models/shinigami/shinigami_models.dart';
 import '../../riverpod/comic/comic_provider.dart';
 import '../../riverpod/comic/comic_state.dart';
 import '../../widgets/skeletons/comic_detail_skeleton.dart';
 import '../../../core/mahas/widget/mahas_tab.dart';
 import 'widget/comic_header.dart';
 import 'widget/comic_action_buttons.dart';
-import 'widget/comic_metadata.dart';
 import 'widget/chapters_tab.dart';
 import 'widget/info_tab.dart';
 import 'widget/comments_tab.dart';
@@ -59,9 +58,7 @@ class _ComicSuccessView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Only watch selectedComic for this view
-    final comic = ref.watch(
-      comicProvider.select((state) => state.selectedComic),
-    );
+    final comic = ref.watch(comicDetailProvider);
 
     if (comic == null) {
       return const ComicErrorWidget(errorMessage: "Comic not found");
@@ -79,13 +76,10 @@ class _ComicSuccessView extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Comic header with cover image and title
-            ComicHeader(completeComic: comic),
+            ComicHeader(manga: comic),
 
             // Action buttons (Read, Bookmark, Add to Reading List)
-            ComicActionButtons(completeComic: comic),
-
-            // Comic metadata (genres, authors, artists, format)
-            ComicMetadata(completeComic: comic),
+            ComicActionButtons(manga: comic),
 
             // Tab bar for chapters, info, and comments
             SizedBox(
@@ -101,7 +95,7 @@ class _ComicSuccessView extends ConsumerWidget {
 
 /// Optimized AppBar widget
 class _ComicAppBar extends StatelessWidget {
-  final CompleteComic comic;
+  final ShinigamiManga comic;
 
   const _ComicAppBar({required this.comic});
 
@@ -112,7 +106,7 @@ class _ComicAppBar extends StatelessWidget {
       pinned: true,
       backgroundColor: AppColors.getBackgroundColor(context),
       title: Text(
-        comic.comic.title,
+        comic.title,
         style: TextStyle(
           color: AppColors.getTextPrimaryColor(context),
           fontSize: 18,
@@ -132,7 +126,7 @@ class _ComicAppBar extends StatelessWidget {
 
 /// Optimized TabBar widget
 class _ComicTabBar extends ConsumerWidget {
-  final CompleteComic comic;
+  final ShinigamiManga comic;
 
   const _ComicTabBar({required this.comic});
 
@@ -150,17 +144,13 @@ class _ComicTabBar extends ConsumerWidget {
         const ChaptersTab(),
 
         // Info tab (more detailed information)
-        InfoTab(completeComic: comic),
+        InfoTab(manga: comic),
 
-        // Comments tab
+        // Comments tab (coming soon)
         const CommentsTab(),
       ],
       onTabChanged: (index) {
         // Load data for the selected tab if needed
-        if (index == 2) {
-          // Comments tab - only load when user switches to it
-          ref.read(comicProvider.notifier).fetchComments(1);
-        }
         // Note: Chapters are already loaded in fetchComicDetails
         // No need to reload unless specifically needed
       },

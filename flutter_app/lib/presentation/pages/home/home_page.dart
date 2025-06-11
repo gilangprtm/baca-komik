@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/base/global_state.dart';
 import '../../../core/utils/mahas_utils.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/models/home_comic_model.dart';
+import '../../../data/models/shinigami/shinigami_models.dart';
 import '../../riverpod/home/home_provider.dart';
 import '../../riverpod/home/home_state.dart';
 import '../../routes/app_routes.dart';
@@ -95,7 +95,7 @@ class HomePage extends StatelessWidget {
                   return MahasGrid(
                     items: comicItems,
                     crossAxisCount: 2,
-                    childAspectRatio: 0.45,
+                    childAspectRatio: 0.48,
                     padding: const EdgeInsets.all(8.0),
                   );
                 },
@@ -130,7 +130,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildComicItem(BuildContext context, HomeComic comic) {
+  Widget _buildComicItem(BuildContext context, ShinigamiManga comic) {
     return ComicCard(
       comic: comic,
       width: double.infinity,
@@ -142,7 +142,7 @@ class HomePage extends StatelessWidget {
       onTapKomik: () {
         Mahas.routeTo(
           AppRoutes.comic,
-          arguments: {'comicId': comic.id},
+          arguments: {'comicId': comic.mangaId},
         );
       },
     );

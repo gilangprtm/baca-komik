@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/base/base_state_notifier.dart';
-import '../../../data/datasource/network/service/comic_service.dart';
-import '../../../data/datasource/network/service/optimized_comic_service.dart';
+import '../../../data/datasource/network/service/shinigami_services.dart';
 import 'search_state.dart';
 
 class SearchNotifier extends BaseStateNotifier<SearchState> {
-  final ComicService _comicService = ComicService();
-  final OptimizedComicService _optimizedComicService = OptimizedComicService();
+  final ShinigamiMangaService _mangaService = ShinigamiMangaService();
 
   // Controllers
   late final TextEditingController searchController;
@@ -23,9 +21,9 @@ class SearchNotifier extends BaseStateNotifier<SearchState> {
     scrollController = ScrollController();
     scrollController.addListener(_onScroll);
 
-    // Load initial data for both tabs
-    loadAllComics();
-    loadDiscoverContent();
+    // Load initial data
+    loadTopDailyManga();
+    loadAllManga();
   }
 
   @override
@@ -41,111 +39,237 @@ class SearchNotifier extends BaseStateNotifier<SearchState> {
     super.dispose();
   }
 
-  /// Handle scroll events for pagination (All Comics tab)
+  /// Handle scroll events for pagination (Search results)
   void _onScroll() {
     if (scrollController.position.pixels >=
         scrollController.position.maxScrollExtent - 200) {
-      if (state.canLoadMoreAllComics) {
-        loadMoreAllComics();
+      if (state.canLoadMoreSearch) {
+        loadMoreSearchResults();
       }
     }
   }
 
-  /// Load all comics (GET /comics)
-  Future<void> loadAllComics({int page = 1}) async {
-    runAsync('loadAllComics', () async {
+  /// Load top daily manga (GET /manga/top?filter=daily)
+  Future<void> loadTopDailyManga({int page = 1}) async {
+    runAsync('loadTopDailyManga', () async {
       // Set loading state
       if (page == 1) {
-        state = state.copyWith(allComicsStatus: SearchStatus.loading);
+        state = state.copyWith(
+          topDailyStatus: SearchStatus.loading,
+          errorMessage: null,
+        );
       } else {
-        state = state.copyWith(isLoadingMoreAllComics: true);
+        state = state.copyWith(isLoadingMoreTopDaily: true);
       }
 
       try {
-        final comicsResponse = await _comicService.getComics(
+        final response = await _mangaService.getTopManga(
+          filter: 'daily',
           page: page,
-          limit: 20,
-          search: state.query.isNotEmpty ? state.query : null,
-          genre: state.selectedGenre,
-          status: state.selectedCountry,
+          pageSize: 20,
         );
 
         if (page == 1) {
           // First page - replace results
           state = state.copyWith(
-            allComicsStatus: SearchStatus.success,
-            allComics: comicsResponse.data,
-            allComicsMeta: comicsResponse.meta,
-            isLoadingMoreAllComics: false,
-            hasMoreAllComics: comicsResponse.meta.hasMore,
+            topDailyStatus: SearchStatus.success,
+            topDailyManga: response.data,
+            topDailyMeta: response.meta,
+            isLoadingMoreTopDaily: false,
             errorMessage: null,
           );
         } else {
           // Pagination - append results
           final combinedResults = [
-            ...state.allComics,
-            ...comicsResponse.data,
+            ...state.topDailyManga,
+            ...response.data,
           ];
 
           state = state.copyWith(
-            allComics: combinedResults,
-            allComicsMeta: comicsResponse.meta,
-            isLoadingMoreAllComics: false,
-            hasMoreAllComics: comicsResponse.meta.hasMore,
+            topDailyManga: combinedResults,
+            topDailyMeta: response.meta,
+            isLoadingMoreTopDaily: false,
             errorMessage: null,
           );
         }
       } catch (e, stackTrace) {
-        logger.e('Error loading all comics', error: e, stackTrace: stackTrace);
+        logger.e('Error loading top daily manga',
+            error: e, stackTrace: stackTrace);
 
         if (page == 1) {
           state = state.copyWith(
-            allComicsStatus: SearchStatus.error,
-            errorMessage: 'Failed to load comics: ${e.toString()}',
+            topDailyStatus: SearchStatus.error,
+            errorMessage: 'Failed to load top daily manga: ${e.toString()}',
           );
         } else {
           state = state.copyWith(
-            isLoadingMoreAllComics: false,
-            errorMessage: 'Failed to load more comics: ${e.toString()}',
+            isLoadingMoreTopDaily: false,
+            errorMessage:
+                'Failed to load more top daily manga: ${e.toString()}',
           );
         }
       }
     });
   }
 
-  /// Load more all comics for pagination
-  Future<void> loadMoreAllComics() async {
-    if (!state.canLoadMoreAllComics) return;
+  /// Load more top daily manga for pagination
+  Future<void> loadMoreTopDailyManga() async {
+    if (!state.canLoadMoreTopDaily) return;
 
-    final nextPage = state.currentAllComicsPage + 1;
-    await loadAllComics(page: nextPage);
+    final nextPage = state.currentTopDailyPage + 1;
+    await loadTopDailyManga(page: nextPage);
   }
 
-  /// Load discover content (popular and recommended comics)
-  Future<void> loadDiscoverContent() async {
-    runAsync('loadDiscoverContent', () async {
-      state = state.copyWith(discoverStatus: SearchStatus.loading);
+  /// Search manga (GET /manga/list with search query)
+  Future<void> searchManga({int page = 1}) async {
+    if (state.query.isEmpty) {
+      // Clear search results if query is empty
+      state = state.copyWith(
+        searchResults: const [],
+        searchMeta: null,
+        searchStatus: SearchStatus.initial,
+      );
+      return;
+    }
+
+    runAsync('searchManga', () async {
+      // Set loading state
+      if (page == 1) {
+        state = state.copyWith(searchStatus: SearchStatus.loading);
+      } else {
+        state = state.copyWith(isLoadingMoreSearch: true);
+      }
 
       try {
-        final discoverResponse = await _optimizedComicService.getDiscoverComics(
-          limit: 20,
+        final response = await _mangaService.searchManga(
+          query: state.query,
+          page: page,
+          pageSize: 20,
+          genre: state.selectedGenre,
+          format: state.selectedFormat,
+          country: state.selectedCountry,
         );
 
-        state = state.copyWith(
-          discoverStatus: SearchStatus.success,
-          popularComics: discoverResponse.popular,
-          recommendedComics: discoverResponse.recommended,
-          errorMessage: null,
-        );
+        if (page == 1) {
+          // First page - replace results
+          state = state.copyWith(
+            searchStatus: SearchStatus.success,
+            searchResults: response.data,
+            searchMeta: response.meta,
+            isLoadingMoreSearch: false,
+            hasMoreSearch: response.meta.hasMore,
+            errorMessage: null,
+          );
+        } else {
+          // Pagination - append results
+          final combinedResults = [
+            ...state.searchResults,
+            ...response.data,
+          ];
+
+          state = state.copyWith(
+            searchResults: combinedResults,
+            searchMeta: response.meta,
+            isLoadingMoreSearch: false,
+            hasMoreSearch: response.meta.hasMore,
+            errorMessage: null,
+          );
+        }
       } catch (e, stackTrace) {
-        logger.e('Error loading discover content',
-            error: e, stackTrace: stackTrace);
-        state = state.copyWith(
-          discoverStatus: SearchStatus.error,
-          errorMessage: 'Failed to load discover content: ${e.toString()}',
-        );
+        logger.e('Error searching manga', error: e, stackTrace: stackTrace);
+
+        if (page == 1) {
+          state = state.copyWith(
+            searchStatus: SearchStatus.error,
+            errorMessage: 'Failed to search manga: ${e.toString()}',
+          );
+        } else {
+          state = state.copyWith(
+            isLoadingMoreSearch: false,
+            errorMessage: 'Failed to load more results: ${e.toString()}',
+          );
+        }
       }
     });
+  }
+
+  /// Load more search results for pagination
+  Future<void> loadMoreSearchResults() async {
+    if (!state.canLoadMoreSearch) return;
+
+    final nextPage = state.currentSearchPage + 1;
+    await searchManga(page: nextPage);
+  }
+
+  /// Load all manga (GET /manga/list without search query)
+  Future<void> loadAllManga({int page = 1}) async {
+    runAsync('loadAllManga', () async {
+      // Set loading state
+      if (page == 1) {
+        state = state.copyWith(searchStatus: SearchStatus.loading);
+      } else {
+        state = state.copyWith(isLoadingMoreSearch: true);
+      }
+
+      try {
+        final response = await _mangaService.getMangaList(
+          page: page,
+          pageSize: 20,
+          genre: state.selectedGenre,
+          format: state.selectedFormat,
+          country: state.selectedCountry,
+          sort: state.sortBy ?? 'rating',
+        );
+
+        if (page == 1) {
+          // First page - replace results
+          state = state.copyWith(
+            searchStatus: SearchStatus.success,
+            searchResults: response.data,
+            searchMeta: response.meta,
+            isLoadingMoreSearch: false,
+            hasMoreSearch: response.meta.hasMore,
+            errorMessage: null,
+          );
+        } else {
+          // Pagination - append results
+          final combinedResults = [
+            ...state.searchResults,
+            ...response.data,
+          ];
+
+          state = state.copyWith(
+            searchResults: combinedResults,
+            searchMeta: response.meta,
+            isLoadingMoreSearch: false,
+            hasMoreSearch: response.meta.hasMore,
+            errorMessage: null,
+          );
+        }
+      } catch (e, stackTrace) {
+        logger.e('Error loading all manga', error: e, stackTrace: stackTrace);
+
+        if (page == 1) {
+          state = state.copyWith(
+            searchStatus: SearchStatus.error,
+            errorMessage: 'Failed to load manga: ${e.toString()}',
+          );
+        } else {
+          state = state.copyWith(
+            isLoadingMoreSearch: false,
+            errorMessage: 'Failed to load more manga: ${e.toString()}',
+          );
+        }
+      }
+    });
+  }
+
+  /// Load more all manga for pagination
+  Future<void> loadMoreAllManga() async {
+    if (!state.canLoadMoreSearch) return;
+
+    final nextPage = state.currentSearchPage + 1;
+    await loadAllManga(page: nextPage);
   }
 
   /// Update search query (called on text change, but doesn't trigger search)
@@ -159,33 +283,39 @@ class SearchNotifier extends BaseStateNotifier<SearchState> {
     // Update query and trigger search
     state = state.copyWith(query: query.trim());
 
-    // If query is empty, load all comics without search
-    if (query.trim().isEmpty) {
-      loadAllComics();
-      return;
-    }
-
-    // Trigger search immediately
-    loadAllComics();
+    // Trigger search
+    searchManga();
   }
 
   /// Clear search query
   void clearSearch() {
     searchController.clear();
-    state = state.copyWith(query: '');
-    // Reload all comics without search
-    loadAllComics();
+    state = state.copyWith(
+      query: '',
+      searchResults: const [],
+      searchMeta: null,
+      searchStatus: SearchStatus.initial,
+    );
   }
 
   /// Apply filters
-  void applyFilters({String? country, String? genre}) {
+  void applyFilters({
+    String? country,
+    String? genre,
+    String? format,
+    String? sort,
+  }) {
     state = state.copyWith(
       selectedCountry: country,
       selectedGenre: genre,
+      selectedFormat: format,
+      sortBy: sort,
     );
 
-    // Reload all comics with new filters
-    loadAllComics();
+    // Re-trigger search with new filters if there's a query
+    if (state.query.isNotEmpty) {
+      searchManga();
+    }
   }
 
   /// Clear filters
@@ -193,9 +323,21 @@ class SearchNotifier extends BaseStateNotifier<SearchState> {
     state = state.copyWith(
       selectedCountry: null,
       selectedGenre: null,
+      selectedFormat: null,
+      sortBy: null,
     );
 
-    // Reload all comics without filters
-    loadAllComics();
+    // Re-trigger search without filters if there's a query
+    if (state.query.isNotEmpty) {
+      searchManga();
+    }
+  }
+
+  /// Refresh all data
+  Future<void> refresh() async {
+    await Future.wait([
+      loadTopDailyManga(),
+      if (state.query.isNotEmpty) searchManga() else loadAllManga(),
+    ]);
   }
 }

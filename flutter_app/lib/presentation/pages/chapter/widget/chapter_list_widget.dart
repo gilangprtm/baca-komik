@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/mahas/widget/mahas_tile.dart';
-import '../../../../data/datasource/network/service/comic_service.dart';
-import '../../../../data/models/chapter_model.dart';
+import '../../../../data/datasource/network/service/shinigami_chapter_service.dart';
+import '../../../../data/models/shinigami/shinigami_models.dart';
 
 /// Widget for displaying chapter list in bottom sheet
 class ChapterListWidget extends StatefulWidget {
   final String comicId;
   final String currentChapterId;
-  final Function(Chapter) onChapterSelected;
+  final Function(ShinigamiChapter) onChapterSelected;
 
   const ChapterListWidget({
     super.key,
@@ -22,14 +22,14 @@ class ChapterListWidget extends StatefulWidget {
 }
 
 class _ChapterListWidgetState extends State<ChapterListWidget> {
-  final ComicService _comicService = ComicService();
+  final ShinigamiChapterService _chapterService = ShinigamiChapterService();
   final ScrollController _scrollController = ScrollController();
 
-  List<Chapter> _chapters = [];
+  List<ShinigamiChapter> _chapters = [];
   bool _isLoading = false;
   bool _hasMore = true;
   int _currentPage = 1;
-  final int _limit = 20;
+  final int _pageSize = 24;
 
   @override
   void initState() {
@@ -61,17 +61,17 @@ class _ChapterListWidgetState extends State<ChapterListWidget> {
     });
 
     try {
-      final response = await _comicService.getComicChapters(
-        comicId: widget.comicId,
+      final response = await _chapterService.getChaptersByMangaId(
+        mangaId: widget.comicId,
         page: 1,
-        limit: _limit,
-        sort: 'chapter_number',
-        order: 'desc',
+        pageSize: _pageSize,
+        sortBy: 'chapter_number',
+        sortOrder: 'desc',
       );
 
       setState(() {
-        _chapters = response.chapters;
-        _hasMore = response.meta.hasMore;
+        _chapters = response.data;
+        _hasMore = (response.meta.totalPage ?? 1) > _currentPage;
         _currentPage = 1;
         _isLoading = false;
       });
@@ -90,17 +90,17 @@ class _ChapterListWidgetState extends State<ChapterListWidget> {
     });
 
     try {
-      final response = await _comicService.getComicChapters(
-        comicId: widget.comicId,
+      final response = await _chapterService.getChaptersByMangaId(
+        mangaId: widget.comicId,
         page: _currentPage + 1,
-        limit: _limit,
-        sort: 'chapter_number',
-        order: 'desc',
+        pageSize: _pageSize,
+        sortBy: 'chapter_number',
+        sortOrder: 'desc',
       );
 
       setState(() {
-        _chapters.addAll(response.chapters);
-        _hasMore = response.meta.hasMore;
+        _chapters.addAll(response.data);
+        _hasMore = (response.meta.totalPage ?? 1) > (_currentPage + 1);
         _currentPage++;
         _isLoading = false;
       });
@@ -125,7 +125,7 @@ class _ChapterListWidgetState extends State<ChapterListWidget> {
         }
 
         final chapter = _chapters[index];
-        final isCurrentChapter = chapter.id == widget.currentChapterId;
+        final isCurrentChapter = chapter.chapterId == widget.currentChapterId;
 
         return Column(
           children: [
@@ -135,7 +135,7 @@ class _ChapterListWidgetState extends State<ChapterListWidget> {
                 color: AppColors.darkBackgroundColor,
                 child: Center(
                   child: Text(
-                    chapter.title ?? 'Chapter ${chapter.chapterNumber}',
+                    'Chapter ${chapter.chapterNumber}',
                     style: TextStyle(
                       fontWeight: isCurrentChapter
                           ? FontWeight.bold

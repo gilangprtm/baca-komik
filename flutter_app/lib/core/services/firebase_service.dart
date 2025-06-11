@@ -91,6 +91,16 @@ class FirebaseService {
       GlobalState.baseUrl = apiUrl;
     }
 
+    final shinigamiUrl = _remoteConfig.getString('url_shinigami');
+    if (shinigamiUrl.isNotEmpty) {
+      GlobalState.shinigamiUrl = shinigamiUrl;
+    }
+
+    final refererUrl = _remoteConfig.getString('url_referer');
+    if (refererUrl.isNotEmpty) {
+      GlobalState.refererUrl = refererUrl;
+    }
+
     // GlobalState.baseUrl = "http://192.168.1.9:3000/api";
   }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../riverpod/chapter/chapter_provider.dart';
-import '../../riverpod/chapter/chapter_state.dart';
 import 'widget/chapter_reader_content.dart';
 import 'widget/chapter_navigation_controls.dart';
 import 'widget/chapter_app_bar.dart';
@@ -17,23 +16,27 @@ class ChapterPage extends StatelessWidget {
       backgroundColor: AppColors.black,
       body: Consumer(
         builder: (context, ref, _) {
-          final status = ref.watch(
-            chapterProvider.select((state) => state.status),
+          final isLoading = ref.watch(
+            chapterProvider.select(
+                (state) => state.isLoadingDetail || state.isLoadingPages),
+          );
+          final hasError = ref.watch(
+            chapterProvider.select((state) => state.hasError),
           );
           final pages = ref.watch(
             chapterProvider.select((state) => state.pages),
           );
           final showControls = ref.watch(
-            chapterProvider.select((state) => state.isReaderControlsVisible),
+            chapterProvider.select((state) => state.showControls),
           );
 
           // Handle loading state
-          if (status == ChapterStateStatus.loading) {
+          if (isLoading) {
             return const ChapterLoadingWidget();
           }
 
           // Handle error state
-          if (status == ChapterStateStatus.error) {
+          if (hasError) {
             return const ChapterErrorWidget();
           }
 
