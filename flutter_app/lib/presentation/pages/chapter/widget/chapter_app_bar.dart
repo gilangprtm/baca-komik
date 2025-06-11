@@ -5,30 +5,34 @@ import '../../../../core/utils/mahas_utils.dart';
 import '../../../riverpod/chapter/chapter_provider.dart';
 
 /// Custom app bar for chapter page
-class ChapterAppBar extends ConsumerWidget implements PreferredSizeWidget {
+class ChapterAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ChapterAppBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final chapter = ref.watch(
-      chapterProvider.select((state) => state.selectedChapter),
-    );
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final chapter = ref.watch(
+          chapterProvider.select((state) => state.selectedChapter),
+        );
 
-    return AppBar(
-      backgroundColor: AppColors.getBackgroundColor(context),
-      title: Text(
-        'Chapter ${chapter?.chapterNumber ?? ''}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back_ios,
-          color: AppColors.getTextPrimaryColor(context),
-        ),
-        onPressed: () => Mahas.back(),
-      ),
+        return AppBar(
+          backgroundColor: AppColors.getBackgroundColor(context),
+          title: Text(
+            'Chapter ${chapter?.chapterNumber ?? ''}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: AppColors.getTextPrimaryColor(context),
+            ),
+            onPressed: () => Mahas.back(),
+          ),
+        );
+      },
     );
   }
 

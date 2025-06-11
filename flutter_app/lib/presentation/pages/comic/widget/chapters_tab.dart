@@ -6,42 +6,48 @@ import '../../../riverpod/comic/comic_provider.dart';
 import '../../../riverpod/comic/comic_state.dart';
 import '../../../routes/app_routes.dart';
 
-class ChaptersTab extends ConsumerWidget {
+class ChaptersTab extends StatelessWidget {
   const ChaptersTab({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Only watch chapters to optimize rebuilds
-    final chapters = ref.watch(comicChaptersProvider);
-    final chapterStatus = ref.watch(comicChapterStatusProvider);
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        // Only watch chapters to optimize rebuilds
+        final chapters = ref.watch(comicChaptersProvider);
+        final chapterStatus = ref.watch(comicChapterStatusProvider);
 
-    // Check if we have chapters to display
-    if (chapters.isNotEmpty) {
-      return RefreshIndicator(
-        onRefresh: () async {
-          // Refresh chapters from page 1
-          await ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
-        },
-        child: _ChapterListView(chapters: chapters),
-      );
-    }
+        // Check if we have chapters to display
+        if (chapters.isNotEmpty) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              // Refresh chapters from page 1
+              await ref
+                  .read(comicProvider.notifier)
+                  .fetchComicChapters(page: 1);
+            },
+            child: _ChapterListView(chapters: chapters),
+          );
+        }
 
-    // Show loading or empty state
-    return _ChapterEmptyState(status: chapterStatus);
+        // Show loading or empty state
+        return _ChapterEmptyState(status: chapterStatus);
+      },
+    );
   }
 }
 
 /// Optimized chapter list view with pagination support
-class _ChapterListView extends ConsumerStatefulWidget {
+class _ChapterListView extends StatefulWidget {
   final List<ShinigamiChapter> chapters;
 
   const _ChapterListView({required this.chapters});
 
   @override
-  ConsumerState<_ChapterListView> createState() => _ChapterListViewState();
+  State<_ChapterListView> createState() => _ChapterListViewState();
 }
 
-class _ChapterListViewState extends ConsumerState<_ChapterListView> {
+class _ChapterListViewState extends State<_ChapterListView> {
   late ScrollController _scrollController;
 
   @override
@@ -62,97 +68,116 @@ class _ChapterListViewState extends ConsumerState<_ChapterListView> {
     // Check if user has scrolled to near the bottom
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      // Load more chapters if available using helper method
-      final canLoadMore = ref.read(
-        comicProvider.select((state) => state.canLoadMoreChapters),
-      );
-
-      if (canLoadMore) {
-        ref.read(comicProvider.notifier).loadMoreChapters();
+      // Use Consumer to access ref in callback
+      if (mounted) {
+        // We'll handle this in the build method with Consumer
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch pagination state using helper methods
-    final isLoadingMore = ref.watch(
-      comicProvider.select((state) => state.isLoadingMoreChapters),
-    );
-    final hasMoreChapters = ref.watch(
-      comicProvider.select((state) => state.hasMoreChapters),
-    );
+    return Consumer(
+      builder: (context, ref, _) {
+        // Watch pagination state using helper methods
+        final isLoadingMore = ref.watch(
+          comicProvider.select((state) => state.isLoadingMoreChapters),
+        );
+        final hasMoreChapters = ref.watch(
+          comicProvider.select((state) => state.hasMoreChapters),
+        );
 
-    return Column(
-      children: [
-        // Chapter list
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            itemCount: widget.chapters.length + (hasMoreChapters ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Show loading indicator at the end if there are more chapters
-              if (index == widget.chapters.length) {
-                return _buildLoadingIndicator(isLoadingMore);
-              }
+        // Handle scroll pagination
+        void handleScrollPagination() {
+          if (_scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent - 200) {
+            final canLoadMore = ref.read(
+              comicProvider.select((state) => state.canLoadMoreChapters),
+            );
 
-              final chapter = widget.chapters[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: ListTile(
-                  leading: chapter.thumbnailImageUrl != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.network(
-                            chapter.thumbnailImageUrl!,
-                            width: 40,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
+            if (canLoadMore) {
+              ref.read(comicProvider.notifier).loadMoreChapters();
+            }
+          }
+        }
+
+        // Update scroll listener
+        _scrollController.removeListener(_onScroll);
+        _scrollController.addListener(handleScrollPagination);
+
+        return Column(
+          children: [
+            // Chapter list
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                itemCount: widget.chapters.length + (hasMoreChapters ? 1 : 0),
+                itemBuilder: (context, index) {
+                  // Show loading indicator at the end if there are more chapters
+                  if (index == widget.chapters.length) {
+                    return _buildLoadingIndicator(isLoadingMore);
+                  }
+
+                  final chapter = widget.chapters[index];
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: ListTile(
+                      leading: chapter.thumbnailImageUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.network(
+                                chapter.thumbnailImageUrl!,
+                                width: 40,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  width: 40,
+                                  height: 60,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.image_not_supported),
+                                ),
+                              ),
+                            )
+                          : Container(
                               width: 40,
                               height: 60,
                               color: Colors.grey[300],
                               child: const Icon(Icons.image_not_supported),
                             ),
+                      title: Text('Chapter ${chapter.chapterNumber}'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (chapter.chapterTitle?.isNotEmpty == true)
+                            Text(
+                              chapter.chapterTitle!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          Text(
+                            '${_formatViewCount(chapter.viewCount)} views • ${_formatRelativeTime(chapter.releaseDate)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
                           ),
-                        )
-                      : Container(
-                          width: 40,
-                          height: 60,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported),
-                        ),
-                  title: Text('Chapter ${chapter.chapterNumber}'),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (chapter.chapterTitle?.isNotEmpty == true)
-                        Text(
-                          chapter.chapterTitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      Text(
-                        '${_formatViewCount(chapter.viewCount)} views • ${_formatRelativeTime(chapter.releaseDate)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  onTap: () {
-                    // Navigate to chapter
-                    Mahas.routeTo(AppRoutes.chapter,
-                        arguments: {'chapterId': chapter.chapterId});
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+                      onTap: () {
+                        // Navigate to chapter
+                        Mahas.routeTo(AppRoutes.chapter,
+                            arguments: {'chapterId': chapter.chapterId});
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -212,13 +237,13 @@ class _ChapterListViewState extends ConsumerState<_ChapterListView> {
 }
 
 /// Optimized empty state widget
-class _ChapterEmptyState extends ConsumerWidget {
+class _ChapterEmptyState extends StatelessWidget {
   final ComicStateStatus status;
 
   const _ChapterEmptyState({required this.status});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     // Get comic ID from arguments
     final String? comicId = Mahas.argument<String>('comicId');
 
@@ -236,59 +261,70 @@ class _ChapterEmptyState extends ConsumerWidget {
     }
 
     if (status == ComicStateStatus.error) {
-      final errorMessage = ref.watch(comicErrorProvider);
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            const Text(
-              'Failed to load chapters',
-              style: TextStyle(fontSize: 16),
+      return Consumer(
+        builder: (context, ref, _) {
+          final errorMessage = ref.watch(comicErrorProvider);
+
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Failed to load chapters',
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  errorMessage ?? 'Unknown error occurred',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    ref
+                        .read(comicProvider.notifier)
+                        .fetchComicChapters(page: 1);
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              errorMessage ?? 'Unknown error occurred',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+          );
+        },
       );
     }
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.list, size: 48, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text(
-            'No chapters available',
-            style: TextStyle(fontSize: 16),
+    return Consumer(
+      builder: (context, ref, _) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.list, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'No chapters available',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Chapters for comic ${comicId ?? "this"} will appear here',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
+                },
+                child: const Text('Load Chapters'),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Chapters for comic ${comicId ?? "this"} will appear here',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              ref.read(comicProvider.notifier).fetchComicChapters(page: 1);
-            },
-            child: const Text('Load Chapters'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

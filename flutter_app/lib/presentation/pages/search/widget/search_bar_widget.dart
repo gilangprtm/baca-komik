@@ -4,28 +4,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../riverpod/search/search_provider.dart';
 
-class SearchBarWidget extends ConsumerWidget {
+class SearchBarWidget extends StatelessWidget {
   const SearchBarWidget({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final searchQuery = ref.watch(searchQueryProvider);
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final searchQuery = ref.watch(searchQueryProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      color: AppColors.getBackgroundColor(context),
-      child: SearchTextField(
-        initialValue: searchQuery,
-        onSubmitted: (query) {
-          ref.read(searchProvider.notifier).searchComics(query);
-        },
-        onChanged: (query) {
-          ref.read(searchProvider.notifier).updateSearchQuery(query);
-        },
-        onClear: () {
-          ref.read(searchProvider.notifier).clearSearch();
-        },
-      ),
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          color: AppColors.getBackgroundColor(context),
+          child: SearchTextField(
+            initialValue: searchQuery,
+            onSubmitted: (query) {
+              ref.read(searchProvider.notifier).searchComics(query);
+            },
+            onChanged: (query) {
+              ref.read(searchProvider.notifier).updateSearchQuery(query);
+            },
+            onClear: () {
+              ref.read(searchProvider.notifier).clearSearch();
+            },
+          ),
+        );
+      },
     );
   }
 }

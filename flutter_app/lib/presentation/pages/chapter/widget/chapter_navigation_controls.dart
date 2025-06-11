@@ -8,7 +8,7 @@ import '../../../riverpod/chapter/chapter_provider.dart';
 import 'chapter_list_widget.dart';
 
 /// Navigation controls for chapter page
-class ChapterNavigationControls extends ConsumerWidget {
+class ChapterNavigationControls extends StatelessWidget {
   const ChapterNavigationControls({super.key});
 
   /// Show chapter list modal for navigation
@@ -37,81 +37,86 @@ class ChapterNavigationControls extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hasNextChapter = ref.watch(
-      chapterProvider.select((state) => state.hasNextChapter),
-    );
-    final hasPreviousChapter = ref.watch(
-      chapterProvider.select((state) => state.hasPreviousChapter),
-    );
-    final notifier = ref.read(chapterProvider.notifier);
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        height: 100,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Previous chapter button
-            if (hasPreviousChapter)
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: MahasButton(
-                  type: ButtonType.primary,
-                  borderRadius: MahasBorderRadius.circle,
-                  color: AppColors.darkSurfaceColor,
-                  icon: const Icon(
-                    Icons.skip_previous,
-                    color: Colors.white,
-                    size: 24,
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final hasNextChapter = ref.watch(
+          chapterProvider.select((state) => state.hasNextChapter),
+        );
+        final hasPreviousChapter = ref.watch(
+          chapterProvider.select((state) => state.hasPreviousChapter),
+        );
+        final notifier = ref.read(chapterProvider.notifier);
+
+        return Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 100,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Previous chapter button
+                if (hasPreviousChapter)
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: MahasButton(
+                      type: ButtonType.primary,
+                      borderRadius: MahasBorderRadius.circle,
+                      color: AppColors.darkSurfaceColor,
+                      icon: const Icon(
+                        Icons.skip_previous,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        notifier.previousChapter();
+                      },
+                    ),
                   ),
-                  onPressed: () {
-                    notifier.previousChapter();
-                  },
+                // Chapter list button
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: MahasButton(
+                    type: ButtonType.primary,
+                    borderRadius: MahasBorderRadius.circle,
+                    color: AppColors.darkSurfaceColor,
+                    icon: const Icon(
+                      Icons.format_list_bulleted,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () => _showChapterList(context, ref),
+                  ),
                 ),
-              ),
-            // Chapter list button
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: MahasButton(
-                type: ButtonType.primary,
-                borderRadius: MahasBorderRadius.circle,
-                color: AppColors.darkSurfaceColor,
-                icon: const Icon(
-                  Icons.format_list_bulleted,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                onPressed: () => _showChapterList(context, ref),
-              ),
+                // Next chapter button
+                if (hasNextChapter)
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: MahasButton(
+                      type: ButtonType.primary,
+                      borderRadius: MahasBorderRadius.circle,
+                      color: AppColors.darkSurfaceColor,
+                      icon: const Icon(
+                        Icons.skip_next,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        notifier.nextChapter();
+                      },
+                    ),
+                  ),
+              ],
             ),
-            // Next chapter button
-            if (hasNextChapter)
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: MahasButton(
-                  type: ButtonType.primary,
-                  borderRadius: MahasBorderRadius.circle,
-                  color: AppColors.darkSurfaceColor,
-                  icon: const Icon(
-                    Icons.skip_next,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    notifier.nextChapter();
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

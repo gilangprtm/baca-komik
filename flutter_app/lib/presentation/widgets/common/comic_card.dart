@@ -335,10 +335,15 @@ class ComicCard extends StatelessWidget {
     String timeAgo = '';
     if (releaseDate != null) {
       final difference = DateTime.now().difference(releaseDate);
-      if (difference.inHours < 24) {
-        timeAgo = '${difference.inHours} jam';
-      } else {
+      // hingga ke menit hitung
+      if (difference.inDays > 0) {
         timeAgo = '${difference.inDays} hari';
+      } else if (difference.inHours > 0) {
+        timeAgo = '${difference.inHours} jam';
+      } else if (difference.inMinutes > 0) {
+        timeAgo = '${difference.inMinutes} menit';
+      } else {
+        timeAgo = 'Baru saja';
       }
     }
 

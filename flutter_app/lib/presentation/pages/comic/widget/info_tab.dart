@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/models/shinigami/shinigami_models.dart';
 
-class InfoTab extends ConsumerWidget {
+class InfoTab extends StatelessWidget {
   final ShinigamiManga manga;
 
   const InfoTab({
@@ -11,7 +10,7 @@ class InfoTab extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
