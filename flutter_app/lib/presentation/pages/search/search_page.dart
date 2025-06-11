@@ -4,9 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/mahas/widget/mahas_tab.dart';
 import '../../riverpod/search/search_provider.dart';
 import 'widget/search_bar_widget.dart';
-import 'widget/popular_tab.dart';
-import 'widget/all_manga_tab.dart';
-import 'widget/search_results_tab.dart';
+import 'widget/search_tab_grid.dart';
 
 class SearchPage extends StatelessWidget {
   const SearchPage({Key? key}) : super(key: key);
@@ -34,41 +32,51 @@ class SearchPage extends StatelessWidget {
   }
 }
 
-class SearchPageContent extends ConsumerWidget {
+class SearchPageContent extends StatelessWidget {
   const SearchPageContent({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Watch search query to determine if we should show search results
-    final searchQuery = ref.watch(
-      searchProvider.select((state) => state.query),
-    );
-    final hasSearchQuery = searchQuery.isNotEmpty;
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        // Watch search query to determine if we should show search results
+        final searchQuery = ref.watch(
+          searchProvider.select((state) => state.query),
+        );
+        final hasSearchQuery = searchQuery.isNotEmpty;
 
-    // If user is searching, show search results
-    if (hasSearchQuery) {
-      return Column(
-        children: [
-          // Search results content
-          const Expanded(
-            child: SearchResultsTab(),
-          ),
-        ],
-      );
-    }
+        // If user is searching, show search results
+        if (hasSearchQuery) {
+          return Column(
+            children: [
+              // Search results content
+              Expanded(
+                child: SearchTabGrid(
+                  config: SearchTabConfigs.searchResults(ref),
+                ),
+              ),
+            ],
+          );
+        }
 
-    // Default view with tabs
-    return MahasPillTabBar(
-      tabLabels: const ['Popular', 'All Comics'],
-      tabViews: [
-        const PopularTab(),
-        const AllMangaTab(),
-      ],
-      borderRadius: 12,
-      activeColor: AppColors.getCardColor(context),
-      backgroundColor: Colors.grey.shade200,
-      activeTextColor: Colors.white,
-      inactiveTextColor: Colors.black87,
+        // Default view with tabs
+        return MahasPillTabBar(
+          tabLabels: const ['Popular', 'All Comics'],
+          tabViews: [
+            SearchTabGrid(
+              config: SearchTabConfigs.popular(ref),
+            ),
+            SearchTabGrid(
+              config: SearchTabConfigs.allManga(ref),
+            ),
+          ],
+          borderRadius: 12,
+          activeColor: AppColors.getCardColor(context),
+          backgroundColor: Colors.grey.shade200,
+          activeTextColor: Colors.white,
+          inactiveTextColor: Colors.black87,
+        );
+      },
     );
   }
 }

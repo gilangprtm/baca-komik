@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../riverpod/comic/comic_provider.dart';
 
-class ComicErrorWidget extends ConsumerWidget {
+class ComicErrorWidget extends StatelessWidget {
   final String? errorMessage;
 
   const ComicErrorWidget({
@@ -11,7 +11,7 @@ class ComicErrorWidget extends ConsumerWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -28,12 +28,16 @@ class ComicErrorWidget extends ConsumerWidget {
             style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Retry loading comic details
-              ref.read(comicProvider.notifier).fetchComicDetails();
+          Consumer(
+            builder: (context, ref, _) {
+              return ElevatedButton(
+                onPressed: () {
+                  // Retry loading comic details
+                  ref.read(comicProvider.notifier).fetchComicDetails();
+                },
+                child: const Text('Retry'),
+              );
             },
-            child: const Text('Retry'),
           ),
         ],
       ),

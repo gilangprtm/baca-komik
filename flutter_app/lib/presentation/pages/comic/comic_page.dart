@@ -52,43 +52,47 @@ class ComicPage extends StatelessWidget {
 }
 
 /// Separate widget for success state to optimize rebuilds
-class _ComicSuccessView extends ConsumerWidget {
+class _ComicSuccessView extends StatelessWidget {
   const _ComicSuccessView();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Only watch selectedComic for this view
-    final comic = ref.watch(comicDetailProvider);
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        // Only watch selectedComic for this view
+        final comic = ref.watch(comicDetailProvider);
 
-    if (comic == null) {
-      return const ComicErrorWidget(errorMessage: "Comic not found");
-    }
+        if (comic == null) {
+          return const ComicErrorWidget(errorMessage: "Comic not found");
+        }
 
-    return NestedScrollView(
-      controller: ScrollController(),
-      headerSliverBuilder: (context, innerBoxIsScrolled) {
-        return [
-          _ComicAppBar(comic: comic),
-        ];
-      },
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Comic header with cover image and title
-            ComicHeader(manga: comic),
+        return NestedScrollView(
+          controller: ScrollController(),
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              _ComicAppBar(comic: comic),
+            ];
+          },
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Comic header with cover image and title
+                ComicHeader(manga: comic),
 
-            // Action buttons (Read, Bookmark, Add to Reading List)
-            ComicActionButtons(manga: comic),
+                // Action buttons (Read, Bookmark, Add to Reading List)
+                ComicActionButtons(manga: comic),
 
-            // Tab bar for chapters, info, and comments
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.65,
-              child: _ComicTabBar(comic: comic),
+                // Tab bar for chapters, info, and comments
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.65,
+                  child: _ComicTabBar(comic: comic),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -125,13 +129,13 @@ class _ComicAppBar extends StatelessWidget {
 }
 
 /// Optimized TabBar widget
-class _ComicTabBar extends ConsumerWidget {
+class _ComicTabBar extends StatelessWidget {
   final ShinigamiManga comic;
 
   const _ComicTabBar({required this.comic});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return MahasPillTabBar(
       borderRadius: 12,
       tabLabels: const ['Chapters', 'Info', 'Comments'],
