@@ -396,6 +396,139 @@ GET /v1/genre/list
 - `data[].view_count`: Number of views
 - `data[].release_date`: Release date in ISO 8601 format
 
+## 6. Comment List - Commento API
+
+### Base URL
+
+```
+https://commento.shngm.io/api
+```
+
+### Request
+
+**For Comic Comments:**
+
+```
+GET /comment?path=series%2F{manga_id}&pageSize=10&page=2&lang=en&sortBy=insertedAt_desc
+```
+
+**For Chapter Comments:**
+
+```
+GET /comment?path=chapter%2F{chapter_id}&pageSize=10&page=20&lang=en&sortBy=insertedAt_desc
+```
+
+**Parameters:**
+
+- `path`: Path with ID (URL encoded):
+  - Comic: `series/{manga_id}`
+  - Chapter: `chapter/{chapter_id}`
+- `pageSize`: Number of comments per page (default: 10)
+- `page`: Page number (starts from 1)
+- `lang`: Language code (default: en)
+- `sortBy`: Sort order (insertedAt_desc for newest first)
+
+### Response Structure
+
+```json
+{
+  "errno": 0,
+  "errmsg": "",
+  "data": {
+    "page": 2,
+    "totalPages": 4,
+    "pageSize": 10,
+    "count": 63,
+    "data": [
+      {
+        "status": "approved",
+        "comment": "icip dulu le\n",
+        "link": "",
+        "nick": "crazy Explorer ",
+        "pid": null,
+        "rid": null,
+        "user_id": 11672,
+        "sticky": null,
+        "like": 0,
+        "objectId": 173746,
+        "level": 0,
+        "type": "guest",
+        "label": null,
+        "avatar": "https://profilestorage.shngm.id/profile/e5e4bf8a.jpg",
+        "orig": "icip dulu le",
+        "time": 1749135391000,
+        "children": []
+      },
+      {
+        "status": "approved",
+        "comment": "Hmm bagus ga\n",
+        "link": "https://go.shng.me/user/01effc57-008f-66c6-8487-0242ac120006",
+        "nick": "Frfrfr",
+        "pid": null,
+        "rid": null,
+        "user_id": 16916,
+        "sticky": null,
+        "like": 0,
+        "objectId": 144849,
+        "level": 1,
+        "type": "guest",
+        "label": null,
+        "avatar": "https://profilestorage.shngm.id/profile/3e7eaea1.jpg",
+        "orig": "Hmm bagus ga",
+        "time": 1749023775000,
+        "children": [
+          {
+            "status": "approved",
+            "comment": "bagus bgt\n",
+            "link": "https://go.shng.me/user/01eff52b-a050-62ce-b0d7-0242ac120007",
+            "nick": "Akira",
+            "pid": 144849,
+            "rid": 144849,
+            "user_id": 222,
+            "sticky": null,
+            "like": 0,
+            "objectId": 167665,
+            "level": 2,
+            "type": "guest",
+            "label": null,
+            "avatar": "https://profilestorage.shngm.id/profile/b4b3acf2.jpg",
+            "orig": "bagus bgt",
+            "time": 1749112722000,
+            "reply_user": {
+              "nick": "Frfrfr",
+              "link": "https://go.shng.me/user/01effc57-008f-66c6-8487-0242ac120006",
+              "avatar": "https://profilestorage.shngm.id/profile/3e7eaea1.jpg"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Response Fields:**
+
+- `errno`: Error number (0 = success)
+- `errmsg`: Error message (empty on success)
+- `data.page`: Current page number
+- `data.totalPages`: Total number of pages
+- `data.pageSize`: Items per page
+- `data.count`: Total number of comments
+- `data.data[]`: Array of comment objects
+  - `status`: Comment status (approved, pending, etc.)
+  - `comment`: Comment text content
+  - `nick`: User nickname
+  - `user_id`: User identifier
+  - `avatar`: User avatar URL
+  - `time`: Comment timestamp (Unix timestamp in milliseconds)
+  - `like`: Number of likes
+  - `level`: Comment level (0 = root, 1+ = reply depth)
+  - `children[]`: Array of reply comments (nested structure)
+  - `pid`: Parent comment ID (for replies)
+  - `rid`: Root comment ID (for nested replies)
+  - `reply_user`: Information about the user being replied to
+
 ## Notes
 
 1. **Pagination**: All list endpoints support pagination with `page` parameter
@@ -403,8 +536,12 @@ GET /v1/genre/list
 3. **Filtering**: Use `is_update=true&sort=latest` for latest updates
 4. **Image URLs**: Always use the provided base_url + path + filename structure
 5. **Chapter Navigation**: Use `prev_chapter_id` and `next_chapter_id` for navigation
-6. **Status Codes**:
-   - `retcode: 0` = Success
+6. **Comment System**: Uses Commento API with different base URL and response format
+7. **Status Codes**:
+   - `retcode: 0` = Success (Shinigami API)
+   - `errno: 0` = Success (Commento API)
    - `retcode: 1` = Error (assumed)
-7. **Timestamps**: All timestamps are in ISO 8601 format
-8. **Missing Endpoints**: Chapter list endpoint for specific manga not found (404)
+8. **Timestamps**:
+   - Shinigami API: ISO 8601 format
+   - Commento API: Unix timestamp in milliseconds
+9. **Missing Endpoints**: Chapter list endpoint for specific manga not found (404)

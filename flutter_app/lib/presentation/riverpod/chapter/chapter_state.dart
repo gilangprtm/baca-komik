@@ -41,6 +41,14 @@ class ChapterState {
   final bool isTrackingProgress;
   final DateTime? lastReadAt;
 
+  // Comment state
+  final ChapterStateStatus commentStatus;
+  final List<CommentoComment> comments;
+  final CommentoCommentListResponse? commentPagination;
+  final bool isLoadingMoreComments;
+  final bool hasMoreComments;
+  final int totalCommentCount;
+
   const ChapterState({
     this.detailStatus = ChapterStateStatus.initial,
     this.pagesStatus = ChapterStateStatus.initial,
@@ -64,6 +72,12 @@ class ChapterState {
     this.errorMessage,
     this.isTrackingProgress = false,
     this.lastReadAt,
+    this.commentStatus = ChapterStateStatus.initial,
+    this.comments = const [],
+    this.commentPagination,
+    this.isLoadingMoreComments = false,
+    this.hasMoreComments = true,
+    this.totalCommentCount = 0,
   });
 
   ChapterState copyWith({
@@ -89,6 +103,12 @@ class ChapterState {
     String? errorMessage,
     bool? isTrackingProgress,
     DateTime? lastReadAt,
+    ChapterStateStatus? commentStatus,
+    List<CommentoComment>? comments,
+    CommentoCommentListResponse? commentPagination,
+    bool? isLoadingMoreComments,
+    bool? hasMoreComments,
+    int? totalCommentCount,
   }) {
     return ChapterState(
       detailStatus: detailStatus ?? this.detailStatus,
@@ -113,6 +133,13 @@ class ChapterState {
       errorMessage: errorMessage ?? this.errorMessage,
       isTrackingProgress: isTrackingProgress ?? this.isTrackingProgress,
       lastReadAt: lastReadAt ?? this.lastReadAt,
+      commentStatus: commentStatus ?? this.commentStatus,
+      comments: comments ?? this.comments,
+      commentPagination: commentPagination ?? this.commentPagination,
+      isLoadingMoreComments:
+          isLoadingMoreComments ?? this.isLoadingMoreComments,
+      hasMoreComments: hasMoreComments ?? this.hasMoreComments,
+      totalCommentCount: totalCommentCount ?? this.totalCommentCount,
     );
   }
 
@@ -135,10 +162,12 @@ class ChapterState {
   bool get isLoadingPages => pagesStatus == ChapterStateStatus.loading;
   bool get isLoadingNavigation =>
       navigationStatus == ChapterStateStatus.loading;
+  bool get isLoadingComments => commentStatus == ChapterStateStatus.loading;
   bool get hasError =>
       detailStatus == ChapterStateStatus.error ||
       pagesStatus == ChapterStateStatus.error ||
-      navigationStatus == ChapterStateStatus.error;
+      navigationStatus == ChapterStateStatus.error ||
+      commentStatus == ChapterStateStatus.error;
   bool get isSuccess =>
       detailStatus == ChapterStateStatus.success &&
       pagesStatus == ChapterStateStatus.success;
@@ -179,6 +208,29 @@ class ChapterState {
       chapterTitle.isNotEmpty ? chapterTitle : 'Chapter $chapterNumber';
   String get fullTitle =>
       'Chapter $chapterNumber${chapterTitle.isNotEmpty ? ': $chapterTitle' : ''}';
+
+  // Comment helpers
+  int get currentCommentPage => commentPagination?.page ?? 0;
+  int get totalCommentPages => commentPagination?.totalPages ?? 0;
+  bool get hasComments => comments.isNotEmpty;
+  bool get canLoadMoreComments => hasMoreComments && !isLoadingMoreComments;
+
+  // Helper methods for comment info
+  List<CommentoComment> get rootComments =>
+      comments.where((comment) => comment.isRootComment).toList();
+  int get rootCommentCount => rootComments.length;
+  int get replyCount => comments.length - rootCommentCount;
+
+  // Helper method to get comment statistics
+  Map<String, dynamic> get commentStats => {
+        'total_comments': totalCommentCount,
+        'loaded_comments': comments.length,
+        'root_comments': rootCommentCount,
+        'replies': replyCount,
+        'current_page': currentCommentPage,
+        'total_pages': totalCommentPages,
+        'has_more': hasMoreComments,
+      };
 
   /// Initial state factory
   factory ChapterState.initial() => const ChapterState();

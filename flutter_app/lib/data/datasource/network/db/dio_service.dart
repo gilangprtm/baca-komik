@@ -6,6 +6,7 @@ import '../../../../core/base/global_state.dart';
 enum UrlType {
   baseUrl,
   shinigamiApi,
+  commentApi,
   customUrl, // For handling complete URLs
 }
 
@@ -18,6 +19,8 @@ class DioService {
         return GlobalState.baseUrl;
       case UrlType.shinigamiApi:
         return GlobalState.shinigamiUrl;
+      case UrlType.commentApi:
+        return GlobalState.commentUrl;
       case UrlType.customUrl:
         return ""; // Empty string as we'll use the full path for custom URLs
     }

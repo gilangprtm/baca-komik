@@ -27,6 +27,11 @@ final chapterNavigationStatusProvider =
   return ref.watch(chapterProvider.select((state) => state.navigationStatus));
 });
 
+final chapterCommentStatusProvider =
+    Provider.autoDispose<ChapterStateStatus>((ref) {
+  return ref.watch(chapterProvider.select((state) => state.commentStatus));
+});
+
 // Data providers
 final chapterDetailProvider = Provider.autoDispose<ShinigamiChapter?>((ref) {
   return ref.watch(chapterProvider.select((state) => state.selectedChapter));
@@ -39,6 +44,17 @@ final chapterPagesProvider = Provider.autoDispose<List<ShinigamiPage>>((ref) {
 final chapterNavigationProvider =
     Provider.autoDispose<ShinigamiChapterNavigation?>((ref) {
   return ref.watch(chapterProvider.select((state) => state.navigation));
+});
+
+// Comment providers
+final chapterCommentsProvider =
+    Provider.autoDispose<List<CommentoComment>>((ref) {
+  return ref.watch(chapterProvider.select((state) => state.comments));
+});
+
+final chapterCommentStatsProvider =
+    Provider.autoDispose<Map<String, dynamic>>((ref) {
+  return ref.watch(chapterProvider.select((state) => state.commentStats));
 });
 
 final chapterMetaProvider = Provider.autoDispose<ShinigamiMeta?>((ref) {
@@ -157,7 +173,8 @@ final chapterLoadingProvider = Provider.autoDispose<bool>((ref) {
   return ref.watch(chapterProvider.select((state) =>
       state.isLoadingDetail ||
       state.isLoadingPages ||
-      state.isLoadingNavigation));
+      state.isLoadingNavigation ||
+      state.isLoadingComments));
 });
 
 final chapterSuccessProvider = Provider.autoDispose<bool>((ref) {

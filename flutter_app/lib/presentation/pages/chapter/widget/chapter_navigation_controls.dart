@@ -5,6 +5,7 @@ import '../../../../core/mahas/widget/mahas_button.dart';
 import '../../../../core/utils/type_utils.dart';
 import '../../../../core/mahas/widget/mahas_bottomsheet.dart';
 import '../../../riverpod/chapter/chapter_provider.dart';
+import 'chapter_comments_widget.dart';
 import 'chapter_list_widget.dart';
 
 /// Navigation controls for chapter page
@@ -15,6 +16,7 @@ class ChapterNavigationControls extends StatelessWidget {
   void _showChapterList(BuildContext context, WidgetRef ref) {
     final chapter =
         ref.read(chapterProvider.select((state) => state.selectedChapter));
+    final notifier = ref.read(chapterProvider.notifier);
 
     if (chapter?.mangaId == null) return;
 
@@ -29,9 +31,21 @@ class ChapterNavigationControls extends StatelessWidget {
           currentChapterId: chapter.chapterId,
           onChapterSelected: (selectedChapter) {
             Navigator.of(context).pop(); // Close bottom sheet
-            // notifier.goToChapter(selectedChapter.chapterId);
+            notifier.goToChapter(selectedChapter.chapterId);
           },
         ),
+      ),
+    );
+  }
+
+  void _showCommentList(BuildContext context, WidgetRef ref) {
+    MahasBottomSheet.show(
+      context: context,
+      title: 'Comments',
+      height: MediaQuery.of(context).size.height * 0.8,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        child: const ChapterCommentsWidget(),
       ),
     );
   }
@@ -93,6 +107,26 @@ class ChapterNavigationControls extends StatelessWidget {
                     onPressed: () => _showChapterList(context, ref),
                   ),
                 ),
+                // Chapter comment button
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: MahasButton(
+                    type: ButtonType.primary,
+                    borderRadius: MahasBorderRadius.circle,
+                    color: AppColors.darkSurfaceColor,
+                    icon: const Icon(
+                      Icons.comment,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      print('Comment button pressed');
+                      _showCommentList(context, ref);
+                    },
+                  ),
+                ),
+
                 // Next chapter button
                 if (hasNextChapter)
                   SizedBox(

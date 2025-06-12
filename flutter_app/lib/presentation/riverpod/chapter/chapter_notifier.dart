@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../../core/base/base_state_notifier.dart';
 import '../../../core/utils/mahas_utils.dart';
-import '../../../data/datasource/network/service/shinigami_chapter_service.dart';
+import '../../../data/datasource/network/service/shinigami_services.dart';
 import '../../../data/models/shinigami/shinigami_models.dart';
 import 'chapter_state.dart';
 
 class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   final ShinigamiChapterService _chapterService = ShinigamiChapterService();
+  final CommentoCommentService _commentService = CommentoCommentService();
 
   // Store initial state for easy reset
   static final ChapterState _initialState = ChapterState();
@@ -18,6 +19,13 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
     state = _initialState.copyWith(
       detailStatus: ChapterStateStatus.loading,
       pagesStatus: ChapterStateStatus.loading,
+      // Reset comment state to initial values
+      commentStatus: ChapterStateStatus.initial,
+      comments: const [],
+      commentPagination: null,
+      isLoadingMoreComments: false,
+      hasMoreComments: true,
+      totalCommentCount: 0,
     );
   }
 
@@ -183,5 +191,145 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
     runAsync('goToChapter', () async {
       await fetchChapterDetails(chapterId);
     });
+  }
+
+  /// Fetch comments for the current chapter
+  Future<void> fetchComments({int page = 1, int pageSize = 10}) async {
+    runAsync('fetchComments', () async {
+      final _chapterId = state.chapterId;
+      if (_chapterId.isEmpty) {
+        return;
+      }
+
+      try {
+        // Set loading state for comments
+        if (page == 1) {
+          state = state.copyWith(commentStatus: ChapterStateStatus.loading);
+        } else {
+          state = state.copyWith(isLoadingMoreComments: true);
+        }
+
+        // Get comments from Commento API using chapter path
+        final commentResponse = await _commentService.getChapterComments(
+          chapterId: _chapterId,
+          page: page,
+          pageSize: pageSize,
+        );
+
+        if (commentResponse.isSuccess) {
+          // If this is the first page, replace comments
+          if (page == 1) {
+            state = state.copyWith(
+              commentStatus: ChapterStateStatus.success,
+              comments: commentResponse.comments,
+              commentPagination: commentResponse.data,
+              isLoadingMoreComments: false,
+              hasMoreComments: commentResponse.data.hasMore,
+              totalCommentCount: commentResponse.data.count,
+              errorMessage: null,
+            );
+          } else {
+            // For pagination, append new comments to existing ones
+            final combinedComments = [
+              ...state.comments,
+              ...commentResponse.comments,
+            ];
+
+            state = state.copyWith(
+              comments: combinedComments,
+              commentPagination: commentResponse.data,
+              isLoadingMoreComments: false,
+              hasMoreComments: commentResponse.data.hasMore,
+              totalCommentCount: commentResponse.data.count,
+            );
+          }
+        } else {
+          // Handle API error
+          if (page == 1) {
+            state = state.copyWith(
+              commentStatus: ChapterStateStatus.error,
+              errorMessage:
+                  'Failed to load comments: ${commentResponse.errmsg}',
+            );
+          } else {
+            state = state.copyWith(isLoadingMoreComments: false);
+          }
+        }
+      } catch (e, stackTrace) {
+        logger.e('Error fetching chapter comments',
+            error: e, stackTrace: stackTrace);
+
+        if (page == 1) {
+          state = state.copyWith(
+            commentStatus: ChapterStateStatus.error,
+            errorMessage: 'Failed to load comments: ${e.toString()}',
+          );
+        } else {
+          state = state.copyWith(isLoadingMoreComments: false);
+        }
+      }
+    });
+  }
+
+  /// Load more comments for pagination
+  Future<void> loadMoreComments() async {
+    // Don't load if already loading or no more comments
+    if (state.isLoadingMoreComments || !state.hasMoreComments) {
+      return;
+    }
+
+    final currentPage = state.commentPagination?.page ?? 0;
+    final nextPage = currentPage + 1;
+
+    try {
+      await fetchComments(page: nextPage);
+    } catch (e, stackTrace) {
+      logger.e('Error loading more chapter comments',
+          error: e, stackTrace: stackTrace);
+      // Reset loading state on error
+      state = state.copyWith(isLoadingMoreComments: false);
+    }
+  }
+
+  /// Get comment statistics for the current chapter
+  Future<void> fetchCommentStats() async {
+    runAsync('fetchCommentStats', () async {
+      final _chapterId = state.chapterId;
+      if (_chapterId.isEmpty) {
+        return;
+      }
+
+      try {
+        final stats = await _commentService.getCommentStats(_chapterId);
+
+        state = state.copyWith(
+          totalCommentCount: stats['total_comments'] as int? ?? 0,
+        );
+      } catch (e, stackTrace) {
+        logger.e('Error fetching chapter comment stats',
+            error: e, stackTrace: stackTrace);
+      }
+    });
+  }
+
+  /// Check if the current chapter has comments
+  Future<bool> hasComments() async {
+    final _chapterId = state.chapterId;
+    if (_chapterId.isEmpty) {
+      return false;
+    }
+
+    try {
+      return await _commentService.hasComments(_chapterId);
+    } catch (e, stackTrace) {
+      logger.e('Error checking if chapter has comments',
+          error: e, stackTrace: stackTrace);
+      return false;
+    }
+  }
+
+  /// Refresh only comments
+  Future<void> refreshComments() async {
+    await fetchComments(page: 1);
   }
 }
