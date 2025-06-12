@@ -28,6 +28,14 @@ class ComicState {
   final bool isBookmarked;
   final ComicStateStatus bookmarkStatus;
 
+  // Comment state
+  final ComicStateStatus commentStatus;
+  final List<CommentoComment> comments;
+  final CommentoCommentListResponse? commentPagination;
+  final bool isLoadingMoreComments;
+  final bool hasMoreComments;
+  final int totalCommentCount;
+
   const ComicState({
     this.comicId,
     this.detailStatus = ComicStateStatus.initial,
@@ -42,6 +50,12 @@ class ComicState {
     this.lastReadChapterId,
     this.isBookmarked = false,
     this.bookmarkStatus = ComicStateStatus.initial,
+    this.commentStatus = ComicStateStatus.initial,
+    this.comments = const [],
+    this.commentPagination,
+    this.isLoadingMoreComments = false,
+    this.hasMoreComments = true,
+    this.totalCommentCount = 0,
   });
 
   ComicState copyWith({
@@ -58,6 +72,12 @@ class ComicState {
     String? lastReadChapterId,
     bool? isBookmarked,
     ComicStateStatus? bookmarkStatus,
+    ComicStateStatus? commentStatus,
+    List<CommentoComment>? comments,
+    CommentoCommentListResponse? commentPagination,
+    bool? isLoadingMoreComments,
+    bool? hasMoreComments,
+    int? totalCommentCount,
   }) {
     return ComicState(
       comicId: comicId ?? this.comicId,
@@ -74,6 +94,13 @@ class ComicState {
       lastReadChapterId: lastReadChapterId ?? this.lastReadChapterId,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       bookmarkStatus: bookmarkStatus ?? this.bookmarkStatus,
+      commentStatus: commentStatus ?? this.commentStatus,
+      comments: comments ?? this.comments,
+      commentPagination: commentPagination ?? this.commentPagination,
+      isLoadingMoreComments:
+          isLoadingMoreComments ?? this.isLoadingMoreComments,
+      hasMoreComments: hasMoreComments ?? this.hasMoreComments,
+      totalCommentCount: totalCommentCount ?? this.totalCommentCount,
     );
   }
 
@@ -115,9 +142,11 @@ class ComicState {
   bool get isLoadingDetail => detailStatus == ComicStateStatus.loading;
   bool get isLoadingChapters => chapterStatus == ComicStateStatus.loading;
   bool get isLoadingBookmark => bookmarkStatus == ComicStateStatus.loading;
+  bool get isLoadingComments => commentStatus == ComicStateStatus.loading;
   bool get hasError =>
       detailStatus == ComicStateStatus.error ||
-      chapterStatus == ComicStateStatus.error;
+      chapterStatus == ComicStateStatus.error ||
+      commentStatus == ComicStateStatus.error;
 
   // Helper method to get reading statistics
   Map<String, dynamic> get readingStats => {
@@ -134,5 +163,28 @@ class ComicState {
                     100)
                 .round()
             : 0,
+      };
+
+  // Helper methods for comment pagination
+  int get currentCommentPage => commentPagination?.page ?? 0;
+  int get totalCommentPages => commentPagination?.totalPages ?? 0;
+  bool get hasComments => comments.isNotEmpty;
+  bool get canLoadMoreComments => hasMoreComments && !isLoadingMoreComments;
+
+  // Helper methods for comment info
+  List<CommentoComment> get rootComments =>
+      comments.where((comment) => comment.isRootComment).toList();
+  int get rootCommentCount => rootComments.length;
+  int get replyCount => comments.length - rootCommentCount;
+
+  // Helper method to get comment statistics
+  Map<String, dynamic> get commentStats => {
+        'total_comments': totalCommentCount,
+        'loaded_comments': comments.length,
+        'root_comments': rootCommentCount,
+        'replies': replyCount,
+        'current_page': currentCommentPage,
+        'total_pages': totalCommentPages,
+        'has_more': hasMoreComments,
       };
 }

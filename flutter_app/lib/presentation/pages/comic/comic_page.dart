@@ -22,28 +22,33 @@ class ComicPage extends StatelessWidget {
     return Scaffold(
       body: Consumer(
         builder: (context, ref, _) {
-          // Only watch detailStatus to minimize rebuilds
-          final detailStatus = ref.watch(
-            comicProvider.select((state) => state.detailStatus),
-          );
+          try {
+            // Only watch detailStatus to minimize rebuilds
+            final detailStatus = ref.watch(
+              comicProvider.select((state) => state.detailStatus),
+            );
 
-          switch (detailStatus) {
-            case ComicStateStatus.initial:
-            case ComicStateStatus.loading:
-              return const ComicDetailSkeleton();
+            switch (detailStatus) {
+              case ComicStateStatus.initial:
+              case ComicStateStatus.loading:
+                return const ComicDetailSkeleton();
 
-            case ComicStateStatus.success:
-              return const _ComicSuccessView();
+              case ComicStateStatus.success:
+                return const _ComicSuccessView();
 
-            case ComicStateStatus.error:
-              return Consumer(
-                builder: (context, ref, _) {
-                  final errorMessage = ref.watch(
-                    comicProvider.select((state) => state.errorMessage),
-                  );
-                  return ComicErrorWidget(errorMessage: errorMessage);
-                },
-              );
+              case ComicStateStatus.error:
+                return Consumer(
+                  builder: (context, ref, _) {
+                    final errorMessage = ref.watch(
+                      comicProvider.select((state) => state.errorMessage),
+                    );
+                    return ComicErrorWidget(errorMessage: errorMessage);
+                  },
+                );
+            }
+          } catch (e) {
+            // Fallback for any provider errors
+            return const ComicDetailSkeleton();
           }
         },
       ),
@@ -156,7 +161,12 @@ class _ComicTabBar extends StatelessWidget {
       onTabChanged: (index) {
         // Load data for the selected tab if needed
         // Note: Chapters are already loaded in fetchComicDetails
-        // No need to reload unless specifically needed
+        // Index 2 is Comments tab
+        if (index == 2) {
+          // Fetch comments when Comments tab is selected
+          // This will be handled by the CommentsTab widget itself
+          // through the Consumer widget in comments_tab.dart
+        }
       },
     );
   }

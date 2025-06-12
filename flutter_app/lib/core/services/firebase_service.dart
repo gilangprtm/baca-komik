@@ -101,6 +101,11 @@ class FirebaseService {
       GlobalState.refererUrl = refererUrl;
     }
 
+    final commentUrl = _remoteConfig.getString('url_comment');
+    if (commentUrl.isNotEmpty) {
+      GlobalState.commentUrl = commentUrl;
+    }
+
     // GlobalState.baseUrl = "http://192.168.1.9:3000/api";
   }
 

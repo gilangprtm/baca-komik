@@ -41,6 +41,8 @@ final comicLoadingProvider = Provider.autoDispose<Map<String, bool>>((ref) {
         'is_loading_chapters': state.isLoadingChapters,
         'is_loading_more_chapters': state.isLoadingMoreChapters,
         'is_loading_bookmark': state.isLoadingBookmark,
+        'is_loading_comments': state.isLoadingComments,
+        'is_loading_more_comments': state.isLoadingMoreComments,
       }));
 });
 
@@ -114,11 +116,29 @@ final comicPaginationProvider =
       }));
 });
 
+/// Comment providers
+final comicCommentsProvider =
+    Provider.autoDispose<List<CommentoComment>>((ref) {
+  return ref.watch(comicProvider.select((state) => state.comments));
+});
+
+final comicCommentStatusProvider =
+    Provider.autoDispose<ComicStateStatus>((ref) {
+  return ref.watch(comicProvider.select((state) => state.commentStatus));
+});
+
+final comicCommentStatsProvider =
+    Provider.autoDispose<Map<String, dynamic>>((ref) {
+  return ref.watch(comicProvider.select((state) => state.commentStats));
+});
+
 /// Combined status provider for UI
 final comicStatusProvider = Provider.autoDispose<Map<String, bool>>((ref) {
   return ref.watch(comicProvider.select((state) => {
         'has_error': state.hasError,
-        'is_loading': state.isLoadingDetail || state.isLoadingChapters,
+        'is_loading': state.isLoadingDetail ||
+            state.isLoadingChapters ||
+            state.isLoadingComments,
         'has_data': state.hasSelectedComic && state.hasChapters,
         'is_ready': state.detailStatus == ComicStateStatus.success,
       }));

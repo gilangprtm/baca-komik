@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class MahasBottomSheet {
@@ -25,8 +24,7 @@ class MahasBottomSheet {
         return Container(
           height: height ?? MediaQuery.of(context).size.height * 0.7,
           decoration: BoxDecoration(
-            color:
-                backgroundColor ??
+            color: backgroundColor ??
                 Theme.of(context).bottomSheetTheme.backgroundColor,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(16.0),

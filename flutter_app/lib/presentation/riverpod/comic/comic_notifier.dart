@@ -6,6 +6,7 @@ import 'comic_state.dart';
 class ComicNotifier extends BaseStateNotifier<ComicState> {
   final ShinigamiMangaService _mangaService = ShinigamiMangaService();
   final ShinigamiChapterService _chapterService = ShinigamiChapterService();
+  final CommentoCommentService _commentService = CommentoCommentService();
 
   ComicNotifier(super.initialState, super.ref);
 
@@ -156,7 +157,6 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
       state = state.copyWith(bookmarkStatus: ComicStateStatus.loading);
 
       try {
-        // TODO: Implement bookmark API call
         // For now, just toggle the local state
         final newBookmarkStatus = !state.isBookmarked;
 
@@ -220,10 +220,149 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
     });
   }
 
-  /// Refresh all comic data
+  /// Fetch comments for the current comic
+  Future<void> fetchComments({int page = 1, int pageSize = 10}) async {
+    runAsync('fetchComments', () async {
+      final _comicId = state.comicId;
+      if (_comicId == null || _comicId.isEmpty) {
+        return;
+      }
+
+      try {
+        // Set loading state for comments
+        if (page == 1) {
+          state = state.copyWith(commentStatus: ComicStateStatus.loading);
+        } else {
+          state = state.copyWith(isLoadingMoreComments: true);
+        }
+
+        // Get comments from Commento API
+        final commentResponse = await _commentService.getComments(
+          mangaId: _comicId,
+          page: page,
+          pageSize: pageSize,
+        );
+
+        if (commentResponse.isSuccess) {
+          // If this is the first page, replace comments
+          if (page == 1) {
+            state = state.copyWith(
+              commentStatus: ComicStateStatus.success,
+              comments: commentResponse.comments,
+              commentPagination: commentResponse.data,
+              isLoadingMoreComments: false,
+              hasMoreComments: commentResponse.data.hasMore,
+              totalCommentCount: commentResponse.data.count,
+              errorMessage: null,
+            );
+          } else {
+            // For pagination, append new comments to existing ones
+            final combinedComments = [
+              ...state.comments,
+              ...commentResponse.comments,
+            ];
+
+            state = state.copyWith(
+              comments: combinedComments,
+              commentPagination: commentResponse.data,
+              isLoadingMoreComments: false,
+              hasMoreComments: commentResponse.data.hasMore,
+              totalCommentCount: commentResponse.data.count,
+            );
+          }
+        } else {
+          // Handle API error
+          if (page == 1) {
+            state = state.copyWith(
+              commentStatus: ComicStateStatus.error,
+              errorMessage:
+                  'Failed to load comments: ${commentResponse.errmsg}',
+            );
+          } else {
+            state = state.copyWith(isLoadingMoreComments: false);
+          }
+        }
+      } catch (e, stackTrace) {
+        logger.e('Error fetching comments', error: e, stackTrace: stackTrace);
+
+        if (page == 1) {
+          state = state.copyWith(
+            commentStatus: ComicStateStatus.error,
+            errorMessage: 'Failed to load comments: ${e.toString()}',
+          );
+        } else {
+          state = state.copyWith(isLoadingMoreComments: false);
+        }
+      }
+    });
+  }
+
+  /// Load more comments for pagination
+  Future<void> loadMoreComments() async {
+    // Don't load if already loading or no more comments
+    if (state.isLoadingMoreComments || !state.hasMoreComments) {
+      return;
+    }
+
+    final currentPage = state.commentPagination?.page ?? 0;
+    final nextPage = currentPage + 1;
+
+    try {
+      await fetchComments(page: nextPage);
+    } catch (e, stackTrace) {
+      logger.e('Error loading more comments', error: e, stackTrace: stackTrace);
+      // Reset loading state on error
+      state = state.copyWith(isLoadingMoreComments: false);
+    }
+  }
+
+  /// Get comment statistics for the current comic
+  Future<void> fetchCommentStats() async {
+    runAsync('fetchCommentStats', () async {
+      final _comicId = state.comicId;
+      if (_comicId == null || _comicId.isEmpty) {
+        return;
+      }
+
+      try {
+        final stats = await _commentService.getCommentStats(_comicId);
+
+        state = state.copyWith(
+          totalCommentCount: stats['total_comments'] as int? ?? 0,
+        );
+      } catch (e, stackTrace) {
+        logger.e('Error fetching comment stats',
+            error: e, stackTrace: stackTrace);
+      }
+    });
+  }
+
+  /// Check if the current comic has comments
+  Future<bool> hasComments() async {
+    final _comicId = state.comicId;
+    if (_comicId == null || _comicId.isEmpty) {
+      return false;
+    }
+
+    try {
+      return await _commentService.hasComments(_comicId);
+    } catch (e, stackTrace) {
+      logger.e('Error checking if comic has comments',
+          error: e, stackTrace: stackTrace);
+      return false;
+    }
+  }
+
+  /// Refresh all comic data including comments
   Future<void> refresh() async {
     await Future.wait([
       fetchComicDetails(),
+      fetchCommentStats(), // Add comment stats to refresh
     ]);
+  }
+
+  /// Refresh only comments
+  Future<void> refreshComments() async {
+    await fetchComments(page: 1);
   }
 }
