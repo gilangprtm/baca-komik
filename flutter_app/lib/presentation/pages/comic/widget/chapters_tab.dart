@@ -120,6 +120,11 @@ class _ChapterListViewState extends State<_ChapterListView> {
                   }
 
                   final chapter = widget.chapters[index];
+
+                  final isChapterRead = ref.watch(
+                    comicChapterReadStatusProvider(chapter.chapterId),
+                  );
+
                   return Card(
                     margin:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -147,7 +152,14 @@ class _ChapterListViewState extends State<_ChapterListView> {
                               color: Colors.grey[300],
                               child: const Icon(Icons.image_not_supported),
                             ),
-                      title: Text('Chapter ${chapter.chapterNumber}'),
+                      title: Text(
+                        'Chapter ${chapter.chapterNumber}',
+                        style: TextStyle(
+                          color: isChapterRead
+                              ? AppColors.darkBackgroundColor
+                              : AppColors.backgroundColor,
+                        ),
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -156,16 +168,30 @@ class _ChapterListViewState extends State<_ChapterListView> {
                               chapter.chapterTitle!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isChapterRead
+                                    ? AppColors.getTextSecondaryColor(context)
+                                    : null,
+                              ),
                             ),
                           Text(
                             '${_formatViewCount(chapter.viewCount)} views • ${_formatRelativeTime(chapter.releaseDate)}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: isChapterRead
+                                  ? AppColors.getTextSecondaryColor(context)
+                                  : Colors.grey[600],
                             ),
                           ),
                         ],
                       ),
+                      trailing: isChapterRead
+                          ? Icon(
+                              Icons.check_circle,
+                              color: AppColors.getTextSecondaryColor(context),
+                              size: 20,
+                            )
+                          : null,
                       onTap: () {
                         // Navigate to chapter
                         Mahas.routeTo(AppRoutes.chapter,
@@ -268,7 +294,9 @@ class _ChapterEmptyState extends StatelessWidget {
     if (status == ComicStateStatus.error) {
       return Consumer(
         builder: (context, ref, _) {
-          final errorMessage = ref.watch(comicErrorProvider);
+          final errorMessage = ref.watch(
+            comicProvider.select((state) => state.errorMessage),
+          );
 
           return Center(
             child: Column(

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../services/firebase_service.dart';
 import '../services/logger_service.dart';
+import '../../data/datasource/local/db/sqflite_service.dart';
 
 class Service {
   static final Service _instance = Service._internal();
@@ -15,6 +16,9 @@ class Service {
     try {
       // Inisialisasi Logger terlebih dahulu untuk bisa mencatat progress inisialisasi lainnya
       final logger = LoggerService.instance;
+
+      // Inisialisasi Database lokal
+      await initDatabase();
 
       // Inisialisasi Firebase
       await initFirebase();
@@ -48,6 +52,26 @@ class Service {
     }
   }
 
+  /// Inisialisasi Database lokal
+  static Future<void> initDatabase() async {
+    try {
+      LoggerService.instance.i('🗄️ Opening local database...', tag: 'SERVICE');
+
+      final sqfliteService = SqfliteService.instance;
+      await sqfliteService.database;
+
+      LoggerService.instance.i('✅ Local database ready', tag: 'SERVICE');
+    } catch (e, stackTrace) {
+      LoggerService.instance.e(
+        '❌ Error initializing local database',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'SERVICE',
+      );
+      rethrow;
+    }
+  }
+
   /// Inisialisasi Firebase
   static Future<void> initFirebase() async {
     try {
@@ -64,5 +88,4 @@ class Service {
       rethrow;
     }
   }
-
 }

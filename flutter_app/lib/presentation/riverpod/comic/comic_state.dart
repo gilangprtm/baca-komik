@@ -24,6 +24,9 @@ class ComicState {
       readingProgress; // chapterId -> progress (0.0 to 1.0)
   final String? lastReadChapterId;
 
+  // Chapter read status from database
+  final Set<String> readChapterIds; // Set of chapter IDs that have been read
+
   // Bookmark state
   final bool isBookmarked;
   final ComicStateStatus bookmarkStatus;
@@ -48,6 +51,7 @@ class ComicState {
     this.hasMoreChapters = true,
     this.readingProgress = const {},
     this.lastReadChapterId,
+    this.readChapterIds = const {},
     this.isBookmarked = false,
     this.bookmarkStatus = ComicStateStatus.initial,
     this.commentStatus = ComicStateStatus.initial,
@@ -70,6 +74,7 @@ class ComicState {
     bool? hasMoreChapters,
     Map<String, double>? readingProgress,
     String? lastReadChapterId,
+    Set<String>? readChapterIds,
     bool? isBookmarked,
     ComicStateStatus? bookmarkStatus,
     ComicStateStatus? commentStatus,
@@ -92,6 +97,7 @@ class ComicState {
       hasMoreChapters: hasMoreChapters ?? this.hasMoreChapters,
       readingProgress: readingProgress ?? this.readingProgress,
       lastReadChapterId: lastReadChapterId ?? this.lastReadChapterId,
+      readChapterIds: readChapterIds ?? this.readChapterIds,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       bookmarkStatus: bookmarkStatus ?? this.bookmarkStatus,
       commentStatus: commentStatus ?? this.commentStatus,
@@ -117,6 +123,16 @@ class ComicState {
   bool isChapterRead(String chapterId) => getChapterProgress(chapterId) >= 0.9;
   bool isChapterStarted(String chapterId) =>
       getChapterProgress(chapterId) > 0.0;
+
+  // Helper methods for chapter read status from database
+  bool isChapterReadFromDB(String chapterId) =>
+      readChapterIds.contains(chapterId);
+  bool isChapterReadFromDBByTitle(String chapterTitle) {
+    // Find chapter by title and check if it's read
+    final chapter =
+        chapters.where((c) => c.chapterTitle == chapterTitle).firstOrNull;
+    return chapter != null ? readChapterIds.contains(chapter.chapterId) : false;
+  }
 
   // Helper methods for comic info
   bool get hasSelectedComic => selectedComic != null;
