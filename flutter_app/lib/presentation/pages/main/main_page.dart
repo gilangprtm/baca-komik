@@ -85,15 +85,9 @@ class MainPage extends ConsumerWidget {
             ElevatedButton(
               onPressed: () async {
                 if (mustUpdate.linkUpdate != null) {
-                  try {
-                    final uri = Uri.parse(mustUpdate.linkUpdate!);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    } else {}
-                  } catch (e) {}
+                  // use url launcher
+                  print(mustUpdate.linkUpdate);
+                  await launchUrl(Uri.parse(mustUpdate.linkUpdate!));
                 }
               },
               child: const Text('Update'),
