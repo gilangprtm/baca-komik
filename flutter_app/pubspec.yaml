@@ -44,11 +44,27 @@ dev_dependencies:
   # Code Generation
   build_runner: ^2.4.8
   riverpod_generator: ^2.5.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image: "assets/images/logo.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#1c1c1c"
+  image: assets/images/logonobg.png
+  android_12:
+    color: "#1c1c1c"
+    image: assets/images/logonobg.png
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
+    - assets/images/logonobg.png
     - assets/icons/
     - assets/flags/
