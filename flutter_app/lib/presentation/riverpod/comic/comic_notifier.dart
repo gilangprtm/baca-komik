@@ -1,12 +1,17 @@
 import '../../../core/base/base_state_notifier.dart';
 import '../../../core/utils/mahas_utils.dart';
 import '../../../data/datasource/network/service/shinigami_services.dart';
+import '../../../data/datasource/local/service/local_services.dart';
 import 'comic_state.dart';
 
 class ComicNotifier extends BaseStateNotifier<ComicState> {
   final ShinigamiMangaService _mangaService = ShinigamiMangaService();
   final ShinigamiChapterService _chapterService = ShinigamiChapterService();
   final CommentoCommentService _commentService = CommentoCommentService();
+
+  // Local database services
+  final BookmarkService _bookmarkService = BookmarkService();
+  final ComicChapterService _comicChapterService = ComicChapterService();
 
   ComicNotifier(super.initialState, super.ref);
 
@@ -20,6 +25,11 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
     state = state.copyWith(comicId: comicId);
 
     fetchComicDetails();
+
+    // Check bookmark status from local database
+    if (comicId.isNotEmpty) {
+      _checkBookmarkStatus(comicId);
+    }
   }
 
   @override
@@ -56,6 +66,9 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
 
         // Fetch chapters after getting manga details
         await fetchComicChapters();
+
+        // Load chapter read status after chapters are loaded
+        await _loadChapterReadStatus();
       } catch (e, stackTrace) {
         logger.e('Error fetching comic details',
             error: e, stackTrace: stackTrace);
@@ -100,6 +113,9 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
             hasMoreChapters: chaptersResponse.meta.hasMore,
             errorMessage: null,
           );
+
+          // Load chapter read status after chapters are loaded (first page only)
+          await _loadChapterReadStatus();
         } else {
           // For pagination, append new chapters to existing ones
           final combinedChapters = [
@@ -148,23 +164,39 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
     }
   }
 
+  /// Check bookmark status from local database
+  Future<void> _checkBookmarkStatus(String comicId) async {
+    try {
+      final isBookmarked = await _bookmarkService.isBookmarked(comicId);
+      state = state.copyWith(isBookmarked: isBookmarked);
+    } catch (e, stackTrace) {
+      logger.e('Error checking bookmark status',
+          error: e, stackTrace: stackTrace);
+    }
+  }
+
   /// Toggle bookmark status for the current comic
   Future<void> toggleBookmark() async {
-    if (state.selectedComic == null) return;
+    final comic = state.selectedComic;
+    final comicId = state.comicId;
+
+    if (comic == null || comicId == null || comicId.isEmpty) return;
 
     runAsync('toggleBookmark', () async {
       // Set loading state
       state = state.copyWith(bookmarkStatus: ComicStateStatus.loading);
 
       try {
-        // For now, just toggle the local state
-        final newBookmarkStatus = !state.isBookmarked;
-
-        // Simulate API delay
-        await Future.delayed(const Duration(milliseconds: 500));
+        // Toggle bookmark in local database
+        final isBookmarked = await _bookmarkService.toggleBookmark(
+          comicId: comicId,
+          urlCover: comic.displayCoverUrl,
+          title: comic.title,
+          nation: comic.countryId ?? 'Unknown',
+        );
 
         state = state.copyWith(
-          isBookmarked: newBookmarkStatus,
+          isBookmarked: isBookmarked,
           bookmarkStatus: ComicStateStatus.success,
           errorMessage: null,
         );
@@ -357,12 +389,92 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
   Future<void> refresh() async {
     await Future.wait([
       fetchComicDetails(),
-      fetchCommentStats(), // Add comment stats to refresh
+      fetchCommentStats(),
     ]);
   }
 
   /// Refresh only comments
   Future<void> refreshComments() async {
     await fetchComments(page: 1);
+  }
+
+  // ==================== CHAPTER READ STATUS METHODS ====================
+
+  /// Load chapter read status from database for all chapters
+  Future<void> _loadChapterReadStatus() async {
+    try {
+      final comicId = state.comicId;
+      if (comicId == null || comicId.isEmpty || state.chapters.isEmpty) {
+        return;
+      }
+
+      // Get all read chapters for this comic from database
+      final readChapterIds = <String>{};
+
+      for (final chapter in state.chapters) {
+        // Use chapter ID for reliable checking
+        final isRead = await _comicChapterService.isChapterReadById(
+          comicId,
+          chapter.chapterId,
+        );
+
+        if (isRead) {
+          readChapterIds.add(chapter.chapterId);
+        }
+      }
+
+      // Update state with read chapter IDs
+      state = state.copyWith(readChapterIds: readChapterIds);
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error loading chapter read status',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Don't rethrow - this is background operation
+    }
+  }
+
+  /// Mark specific chapter as read in database and update UI
+  Future<void> markChapterAsReadInDB(
+      String chapterId, String chapterTitle) async {
+    try {
+      final comicId = state.comicId;
+      if (comicId == null || comicId.isEmpty) return;
+
+      // Mark chapter as read in database
+      await _comicChapterService.markChapterRead(
+        comicId: comicId,
+        chapter: chapterTitle,
+        chapterId: chapterId,
+        isCompleted: true,
+      );
+
+      // Update local state
+      final updatedReadChapterIds = Set<String>.from(state.readChapterIds);
+      updatedReadChapterIds.add(chapterId);
+
+      state = state.copyWith(readChapterIds: updatedReadChapterIds);
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error marking chapter as read',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Check if specific chapter is read
+  bool isChapterRead(String chapterId) {
+    return state.isChapterReadFromDB(chapterId);
+  }
+
+  /// Get read chapters count
+  int get readChaptersCount => state.readChapterIds.length;
+
+  /// Get reading progress percentage based on read chapters
+  double get readingProgressPercentage {
+    if (state.chapters.isEmpty) return 0.0;
+    return (state.readChapterIds.length / state.chapters.length) * 100;
   }
 }

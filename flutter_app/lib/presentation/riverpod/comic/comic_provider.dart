@@ -71,6 +71,18 @@ final comicLastReadChapterProvider = Provider.autoDispose<String?>((ref) {
   return ref.watch(comicProvider.select((state) => state.lastReadChapterId));
 });
 
+/// Chapter read status providers
+final comicReadChapterIdsProvider = Provider.autoDispose<Set<String>>((ref) {
+  return ref.watch(comicProvider.select((state) => state.readChapterIds));
+});
+
+/// Provider to check if specific chapter is read
+final comicChapterReadStatusProvider =
+    Provider.autoDispose.family<bool, String>((ref, chapterId) {
+  final readChapterIds = ref.watch(comicReadChapterIdsProvider);
+  return readChapterIds.contains(chapterId);
+});
+
 /// Comic info providers (derived from selectedComic)
 final comicInfoProvider = Provider.autoDispose<Map<String, dynamic>>((ref) {
   return ref.watch(comicProvider.select((state) => {

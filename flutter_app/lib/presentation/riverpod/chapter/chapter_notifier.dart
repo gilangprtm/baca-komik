@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import '../../../core/base/base_state_notifier.dart';
 import '../../../core/utils/mahas_utils.dart';
 import '../../../data/datasource/network/service/shinigami_services.dart';
+import '../../../data/datasource/local/service/local_services.dart';
 import '../../../data/models/shinigami/shinigami_models.dart';
 import 'chapter_state.dart';
 
 class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   final ShinigamiChapterService _chapterService = ShinigamiChapterService();
   final CommentoCommentService _commentService = CommentoCommentService();
+
+  // Local database services for history tracking and chapter read marking
+  final HistoryService _historyService = HistoryService();
+  final ComicChapterService _comicChapterService = ComicChapterService();
 
   // Store initial state for easy reset
   static final ChapterState _initialState = ChapterState();
@@ -75,6 +80,9 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
         isFirstChapter: navigation.prevChapterId == null,
         isLastChapter: navigation.nextChapterId == null,
       );
+
+      // Track chapter access in background (don't wait for completion)
+      _trackChapterAccess(chapter, pages.length);
     });
   }
 
@@ -100,9 +108,13 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   void nextPage() {
     run('nextPage', () {
       if (state.canGoToNextPage) {
+        final newPageIndex = state.currentPageIndex + 1;
         state = state.copyWith(
-          currentPageIndex: state.currentPageIndex + 1,
+          currentPageIndex: newPageIndex,
         );
+
+        // Track reading progress in background
+        _updateReadingProgress(newPageIndex);
       }
     });
   }
@@ -111,9 +123,13 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   void previousPage() {
     run('previousPage', () {
       if (state.canGoToPrevPage) {
+        final newPageIndex = state.currentPageIndex - 1;
         state = state.copyWith(
-          currentPageIndex: state.currentPageIndex - 1,
+          currentPageIndex: newPageIndex,
         );
+
+        // Track reading progress in background
+        _updateReadingProgress(newPageIndex);
       }
     });
   }
@@ -125,6 +141,9 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
         state = state.copyWith(
           currentPageIndex: pageIndex,
         );
+
+        // Track reading progress in background
+        _updateReadingProgress(pageIndex);
       }
     });
   }
@@ -173,13 +192,6 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
           isTrackingProgress: true,
           lastReadAt: DateTime.now(),
         );
-
-        // TODO: Implement actual progress tracking to backend
-        // await _progressService.updateReadingProgress(
-        //   chapterId: state.chapterId,
-        //   pageIndex: state.currentPageIndex,
-        //   progress: state.readingProgress,
-        // );
 
         state = state.copyWith(isTrackingProgress: false);
       }
@@ -331,5 +343,167 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   /// Refresh only comments
   Future<void> refreshComments() async {
     await fetchComments(page: 1);
+  }
+
+  // ==================== HISTORY TRACKING METHODS ====================
+
+  /// Track chapter access when user opens a chapter
+  /// This creates initial history entry and marks chapter as read
+  Future<void> _trackChapterAccess(
+      ShinigamiChapter chapter, int totalPages) async {
+    try {
+      final mangaId = chapter.mangaId;
+      final chapterId = chapter.chapterId;
+      final chapterNumber = chapter.chapterNumber;
+
+      logger.d(
+          'Tracking chapter access: $mangaId - Chapter $chapterNumber (ID: $chapterId)');
+
+      // Get manga details for history (we need cover and title)
+      // For now, we'll use basic info and enhance later if needed
+      final mangaTitle = 'Unknown'; // TODO: Get from manga service if needed
+      final mangaCover = ''; // TODO: Get from manga service if needed
+      final nation = 'Unknown'; // TODO: Get from manga service if needed
+
+      // Update reading history (initial access)
+      await _historyService.updateHistory(
+        comicId: mangaId,
+        chapterId: chapterId,
+        chapter: 'Chapter $chapterNumber',
+        urlCover: mangaCover,
+        title: mangaTitle,
+        nation: nation,
+        pagePosition: 0,
+        totalPages: totalPages,
+        isCompleted: false,
+      );
+
+      // Mark chapter as read (started reading) - use chapter ID
+      await _comicChapterService.markChapterReadById(
+        comicId: mangaId,
+        chapterId: chapterId,
+        isCompleted: false,
+      );
+
+      logger.i('Chapter access tracked: $mangaId - Chapter $chapterNumber');
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error tracking chapter access',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Don't rethrow - this is background operation
+    }
+  }
+
+  /// Update reading progress in real-time as user navigates pages
+  Future<void> _updateReadingProgress(int pagePosition) async {
+    try {
+      final chapter = state.selectedChapter;
+      if (chapter == null) return;
+
+      final totalPages = state.totalPages;
+      final isCompleted = pagePosition >= totalPages - 1;
+
+      // Update history with current progress
+      await _historyService.updateProgress(
+        comicId: chapter.mangaId,
+        pagePosition: pagePosition,
+        totalPages: totalPages,
+        isCompleted: isCompleted,
+      );
+
+      // If chapter is completed, mark it as completed
+      if (isCompleted) {
+        await _comicChapterService.markChapterCompleted(
+          chapter.mangaId,
+          chapter.chapterTitle ?? 'Unknown Chapter',
+        );
+
+        logger.i(
+            'Chapter completed: ${chapter.mangaId} - ${chapter.chapterTitle}');
+      }
+
+      logger.d(
+          'Reading progress updated: ${chapter.mangaId} - Page ${pagePosition + 1}/$totalPages');
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error updating reading progress',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Don't rethrow - this is background operation
+    }
+  }
+
+  /// Mark current chapter as completed manually
+  Future<void> markChapterAsCompleted() async {
+    runAsync('markChapterAsCompleted', () async {
+      final chapter = state.selectedChapter;
+      if (chapter == null) return;
+
+      try {
+        // Mark as completed in history
+        await _historyService.markChapterCompleted(chapter.mangaId);
+
+        // Mark as completed in chapter tracking
+        await _comicChapterService.markChapterCompleted(
+          chapter.mangaId,
+          chapter.chapterTitle ?? 'Unknown Chapter',
+        );
+
+        // Update local state to reflect completion
+        state = state.copyWith(
+          currentPageIndex: state.totalPages - 1,
+        );
+
+        logger.i(
+            'Chapter manually marked as completed: ${chapter.mangaId} - ${chapter.chapterTitle}');
+      } catch (e, stackTrace) {
+        logger.e(
+          'Error marking chapter as completed',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    });
+  }
+
+  /// Get reading progress for current chapter
+  Future<double> getReadingProgress() async {
+    try {
+      final chapter = state.selectedChapter;
+      if (chapter == null) return 0.0;
+
+      final history = await _historyService.getComicHistory(chapter.mangaId);
+      return history?.progressPercentage ?? 0.0;
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error getting reading progress',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return 0.0;
+    }
+  }
+
+  /// Check if current chapter is marked as read
+  Future<bool> isChapterRead() async {
+    try {
+      final chapter = state.selectedChapter;
+      if (chapter == null) return false;
+
+      return await _comicChapterService.isChapterRead(
+        chapter.mangaId,
+        chapter.chapterTitle ?? 'Unknown Chapter',
+      );
+    } catch (e, stackTrace) {
+      logger.e(
+        'Error checking if chapter is read',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
   }
 }
