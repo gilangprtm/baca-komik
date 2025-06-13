@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -5,6 +7,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../data/models/must_update_model.dart';
 import '../base/global_state.dart';
 import 'logger_service.dart';
 
@@ -117,6 +120,16 @@ class FirebaseService {
           int.tryParse(GlobalState.packageInfo?.buildNumber ?? '0') ?? 0;
 
       GlobalState.underMaintenance = localBuildNumber > remoteBuildNumber;
+
+      final mustUpdate = _remoteConfig.getString('must_update');
+      final mustUpdateModel = MustUpdateModel.fromJson(jsonDecode(mustUpdate));
+
+      final shouldUpdate =
+          mustUpdateModel.mustUpdate && localBuildNumber < remoteBuildNumber;
+
+      GlobalState.mustUpdate = shouldUpdate
+          ? mustUpdateModel
+          : MustUpdateModel(mustUpdate: false, linkUpdate: "");
     } catch (e) {
       GlobalState.underMaintenance = false;
     }

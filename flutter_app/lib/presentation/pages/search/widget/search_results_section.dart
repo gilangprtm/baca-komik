@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/mahas/widget/mahas_grid.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../data/models/shinigami/shinigami_models.dart';
 import '../../../riverpod/search/search_provider.dart';
 import '../../../riverpod/search/search_state.dart';
@@ -161,10 +162,12 @@ class SearchResultsSection extends ConsumerWidget {
 
             // Loading more indicator
             if (isLoadingMore)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Center(
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    color: AppColors.getTextPrimaryColor(context),
+                  ),
                 ),
               ),
           ],

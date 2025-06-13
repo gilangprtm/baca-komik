@@ -118,9 +118,12 @@ class _ChapterListWidgetState extends State<ChapterListWidget> {
       itemCount: _chapters.length + (_hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index >= _chapters.length) {
-          return const Padding(
+          return Padding(
             padding: EdgeInsets.all(16.0),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(
+                child: CircularProgressIndicator(
+              color: AppColors.getTextPrimaryColor(context),
+            )),
           );
         }
 

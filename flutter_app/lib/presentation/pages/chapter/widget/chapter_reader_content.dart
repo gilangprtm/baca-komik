@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_project/core/base/global_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../riverpod/chapter/chapter_provider.dart';
 
 /// Widget for displaying chapter pages content
@@ -83,8 +84,10 @@ class ChapterReaderContent extends StatelessWidget {
                 fit: BoxFit.contain,
                 placeholder: (context, url) => Container(
                   height: 200,
-                  child: const Center(
-                    child: CircularProgressIndicator(),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.getTextPrimaryColor(context),
+                    ),
                   ),
                 ),
                 errorWidget: (context, url, error) {
