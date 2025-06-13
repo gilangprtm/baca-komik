@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/mahas_utils.dart';
 import '../../../../data/models/shinigami/shinigami_models.dart';
 import '../../../riverpod/comic/comic_provider.dart';
@@ -183,12 +184,14 @@ class _ChapterListViewState extends State<_ChapterListView> {
 
   Widget _buildLoadingIndicator(bool isLoadingMore) {
     if (isLoadingMore) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.all(16.0),
         child: Center(
           child: Column(
             children: [
-              CircularProgressIndicator(),
+              CircularProgressIndicator(
+                color: AppColors.getTextPrimaryColor(context),
+              ),
               SizedBox(height: 8),
               Text('Loading more chapters...'),
             ],
@@ -248,11 +251,13 @@ class _ChapterEmptyState extends StatelessWidget {
     final String? comicId = Mahas.argument<String>('comicId');
 
     if (status == ComicStateStatus.loading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(
+              color: AppColors.getTextPrimaryColor(context),
+            ),
             SizedBox(height: 16),
             Text('Loading chapters...'),
           ],

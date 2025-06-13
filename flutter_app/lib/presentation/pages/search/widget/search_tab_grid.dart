@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/mahas/widget/mahas_grid.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../data/models/shinigami/shinigami_models.dart';
 import '../../../riverpod/search/search_provider.dart';
 import '../../../riverpod/search/search_state.dart';
@@ -149,13 +150,15 @@ class SearchTabGrid extends StatelessWidget {
 
                 if (!isLoading) return const SizedBox.shrink();
 
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Center(
                     child: SizedBox(
                       width: 24,
                       height: 24,
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(
+                        color: AppColors.getTextPrimaryColor(context),
+                      ),
                     ),
                   ),
                 );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/mahas_utils.dart';
 import '../../../../data/models/shinigami/shinigami_models.dart';
 import '../../../riverpod/comic/comic_provider.dart';
@@ -67,10 +68,12 @@ class ComicActionButtons extends StatelessWidget {
                         ref.read(comicProvider.notifier).toggleBookmark();
                       },
                 icon: isLoadingBookmark
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                            color: AppColors.getTextPrimaryColor(context),
+                            strokeWidth: 2),
                       )
                     : Icon(
                         isBookmarked ? Icons.bookmark : Icons.bookmark_border,

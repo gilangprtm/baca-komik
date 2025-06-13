@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../utils/type_utils.dart';
@@ -139,8 +138,7 @@ class MahasMenuBarState extends State<MahasMenuBar> {
             widget.centerButtonPosition == CenterButtonPosition.aboveCenter)
           Positioned(
             bottom: 30.0,
-            left:
-                MediaQuery.of(context).size.width / 2 -
+            left: MediaQuery.of(context).size.width / 2 -
                 28.0, // Center the button
             child: Center(child: widget.centerButton!),
           ),
@@ -178,8 +176,7 @@ class MahasMenuBarState extends State<MahasMenuBar> {
             widget.centerButtonPosition == CenterButtonPosition.aboveCenter)
           Positioned(
             bottom: 30.0,
-            left:
-                MediaQuery.of(context).size.width / 2 -
+            left: MediaQuery.of(context).size.width / 2 -
                 28.0, // Center the button
             child: Center(child: widget.centerButton!),
           ),
@@ -217,8 +214,7 @@ class MahasMenuBarState extends State<MahasMenuBar> {
             widget.centerButtonPosition == CenterButtonPosition.aboveCenter)
           Positioned(
             bottom: 30.0,
-            left:
-                MediaQuery.of(context).size.width / 2 -
+            left: MediaQuery.of(context).size.width / 2 -
                 28.0, // Center the button
             child: Center(child: widget.centerButton!),
           ),
@@ -227,19 +223,18 @@ class MahasMenuBarState extends State<MahasMenuBar> {
   }
 
   List<Widget> _buildMenuItems() {
-    List<Widget> menuItems =
-        widget.items.asMap().entries.map((entry) {
-          int idx = entry.key;
-          MenuItem item = entry.value;
-          bool isSelected = _selectedIndex == idx;
+    List<Widget> menuItems = widget.items.asMap().entries.map((entry) {
+      int idx = entry.key;
+      MenuItem item = entry.value;
+      bool isSelected = _selectedIndex == idx;
 
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => _onItemTapped(idx),
-              child: _buildMenuItem(item, isSelected),
-            ),
-          );
-        }).toList();
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => _onItemTapped(idx),
+          child: _buildMenuItem(item, isSelected),
+        ),
+      );
+    }).toList();
 
     if (widget.showCenterButton && widget.centerButton != null) {
       List<Widget> updatedMenuItems = [];
@@ -294,10 +289,9 @@ class MahasMenuBarState extends State<MahasMenuBar> {
                 Text(
                   item.title,
                   style: TextStyle(
-                    color:
-                        isSelected
-                            ? widget.selectedColor
-                            : widget.unselectedColor,
+                    color: isSelected
+                        ? widget.selectedColor
+                        : widget.unselectedColor,
                     fontSize: 12.0,
                   ),
                 ),
@@ -322,10 +316,9 @@ class MahasMenuBarState extends State<MahasMenuBar> {
                 Text(
                   item.title,
                   style: TextStyle(
-                    color:
-                        isSelected
-                            ? widget.selectedColor
-                            : widget.unselectedColor,
+                    color: isSelected
+                        ? widget.selectedColor
+                        : widget.unselectedColor,
                     fontSize: 12.0,
                   ),
                 ),
@@ -350,18 +343,16 @@ class MahasMenuBarState extends State<MahasMenuBar> {
               Container(
                 width: 50,
                 decoration: BoxDecoration(
-                  color:
-                      isSelected
-                          ? widget.selectedColor!.withValues(alpha: 0.1)
-                          : Colors.transparent,
+                  color: isSelected
+                      ? widget.selectedColor!.withValues(alpha: 0.1)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(16.0),
                 ),
                 child: Icon(
                   item.icon,
-                  color:
-                      isSelected
-                          ? widget.selectedColor
-                          : widget.unselectedColor,
+                  color: isSelected
+                      ? widget.selectedColor
+                      : widget.unselectedColor,
                   size: isSelected ? 28.0 : 24.0,
                 ),
               ),
@@ -369,10 +360,9 @@ class MahasMenuBarState extends State<MahasMenuBar> {
                 Text(
                   item.title,
                   style: TextStyle(
-                    color:
-                        isSelected
-                            ? widget.selectedColor
-                            : widget.unselectedColor,
+                    color: isSelected
+                        ? widget.selectedColor
+                        : widget.unselectedColor,
                     fontSize: 12.0,
                   ),
                 ),
@@ -381,13 +371,18 @@ class MahasMenuBarState extends State<MahasMenuBar> {
         );
       case MenuType.iconOnly:
         return AnimatedContainer(
+          color: Colors.transparent,
           duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
           margin: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Icon(
-            item.icon,
-            color: isSelected ? widget.selectedColor : widget.unselectedColor,
-            size: isSelected ? 28.0 : 24.0,
+          child: Container(
+            width: 50,
+            height: 50,
+            child: Icon(
+              item.icon,
+              color: isSelected ? widget.selectedColor : widget.unselectedColor,
+              size: isSelected ? 28.0 : 24.0,
+            ),
           ),
         );
     }

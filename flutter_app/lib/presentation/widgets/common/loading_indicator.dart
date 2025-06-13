@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 class LoadingIndicator extends StatelessWidget {
   final String? message;
   final bool isFullScreen;
@@ -85,11 +87,12 @@ class PaginatedLoadingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: const Center(
+      child: Center(
         child: SizedBox(
           height: 24,
           width: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(
+              color: AppColors.getTextPrimaryColor(context), strokeWidth: 2),
         ),
       ),
     );

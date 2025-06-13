@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/models/shinigami/shinigami_models.dart';
 
 /// Reusable comment widget that can be used for both comic and chapter comments
@@ -53,11 +54,13 @@ class _CommentLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(),
+          CircularProgressIndicator(
+            color: AppColors.getTextPrimaryColor(context),
+          ),
           SizedBox(height: 16),
           Text(
             'Loading comments...',
@@ -181,10 +184,12 @@ class _CommentListViewState extends State<_CommentListView> {
             itemBuilder: (context, index) {
               if (index == widget.comments.length) {
                 // Loading indicator at bottom
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.all(16),
                   child: Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(
+                      color: AppColors.getTextPrimaryColor(context),
+                    ),
                   ),
                 );
               }
