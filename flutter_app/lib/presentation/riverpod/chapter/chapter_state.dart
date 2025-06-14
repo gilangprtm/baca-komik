@@ -12,6 +12,7 @@ class ChapterState {
 
   // Data
   final ShinigamiChapter? selectedChapter;
+  final ShinigamiManga? comicModel;
   final List<ShinigamiPage> pages;
   final ShinigamiChapterNavigation? navigation;
   final ShinigamiMeta? chapterMeta;
@@ -54,6 +55,7 @@ class ChapterState {
     this.pagesStatus = ChapterStateStatus.initial,
     this.navigationStatus = ChapterStateStatus.initial,
     this.selectedChapter,
+    this.comicModel,
     this.pages = const [],
     this.navigation,
     this.chapterMeta,
@@ -85,6 +87,7 @@ class ChapterState {
     ChapterStateStatus? pagesStatus,
     ChapterStateStatus? navigationStatus,
     ShinigamiChapter? selectedChapter,
+    ShinigamiManga? comicModel,
     List<ShinigamiPage>? pages,
     ShinigamiChapterNavigation? navigation,
     ShinigamiMeta? chapterMeta,
@@ -115,6 +118,7 @@ class ChapterState {
       pagesStatus: pagesStatus ?? this.pagesStatus,
       navigationStatus: navigationStatus ?? this.navigationStatus,
       selectedChapter: selectedChapter ?? this.selectedChapter,
+      comicModel: comicModel ?? this.comicModel,
       pages: pages ?? this.pages,
       navigation: navigation ?? this.navigation,
       chapterMeta: chapterMeta ?? this.chapterMeta,

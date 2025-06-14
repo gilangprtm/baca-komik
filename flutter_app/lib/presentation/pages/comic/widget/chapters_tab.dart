@@ -193,9 +193,13 @@ class _ChapterListViewState extends State<_ChapterListView> {
                             )
                           : null,
                       onTap: () {
-                        // Navigate to chapter
-                        Mahas.routeTo(AppRoutes.chapter,
-                            arguments: {'chapterId': chapter.chapterId});
+                        // Navigate to chapter with comic model
+                        final comic = ref.read(comicProvider
+                            .select((state) => state.selectedComic));
+                        Mahas.routeTo(AppRoutes.chapter, arguments: {
+                          'chapterId': chapter.chapterId,
+                          'comic': comic,
+                        });
                       },
                     ),
                   );

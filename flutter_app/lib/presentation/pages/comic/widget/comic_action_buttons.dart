@@ -29,11 +29,16 @@ class ComicActionButtons extends StatelessWidget {
               return ElevatedButton.icon(
                 onPressed: chapters.isNotEmpty
                     ? () {
-                        // Navigate to first chapter
+                        // Navigate to first chapter with comic model
                         final firstChapter = chapters.first;
+                        final comic = ref.read(comicProvider
+                            .select((state) => state.selectedComic));
                         Mahas.routeTo(
                           AppRoutes.chapter,
-                          arguments: {'chapterId': firstChapter.chapterId},
+                          arguments: {
+                            'chapterId': firstChapter.chapterId,
+                            'comic': comic,
+                          },
                         );
                       }
                     : null,

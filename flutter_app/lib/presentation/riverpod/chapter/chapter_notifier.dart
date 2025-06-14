@@ -21,16 +21,18 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
 
   /// Reset state to initial state (useful for clearing navigation data)
   void _resetToInitialState() {
+    final preservedComicModel = state.comicModel;
+
     state = _initialState.copyWith(
       detailStatus: ChapterStateStatus.loading,
       pagesStatus: ChapterStateStatus.loading,
-      // Reset comment state to initial values
       commentStatus: ChapterStateStatus.initial,
       comments: const [],
       commentPagination: null,
       isLoadingMoreComments: false,
       hasMoreComments: true,
       totalCommentCount: 0,
+      comicModel: preservedComicModel,
     );
   }
 
@@ -38,8 +40,14 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
   void onInit() {
     super.onInit();
 
-    // Get chapterId from route arguments
+    // Get chapterId and comic model from route arguments
     final chapterId = Mahas.argument<String>('chapterId');
+    final comic = Mahas.argument<ShinigamiManga>('comic');
+
+    // Store comic model in state if available
+    if (comic != null) {
+      state = state.copyWith(comicModel: comic);
+    }
 
     // Fetch chapter details if chapterId is available
     if (chapterId != null) {
@@ -356,20 +364,17 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
       final chapterId = chapter.chapterId;
       final chapterNumber = chapter.chapterNumber;
 
-      logger.d(
-          'Tracking chapter access: $mangaId - Chapter $chapterNumber (ID: $chapterId)');
-
-      // Get manga details for history (we need cover and title)
-      // For now, we'll use basic info and enhance later if needed
-      final mangaTitle = 'Unknown'; // TODO: Get from manga service if needed
-      final mangaCover = ''; // TODO: Get from manga service if needed
-      final nation = 'Unknown'; // TODO: Get from manga service if needed
+      // Get manga details from comic model if available
+      final comicModel = state.comicModel;
+      final mangaTitle = comicModel?.title ?? 'Unknown';
+      final mangaCover = comicModel?.coverImageUrl ?? '';
+      final nation = comicModel?.countryId ?? 'Unknown';
 
       // Update reading history (initial access)
       await _historyService.updateHistory(
         comicId: mangaId,
         chapterId: chapterId,
-        chapter: 'Chapter $chapterNumber',
+        chapter: '$chapterNumber',
         urlCover: mangaCover,
         title: mangaTitle,
         nation: nation,
@@ -384,8 +389,6 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
         chapterId: chapterId,
         isCompleted: false,
       );
-
-      logger.i('Chapter access tracked: $mangaId - Chapter $chapterNumber');
     } catch (e, stackTrace) {
       logger.e(
         'Error tracking chapter access',
@@ -419,13 +422,7 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
           chapter.mangaId,
           chapter.chapterTitle ?? 'Unknown Chapter',
         );
-
-        logger.i(
-            'Chapter completed: ${chapter.mangaId} - ${chapter.chapterTitle}');
       }
-
-      logger.d(
-          'Reading progress updated: ${chapter.mangaId} - Page ${pagePosition + 1}/$totalPages');
     } catch (e, stackTrace) {
       logger.e(
         'Error updating reading progress',
@@ -456,9 +453,6 @@ class ChapterNotifier extends BaseStateNotifier<ChapterState> {
         state = state.copyWith(
           currentPageIndex: state.totalPages - 1,
         );
-
-        logger.i(
-            'Chapter manually marked as completed: ${chapter.mangaId} - ${chapter.chapterTitle}');
       } catch (e, stackTrace) {
         logger.e(
           'Error marking chapter as completed',
