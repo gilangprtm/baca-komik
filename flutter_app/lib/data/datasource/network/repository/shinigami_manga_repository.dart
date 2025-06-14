@@ -41,15 +41,11 @@ class ShinigamiMangaRepository extends BaseRepository {
         queryParams['country'] = country;
       }
 
-      logInfo('Fetching manga list with params: $queryParams');
-
       final response = await dioService.get(
         '/manga/list',
         queryParameters: queryParams,
         urlType: UrlType.shinigamiApi,
       );
-
-      logInfo('Manga list response received');
 
       return ShinigamiListResponse.fromJson(
         response.data,
@@ -72,8 +68,6 @@ class ShinigamiMangaRepository extends BaseRepository {
     int pageSize = 12,
   }) async {
     try {
-      logInfo('Fetching latest updated manga');
-
       return await getMangaList(
         page: page,
         pageSize: pageSize,
@@ -100,8 +94,6 @@ class ShinigamiMangaRepository extends BaseRepository {
     String? country,
   }) async {
     try {
-      logInfo('Searching manga with query: $query');
-
       return await getMangaList(
         page: page,
         pageSize: pageSize,
@@ -123,14 +115,10 @@ class ShinigamiMangaRepository extends BaseRepository {
   /// Get manga detail by ID
   Future<ShinigamiManga> getMangaDetail(String mangaId) async {
     try {
-      logInfo('Fetching manga detail for ID: $mangaId');
-
       final response = await dioService.get(
         '/manga/detail/$mangaId',
         urlType: UrlType.shinigamiApi,
       );
-
-      logInfo('Manga detail response received');
 
       final shinigamiResponse = ShinigamiResponse.fromJson(
         response.data,
@@ -159,8 +147,6 @@ class ShinigamiMangaRepository extends BaseRepository {
     int pageSize = 12,
   }) async {
     try {
-      logInfo('Fetching recommended manga');
-
       // Get all manga and filter recommended ones
       final response = await getMangaList(
         page: page,
@@ -193,8 +179,6 @@ class ShinigamiMangaRepository extends BaseRepository {
     int pageSize = 12,
   }) async {
     try {
-      logInfo('Fetching manga by genre: $genre');
-
       return await getMangaList(
         page: page,
         pageSize: pageSize,
@@ -217,8 +201,6 @@ class ShinigamiMangaRepository extends BaseRepository {
     int pageSize = 12,
   }) async {
     try {
-      logInfo('Fetching manga by format: $format');
-
       return await getMangaList(
         page: page,
         pageSize: pageSize,
@@ -241,8 +223,6 @@ class ShinigamiMangaRepository extends BaseRepository {
     String sortBy = 'view_count', // 'view_count', 'bookmark_count', 'rank'
   }) async {
     try {
-      logInfo('Fetching popular manga sorted by: $sortBy');
-
       final response = await getMangaList(
         page: page,
         pageSize: pageSize,
@@ -291,15 +271,11 @@ class ShinigamiMangaRepository extends BaseRepository {
         'page_size': pageSize,
       };
 
-      logInfo('Fetching top manga with filter: $filter');
-
       final response = await dioService.get(
         '/manga/top',
         queryParameters: queryParams,
         urlType: UrlType.shinigamiApi,
       );
-
-      logInfo('Top manga response received');
 
       return ShinigamiListResponse.fromJson(
         response.data,

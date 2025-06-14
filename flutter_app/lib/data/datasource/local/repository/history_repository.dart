@@ -15,16 +15,12 @@ class HistoryRepository extends BaseRepository {
   /// Add or update reading history
   Future<void> updateHistory(HistoryModel history) async {
     try {
-      logInfo('Updating history for comic: ${history.comicId}, chapter: ${history.chapter}');
-
       final db = await _database;
       await db.insert(
         SqfliteService.tableHistory,
         history.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-
-      logInfo('History updated successfully for comic: ${history.comicId}');
     } catch (e, stackTrace) {
       logError(
         'Failed to update history for comic: ${history.comicId}',
@@ -41,8 +37,6 @@ class HistoryRepository extends BaseRepository {
     int? offset,
   }) async {
     try {
-      logInfo('Fetching history with limit: $limit, offset: $offset');
-
       final db = await _database;
       final result = await db.query(
         SqfliteService.tableHistory,
@@ -52,7 +46,6 @@ class HistoryRepository extends BaseRepository {
       );
 
       final history = result.map((map) => HistoryModel.fromMap(map)).toList();
-      logInfo('Retrieved ${history.length} history records');
 
       return history;
     } catch (e, stackTrace) {
@@ -68,8 +61,6 @@ class HistoryRepository extends BaseRepository {
   /// Get history for specific comic
   Future<HistoryModel?> getComicHistory(String comicId) async {
     try {
-      logDebug('Fetching history for comic: $comicId');
-
       final db = await _database;
       final result = await db.query(
         SqfliteService.tableHistory,
@@ -80,11 +71,9 @@ class HistoryRepository extends BaseRepository {
 
       if (result.isNotEmpty) {
         final history = HistoryModel.fromMap(result.first);
-        logDebug('History found for comic: $comicId');
         return history;
       }
 
-      logDebug('No history found for comic: $comicId');
       return null;
     } catch (e, stackTrace) {
       logError(
@@ -99,8 +88,6 @@ class HistoryRepository extends BaseRepository {
   /// Remove history for specific comic
   Future<bool> removeHistory(String comicId) async {
     try {
-      logInfo('Removing history for comic: $comicId');
-
       final db = await _database;
       final deletedRows = await db.delete(
         SqfliteService.tableHistory,
@@ -109,11 +96,6 @@ class HistoryRepository extends BaseRepository {
       );
 
       final success = deletedRows > 0;
-      if (success) {
-        logInfo('History removed successfully for comic: $comicId');
-      } else {
-        logInfo('No history found to remove for comic: $comicId');
-      }
 
       return success;
     } catch (e, stackTrace) {
@@ -129,15 +111,11 @@ class HistoryRepository extends BaseRepository {
   /// Get history count
   Future<int> getHistoryCount() async {
     try {
-      logDebug('Fetching history count');
-
       final db = await _database;
       final result = await db.rawQuery(
-        'SELECT COUNT(*) as count FROM ${SqfliteService.tableHistory}'
-      );
+          'SELECT COUNT(*) as count FROM ${SqfliteService.tableHistory}');
 
       final count = result.first['count'] as int;
-      logDebug('Total history count: $count');
 
       return count;
     } catch (e, stackTrace) {
@@ -153,12 +131,8 @@ class HistoryRepository extends BaseRepository {
   /// Clear all history
   Future<void> clearAllHistory() async {
     try {
-      logInfo('Clearing all history');
-
       final db = await _database;
       await db.delete(SqfliteService.tableHistory);
-
-      logInfo('All history cleared successfully');
     } catch (e, stackTrace) {
       logError(
         'Failed to clear all history',
@@ -177,8 +151,6 @@ class HistoryRepository extends BaseRepository {
     bool? isCompleted,
   }) async {
     try {
-      logInfo('Updating progress for comic: $comicId, page: $pagePosition/$totalPages');
-
       final existingHistory = await getComicHistory(comicId);
       if (existingHistory != null) {
         final updatedHistory = existingHistory.updateProgress(
@@ -188,7 +160,6 @@ class HistoryRepository extends BaseRepository {
         );
         await updateHistory(updatedHistory);
       } else {
-        logError('Cannot update progress: No history found for comic: $comicId');
         throw Exception('No history found for comic: $comicId');
       }
     } catch (e, stackTrace) {
@@ -204,14 +175,11 @@ class HistoryRepository extends BaseRepository {
   /// Mark chapter as completed
   Future<void> markChapterCompleted(String comicId) async {
     try {
-      logInfo('Marking chapter as completed for comic: $comicId');
-
       final existingHistory = await getComicHistory(comicId);
       if (existingHistory != null) {
         final completedHistory = existingHistory.markCompleted();
         await updateHistory(completedHistory);
       } else {
-        logError('Cannot mark as completed: No history found for comic: $comicId');
         throw Exception('No history found for comic: $comicId');
       }
     } catch (e, stackTrace) {
@@ -227,8 +195,6 @@ class HistoryRepository extends BaseRepository {
   /// Get recently read comics (last 10)
   Future<List<HistoryModel>> getRecentlyRead({int limit = 10}) async {
     try {
-      logInfo('Fetching recently read comics with limit: $limit');
-
       return await getHistory(limit: limit, offset: 0);
     } catch (e, stackTrace) {
       logError(

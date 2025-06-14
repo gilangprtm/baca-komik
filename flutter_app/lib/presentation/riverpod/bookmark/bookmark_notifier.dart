@@ -62,8 +62,6 @@ class BookmarkNotifier extends BaseStateNotifier<BookmarkState> {
             isLoadingMore: false,
           );
         }
-
-        logger.i('Loaded ${bookmarks.length} bookmarks (page $page)');
       } catch (e, stackTrace) {
         logger.e('Error loading bookmarks', error: e, stackTrace: stackTrace);
 

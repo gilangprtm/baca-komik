@@ -66,8 +66,6 @@ class CommentoCommentRepository extends BaseRepository {
         'sortBy': sortBy,
       };
 
-      logInfo('Fetching comments for path: $pathParam, page: $page');
-
       final response = await dioService.get(
         '/comment',
         queryParameters: queryParams,
@@ -75,7 +73,6 @@ class CommentoCommentRepository extends BaseRepository {
       );
 
       if (response.data == null) {
-        logError('Received null response data for comments');
         return CommentoCommentResponse.empty();
       }
 
@@ -84,14 +81,8 @@ class CommentoCommentRepository extends BaseRepository {
       );
 
       if (!commentResponse.isSuccess) {
-        logError('Comment API returned error: ${commentResponse.errmsg}');
         return CommentoCommentResponse.empty();
       }
-
-      logInfo(
-        'Successfully fetched ${commentResponse.comments.length} comments '
-        'for path $pathParam (page $page/${commentResponse.data.totalPages})',
-      );
 
       return commentResponse;
     } catch (e, stackTrace) {
@@ -122,9 +113,6 @@ class CommentoCommentRepository extends BaseRepository {
     String sortBy = 'insertedAt_desc',
   }) async {
     try {
-      logInfo(
-          'Fetching all comments for manga ID: $mangaId (max $maxPages pages)');
-
       // Get first page to determine total pages
       final firstPageResponse = await getComments(
         mangaId: mangaId,
@@ -160,7 +148,6 @@ class CommentoCommentRepository extends BaseRepository {
         if (pageResponse.isSuccess) {
           allComments.addAll(pageResponse.comments);
         } else {
-          logError('Failed to fetch page $page for manga $mangaId');
           break;
         }
       }
@@ -172,11 +159,6 @@ class CommentoCommentRepository extends BaseRepository {
         pageSize: allComments.length,
         count: firstPageResponse.data.count,
         data: allComments,
-      );
-
-      logInfo(
-        'Successfully fetched ${allComments.length} total comments '
-        'from $pagesToFetch pages for manga $mangaId',
       );
 
       return CommentoCommentResponse(
@@ -199,8 +181,6 @@ class CommentoCommentRepository extends BaseRepository {
   /// Returns basic info about comments without fetching all data
   Future<Map<String, dynamic>> getCommentStats(String mangaId) async {
     try {
-      logInfo('Fetching comment stats for manga ID: $mangaId');
-
       final response = await getComments(
         mangaId: mangaId,
         page: 1,

@@ -6,6 +6,9 @@ import 'history_state.dart';
 class HistoryNotifier extends BaseStateNotifier<HistoryState> {
   final HistoryService _historyService = HistoryService();
 
+  // Flag to prevent multiple concurrent loadHistory calls
+  bool _isLoadingHistory = false;
+
   HistoryNotifier(super.initialState, super.ref);
 
   @override
@@ -17,6 +20,12 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
 
   /// Load history from local database
   Future<void> loadHistory({int page = 1, int pageSize = 20}) async {
+    if (_isLoadingHistory) {
+      return;
+    }
+
+    _isLoadingHistory = true;
+
     runAsync('loadHistory', () async {
       try {
         // Set loading state
@@ -63,8 +72,6 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
             isLoadingMore: false,
           );
         }
-
-        logger.i('Loaded ${history.length} history items (page $page)');
       } catch (e, stackTrace) {
         logger.e('Error loading history', error: e, stackTrace: stackTrace);
 
@@ -80,6 +87,8 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
             errorMessage: 'Failed to load more history: ${e.toString()}',
           );
         }
+      } finally {
+        _isLoadingHistory = false;
       }
     });
   }
@@ -125,8 +134,6 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
 
         // Refresh history to get updated list
         await refreshHistory();
-
-        logger.i('History updated: $title - $chapter');
       } catch (e, stackTrace) {
         logger.e('Error updating history', error: e, stackTrace: stackTrace);
       }
@@ -148,8 +155,6 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
           history: updatedHistory,
           totalCount: state.totalCount - 1,
         );
-
-        logger.i('History item removed: $comicId');
       } catch (e, stackTrace) {
         logger.e('Error removing history item',
             error: e, stackTrace: stackTrace);
@@ -173,8 +178,6 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
           currentPage: 1,
           hasMore: false,
         );
-
-        logger.i('All history cleared');
       } catch (e, stackTrace) {
         logger.e('Error clearing history', error: e, stackTrace: stackTrace);
         state = state.copyWith(
@@ -189,7 +192,6 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
   Future<HistoryModel?> getComicHistory(String comicId) async {
     try {
       final historyItem = await _historyService.getComicHistory(comicId);
-      logger.i('Got history for comic $comicId: ${historyItem?.chapter}');
       return historyItem;
     } catch (e, stackTrace) {
       logger.e('Error getting comic history', error: e, stackTrace: stackTrace);
@@ -204,8 +206,6 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
 
       // Refresh history to get updated completion status
       await refreshHistory();
-
-      logger.i('Chapter marked as completed in history: $comicId');
     } catch (e, stackTrace) {
       logger.e('Error marking chapter as completed',
           error: e, stackTrace: stackTrace);
@@ -226,9 +226,6 @@ class HistoryNotifier extends BaseStateNotifier<HistoryState> {
         totalPages: totalPages,
         isCompleted: isCompleted,
       );
-
-      logger.d(
-          'Progress updated: $comicId - Page ${pagePosition + 1}/$totalPages');
     } catch (e, stackTrace) {
       logger.e('Error updating progress', error: e, stackTrace: stackTrace);
     }

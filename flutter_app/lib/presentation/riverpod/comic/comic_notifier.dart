@@ -398,6 +398,11 @@ class ComicNotifier extends BaseStateNotifier<ComicState> {
     await fetchComments(page: 1);
   }
 
+  /// Refresh chapter read status (useful when returning from chapter page)
+  Future<void> refreshChapterReadStatus() async {
+    await _loadChapterReadStatus();
+  }
+
   // ==================== CHAPTER READ STATUS METHODS ====================
 
   /// Load chapter read status from database for all chapters
