@@ -15,18 +15,12 @@ class ComicChapterRepository extends BaseRepository {
   /// Mark chapter as read
   Future<void> markChapterRead(ComicChapterModel comicChapter) async {
     try {
-      logInfo(
-          'Marking chapter as read: ${comicChapter.comicId} - ${comicChapter.chapter}');
-
       final db = await _database;
       await db.insert(
         SqfliteService.tableComicChapter,
         comicChapter.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-
-      logInfo(
-          'Chapter marked as read successfully: ${comicChapter.comicId} - ${comicChapter.chapter}');
     } catch (e, stackTrace) {
       logError(
         'Failed to mark chapter as read: ${comicChapter.comicId} - ${comicChapter.chapter}',
@@ -40,8 +34,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Get read chapters for a comic
   Future<List<ComicChapterModel>> getReadChapters(String comicId) async {
     try {
-      logInfo('Fetching read chapters for comic: $comicId');
-
       final db = await _database;
       final result = await db.query(
         SqfliteService.tableComicChapter,
@@ -52,7 +44,6 @@ class ComicChapterRepository extends BaseRepository {
 
       final chapters =
           result.map((map) => ComicChapterModel.fromMap(map)).toList();
-      logInfo('Retrieved ${chapters.length} read chapters for comic: $comicId');
 
       return chapters;
     } catch (e, stackTrace) {
@@ -92,8 +83,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Check if chapter is read by chapter title (legacy method)
   Future<bool> isChapterRead(String comicId, String chapter) async {
     try {
-      logDebug('Checking if chapter is read: $comicId - $chapter');
-
       final db = await _database;
       final result = await db.query(
         SqfliteService.tableComicChapter,
@@ -103,7 +92,6 @@ class ComicChapterRepository extends BaseRepository {
       );
 
       final isRead = result.isNotEmpty;
-      logDebug('Chapter $comicId - $chapter read status: $isRead');
 
       return isRead;
     } catch (e, stackTrace) {
@@ -119,8 +107,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Get read chapter IDs for a comic (for quick lookup)
   Future<Set<String>> getReadChapterIds(String comicId) async {
     try {
-      logDebug('Fetching read chapter IDs for comic: $comicId');
-
       final db = await _database;
       final result = await db.query(
         SqfliteService.tableComicChapter,
@@ -130,8 +116,6 @@ class ComicChapterRepository extends BaseRepository {
       );
 
       final chapterIds = result.map((row) => row['chapter'] as String).toSet();
-      logDebug(
-          'Retrieved ${chapterIds.length} read chapter IDs for comic: $comicId');
 
       return chapterIds;
     } catch (e, stackTrace) {
@@ -147,8 +131,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Remove all read chapters for a comic
   Future<bool> removeComicChapters(String comicId) async {
     try {
-      logInfo('Removing all chapters for comic: $comicId');
-
       final db = await _database;
       final deletedRows = await db.delete(
         SqfliteService.tableComicChapter,
@@ -157,11 +139,6 @@ class ComicChapterRepository extends BaseRepository {
       );
 
       final success = deletedRows > 0;
-      if (success) {
-        logInfo('All chapters removed successfully for comic: $comicId');
-      } else {
-        logInfo('No chapters found to remove for comic: $comicId');
-      }
 
       return success;
     } catch (e, stackTrace) {
@@ -177,8 +154,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Remove specific chapter
   Future<bool> removeChapter(String comicId, String chapter) async {
     try {
-      logInfo('Removing chapter: $comicId - $chapter');
-
       final db = await _database;
       final deletedRows = await db.delete(
         SqfliteService.tableComicChapter,
@@ -187,11 +162,6 @@ class ComicChapterRepository extends BaseRepository {
       );
 
       final success = deletedRows > 0;
-      if (success) {
-        logInfo('Chapter removed successfully: $comicId - $chapter');
-      } else {
-        logInfo('No chapter found to remove: $comicId - $chapter');
-      }
 
       return success;
     } catch (e, stackTrace) {
@@ -207,8 +177,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Get read chapters count for a comic
   Future<int> getReadChaptersCount(String comicId) async {
     try {
-      logDebug('Fetching read chapters count for comic: $comicId');
-
       final db = await _database;
       final result = await db.rawQuery(
         'SELECT COUNT(*) as count FROM ${SqfliteService.tableComicChapter} WHERE comic_id = ?',
@@ -216,7 +184,6 @@ class ComicChapterRepository extends BaseRepository {
       );
 
       final count = result.first['count'] as int;
-      logDebug('Read chapters count for comic $comicId: $count');
 
       return count;
     } catch (e, stackTrace) {
@@ -232,14 +199,11 @@ class ComicChapterRepository extends BaseRepository {
   /// Get total read chapters count across all comics
   Future<int> getTotalReadChaptersCount() async {
     try {
-      logDebug('Fetching total read chapters count');
-
       final db = await _database;
       final result = await db.rawQuery(
           'SELECT COUNT(*) as count FROM ${SqfliteService.tableComicChapter}');
 
       final count = result.first['count'] as int;
-      logDebug('Total read chapters count: $count');
 
       return count;
     } catch (e, stackTrace) {
@@ -255,12 +219,8 @@ class ComicChapterRepository extends BaseRepository {
   /// Clear all read chapters
   Future<void> clearAllChapters() async {
     try {
-      logInfo('Clearing all read chapters');
-
       final db = await _database;
       await db.delete(SqfliteService.tableComicChapter);
-
-      logInfo('All read chapters cleared successfully');
     } catch (e, stackTrace) {
       logError(
         'Failed to clear all read chapters',
@@ -274,8 +234,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Mark chapter as completed
   Future<void> markChapterCompleted(String comicId, String chapter) async {
     try {
-      logInfo('Marking chapter as completed: $comicId - $chapter');
-
       final db = await _database;
       await db.update(
         SqfliteService.tableComicChapter,
@@ -286,8 +244,6 @@ class ComicChapterRepository extends BaseRepository {
         where: 'comic_id = ? AND chapter = ?',
         whereArgs: [comicId, chapter],
       );
-
-      logInfo('Chapter marked as completed: $comicId - $chapter');
     } catch (e, stackTrace) {
       logError(
         'Failed to mark chapter as completed: $comicId - $chapter',
@@ -301,8 +257,6 @@ class ComicChapterRepository extends BaseRepository {
   /// Get completed chapters for a comic
   Future<List<ComicChapterModel>> getCompletedChapters(String comicId) async {
     try {
-      logInfo('Fetching completed chapters for comic: $comicId');
-
       final db = await _database;
       final result = await db.query(
         SqfliteService.tableComicChapter,
@@ -313,8 +267,6 @@ class ComicChapterRepository extends BaseRepository {
 
       final chapters =
           result.map((map) => ComicChapterModel.fromMap(map)).toList();
-      logInfo(
-          'Retrieved ${chapters.length} completed chapters for comic: $comicId');
 
       return chapters;
     } catch (e, stackTrace) {

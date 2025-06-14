@@ -205,11 +205,6 @@ class ShinigamiChapterService extends BaseService {
             _repository.preloadNextChapter(currentChapterId),
             _repository.preloadPrevChapter(currentChapterId),
           ]));
-
-          logger.i(
-            'Started preloading adjacent chapters for $currentChapterId',
-            tag: 'ShinigamiChapterService',
-          );
         } catch (e, stackTrace) {
           logger.e(
             'Error starting preload for adjacent chapters',

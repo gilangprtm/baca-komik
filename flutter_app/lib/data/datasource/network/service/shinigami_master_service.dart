@@ -111,17 +111,7 @@ class ShinigamiMasterService extends BaseService {
       operationName: 'initializeMasterDataCache',
       function: () async {
         try {
-          logger.i('Initializing master data cache',
-              tag: 'ShinigamiMasterService');
-
           final masterData = await _repository.getAllMasterData();
-
-          logger.i(
-            'Master data cache initialized successfully: '
-            '${(masterData['formats'] as List).length} formats, '
-            '${(masterData['genres'] as List).length} genres',
-            tag: 'ShinigamiMasterService',
-          );
 
           return masterData;
         } catch (e, stackTrace) {

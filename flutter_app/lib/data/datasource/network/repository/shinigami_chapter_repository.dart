@@ -20,15 +20,11 @@ class ShinigamiChapterRepository extends BaseRepository {
         'sort_order': sortOrder,
       };
 
-      logInfo('Fetching chapters for manga ID: $mangaId, page: $page');
-
       final response = await dioService.get(
         '/chapter/$mangaId/list',
         queryParameters: queryParams,
         urlType: UrlType.shinigamiApi,
       );
-
-      logInfo('Chapters list response received');
 
       final chaptersResponse =
           ShinigamiChapterListResponse.fromJson(response.data);
@@ -53,14 +49,10 @@ class ShinigamiChapterRepository extends BaseRepository {
   /// Returns complete chapter information including pages data
   Future<ShinigamiChapter> getChapterDetail(String chapterId) async {
     try {
-      logInfo('Fetching chapter detail for ID: $chapterId');
-
       final response = await dioService.get(
         '/chapter/detail/$chapterId',
         urlType: UrlType.shinigamiApi,
       );
-
-      logInfo('Chapter detail response received');
 
       final shinigamiResponse = ShinigamiResponse.fromJson(
         response.data,
@@ -87,8 +79,6 @@ class ShinigamiChapterRepository extends BaseRepository {
   /// Converts chapter data to individual page objects for easier handling
   Future<List<ShinigamiPage>> getChapterPages(String chapterId) async {
     try {
-      logInfo('Fetching chapter pages for ID: $chapterId');
-
       final chapter = await getChapterDetail(chapterId);
       final pages = <ShinigamiPage>[];
 
@@ -105,7 +95,6 @@ class ShinigamiChapterRepository extends BaseRepository {
         pages.add(page);
       }
 
-      logInfo('Generated ${pages.length} pages for chapter $chapterId');
       return pages;
     } catch (e, stackTrace) {
       logError(
@@ -122,8 +111,6 @@ class ShinigamiChapterRepository extends BaseRepository {
   Future<ShinigamiChapterNavigation> getChapterNavigation(
       String chapterId) async {
     try {
-      logInfo('Fetching chapter navigation for ID: $chapterId');
-
       final chapter = await getChapterDetail(chapterId);
       return ShinigamiChapterNavigation.fromChapter(chapter);
     } catch (e, stackTrace) {
@@ -140,8 +127,6 @@ class ShinigamiChapterRepository extends BaseRepository {
   /// Returns chapter detail, pages, and navigation in one call
   Future<Map<String, dynamic>> getCompleteChapterData(String chapterId) async {
     try {
-      logInfo('Fetching complete chapter data for ID: $chapterId');
-
       // Single API call to get chapter detail
       final chapter = await getChapterDetail(chapterId);
 
@@ -162,9 +147,6 @@ class ShinigamiChapterRepository extends BaseRepository {
 
       // Generate navigation from chapter data (no additional API call)
       final navigation = ShinigamiChapterNavigation.fromChapter(chapter);
-
-      logInfo(
-          'Generated complete data: ${pages.length} pages for chapter $chapterId');
 
       return {
         'chapter': chapter,
@@ -187,8 +169,6 @@ class ShinigamiChapterRepository extends BaseRepository {
   Future<String?> getPageUrl(String chapterId, int pageNumber,
       {bool lowQuality = false}) async {
     try {
-      logInfo('Fetching page URL for chapter $chapterId, page $pageNumber');
-
       final chapter = await getChapterDetail(chapterId);
       final baseUrl = lowQuality ? chapter.baseUrlLow : chapter.baseUrl;
 
@@ -208,8 +188,6 @@ class ShinigamiChapterRepository extends BaseRepository {
   Future<List<String>> getAllPageUrls(String chapterId,
       {bool lowQuality = false}) async {
     try {
-      logInfo('Fetching all page URLs for chapter $chapterId');
-
       final chapter = await getChapterDetail(chapterId);
       final baseUrl = lowQuality ? chapter.baseUrlLow : chapter.baseUrl;
 
@@ -333,10 +311,8 @@ class ShinigamiChapterRepository extends BaseRepository {
     try {
       final nextChapterId = await getNextChapterId(currentChapterId);
       if (nextChapterId != null) {
-        logInfo('Preloading next chapter: $nextChapterId');
         // Just fetch the detail to cache it
         await getChapterDetail(nextChapterId);
-        logInfo('Next chapter preloaded successfully');
       }
     } catch (e, stackTrace) {
       logError(
@@ -354,10 +330,8 @@ class ShinigamiChapterRepository extends BaseRepository {
     try {
       final prevChapterId = await getPrevChapterId(currentChapterId);
       if (prevChapterId != null) {
-        logInfo('Preloading previous chapter: $prevChapterId');
         // Just fetch the detail to cache it
         await getChapterDetail(prevChapterId);
-        logInfo('Previous chapter preloaded successfully');
       }
     } catch (e, stackTrace) {
       logError(

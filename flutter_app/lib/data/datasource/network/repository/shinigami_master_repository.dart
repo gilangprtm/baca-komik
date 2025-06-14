@@ -6,14 +6,10 @@ class ShinigamiMasterRepository extends BaseRepository {
   /// Get all available formats (Manga, Manhwa, Manhua)
   Future<List<ShinigamiFormat>> getFormats() async {
     try {
-      logInfo('Fetching formats list');
-
       final response = await dioService.get(
         '/format/list',
         urlType: UrlType.shinigamiApi,
       );
-
-      logInfo('Formats list response received');
 
       final shinigamiResponse = ShinigamiResponse.fromJson(
         response.data,
@@ -42,14 +38,10 @@ class ShinigamiMasterRepository extends BaseRepository {
   /// Get all available genres
   Future<List<ShinigamiGenre>> getGenres() async {
     try {
-      logInfo('Fetching genres list');
-
       final response = await dioService.get(
         '/genre/list',
         urlType: UrlType.shinigamiApi,
       );
-
-      logInfo('Genres list response received');
 
       final shinigamiResponse = ShinigamiResponse.fromJson(
         response.data,
@@ -114,8 +106,6 @@ class ShinigamiMasterRepository extends BaseRepository {
   /// This method fetches manga data and analyzes genre frequency
   Future<List<ShinigamiGenre>> getPopularGenres({int limit = 10}) async {
     try {
-      logInfo('Fetching popular genres');
-
       // Get all genres first
       final allGenres = await getGenres();
 
@@ -137,8 +127,6 @@ class ShinigamiMasterRepository extends BaseRepository {
   /// Returns count of manga per format
   Future<Map<String, int>> getFormatStatistics() async {
     try {
-      logInfo('Fetching format statistics');
-
       final formats = await getFormats();
       final statistics = <String, int>{};
 
@@ -166,8 +154,6 @@ class ShinigamiMasterRepository extends BaseRepository {
   /// Returns count of manga per genre
   Future<Map<String, int>> getGenreStatistics() async {
     try {
-      logInfo('Fetching genre statistics');
-
       final genres = await getGenres();
       final statistics = <String, int>{};
 
@@ -215,8 +201,6 @@ class ShinigamiMasterRepository extends BaseRepository {
   /// Useful for initialization or caching
   Future<Map<String, dynamic>> getAllMasterData() async {
     try {
-      logInfo('Fetching all master data');
-
       final futures = await Future.wait([
         getFormats(),
         getGenres(),
