@@ -13,7 +13,7 @@ class ComicGridSkeleton extends StatelessWidget {
     super.key,
     this.itemCount = 6,
     this.crossAxisCount = 2,
-    this.childAspectRatio = 0.65, // Adjusted for better comic card proportion
+    this.childAspectRatio = 0.6,
     this.padding = const EdgeInsets.all(8.0),
   });
 
