@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/base/global_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/mahas/widget/mahas_tab.dart';
 import '../../riverpod/search/search_provider.dart';
+import '../../widgets/common/under_construction.dart';
 import 'widget/search_bar_widget.dart';
 import 'widget/search_tab_grid.dart';
 
@@ -11,24 +13,30 @@ class SearchPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search Comics'),
-        backgroundColor: AppColors.getBackgroundColor(context),
-        elevation: 0,
-      ),
-      body: const Column(
-        children: [
-          // Search bar
-          SearchBarWidget(),
+    return GlobalState.underMaintenance
+        ? _buildUnderMaintenance(context)
+        : Scaffold(
+            appBar: AppBar(
+              title: const Text('Search Comics'),
+              backgroundColor: AppColors.getBackgroundColor(context),
+              elevation: 0,
+            ),
+            body: const Column(
+              children: [
+                // Search bar
+                SearchBarWidget(),
 
-          // Content with tabs
-          Expanded(
-            child: SearchPageContent(),
-          ),
-        ],
-      ),
-    );
+                // Content with tabs
+                Expanded(
+                  child: SearchPageContent(),
+                ),
+              ],
+            ),
+          );
+  }
+
+  Widget _buildUnderMaintenance(BuildContext context) {
+    return UnderConstruction();
   }
 }
 
