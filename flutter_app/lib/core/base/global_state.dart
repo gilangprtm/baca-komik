@@ -8,6 +8,7 @@ class GlobalState {
   static String shinigamiUrl = "";
   static String refererUrl = "";
   static String commentUrl = "";
+  static String saweriaUrl = "";
   static bool underMaintenance = false;
   static MustUpdateModel? mustUpdate;
   static PackageInfo? packageInfo;
