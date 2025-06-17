@@ -111,6 +111,11 @@ class FirebaseService {
       GlobalState.commentUrl = commentUrl;
     }
 
+    final saweriaUrl = _remoteConfig.getString('url_saweria');
+    if (saweriaUrl.isNotEmpty) {
+      GlobalState.saweriaUrl = saweriaUrl;
+    }
+
     // GlobalState.baseUrl = "http://192.168.1.9:3000/api";
   }
 

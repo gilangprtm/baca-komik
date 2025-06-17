@@ -42,10 +42,24 @@ class ProfilePage extends StatelessWidget {
           type: ButtonType.primary,
           color: Colors.red,
           isFullWidth: true,
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Donate functionality coming soon')),
-            );
+          onPressed: () async {
+            if (GlobalState.saweriaUrl.isNotEmpty) {
+              try {
+                await launchUrl(
+                  Uri.parse(GlobalState.saweriaUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Could not launch donate link'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
           },
         ),
 
