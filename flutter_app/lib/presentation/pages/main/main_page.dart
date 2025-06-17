@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/mahas/widget/mahas_menubar.dart';
 import '../../../core/utils/type_utils.dart';
-import '../../../data/models/must_update_model.dart';
+import '../../../data/models/firebase/must_update_model.dart';
 import '../../../presentation/riverpod/main/main_provider.dart';
 import '../home/home_page.dart';
 import '../search/search_page.dart';

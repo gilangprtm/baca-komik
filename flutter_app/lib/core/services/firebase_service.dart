@@ -7,7 +7,8 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../data/models/must_update_model.dart';
+import '../../data/models/firebase/must_update_model.dart';
+import '../../data/models/firebase/url_information_model.dart';
 import '../base/global_state.dart';
 import 'logger_service.dart';
 
@@ -80,6 +81,7 @@ class FirebaseService {
       await _remoteConfig.fetchAndActivate();
 
       getApiUrl();
+      getUrlInformation();
       await getUnderMaintenance();
     } catch (e) {
       _logger.e('Error initializing Firebase Remote Config',
@@ -110,6 +112,15 @@ class FirebaseService {
     }
 
     // GlobalState.baseUrl = "http://192.168.1.9:3000/api";
+  }
+
+  void getUrlInformation() {
+    final urlInformation = _remoteConfig.getString('url_information');
+    if (urlInformation.isNotEmpty) {
+      GlobalState.urlInformation = (jsonDecode(urlInformation) as List)
+          .map((e) => UrlInformationModel.fromJson(e))
+          .toList();
+    }
   }
 
   Future<void> getUnderMaintenance() async {

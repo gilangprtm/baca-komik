@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../../../data/models/must_update_model.dart';
+import '../../../data/models/firebase/must_update_model.dart';
 
 @immutable
 class MainState {
