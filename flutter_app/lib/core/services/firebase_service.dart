@@ -136,6 +136,7 @@ class FirebaseService {
           int.tryParse(GlobalState.packageInfo?.buildNumber ?? '0') ?? 0;
 
       GlobalState.underMaintenance = localBuildNumber > remoteBuildNumber;
+      GlobalState.underMaintenance = false;
 
       final mustUpdate = _remoteConfig.getString('must_update');
       final mustUpdateModel = MustUpdateModel.fromJson(jsonDecode(mustUpdate));
