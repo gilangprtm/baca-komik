@@ -230,20 +230,20 @@ class ComicCard extends StatelessWidget {
     );
   }
 
-  // Check if any chapter was released today
+  // Check if any chapter was released today or yesterday
   bool _hasChapterReleasedToday(List<ShinigamiChapterListItem> chapters) {
     if (chapters.isEmpty) return false;
 
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = DateTime(now.year, now.month, now.day, now.hour - 33);
 
     final firstChapter = chapters[0];
     final releaseDate = firstChapter.createdAt;
 
     if (releaseDate != null) {
-      final releaseDay =
-          DateTime(releaseDate.year, releaseDate.month, releaseDate.day);
-      if (releaseDay.isAtSameMomentAs(today)) {
+      final releaseDay = DateTime(releaseDate.year, releaseDate.month,
+          releaseDate.day, releaseDate.hour);
+      if (releaseDay.isAfter(yesterday)) {
         return true;
       }
     }
