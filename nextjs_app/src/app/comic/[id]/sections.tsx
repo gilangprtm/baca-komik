@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {ArrowDown,ArrowUp,Search} from 'lucide-react';
+import {ArrowDown,ArrowUp,ChevronDown,ChevronUp,Search,ThumbsUp} from 'lucide-react';
 import type {Manga,Chapter,ApiEnvelope} from '@/lib/api';
 import {commentToText} from '@/lib/comment-text';
 import {InfiniteSentinel} from '@/components/infinite-loading';
@@ -11,7 +11,26 @@ import {Input} from '@/components/ui/input';
 import {Alert,AlertDescription} from '@/components/ui/alert';
 import {Skeleton} from '@/components/ui/skeleton';
 
-type Comment={objectId:number;nick:string;comment:string;time:number};
+type Comment={objectId:number;nick:string;comment:string;time:number;avatar?:string;like?:number;children?:Comment[];reply_user?:{nick?:string};};
+function replyCount(c:Comment):number{return (c.children||[]).reduce((sum,child)=>sum+1+replyCount(child),0);}
+function CommentItem({comment,depth=0}:{comment:Comment;depth?:number}){
+  const [open,setOpen]=useState(false);
+  const children=comment.children||[];
+  const count=replyCount(comment);
+  const timestamp=comment.time>0?new Date(comment.time<1e12?comment.time*1000:comment.time).toLocaleDateString('id-ID'):null;
+  return <article className={depth?'comic-comment comic-comment-reply':'comic-comment'}>
+    <div className="comic-comment-head">
+      {comment.avatar?<img className="comic-comment-avatar" src={comment.avatar} alt="" loading="lazy" referrerPolicy="no-referrer"/>:<span className="comic-comment-avatar comic-comment-avatar-fallback">{(comment.nick||'?').slice(0,1).toUpperCase()}</span>}
+      <div className="comic-comment-author"><strong>{comment.nick||'Pengguna'}</strong>{timestamp&&<time>{timestamp}</time>}</div>
+    </div>
+    {comment.reply_user?.nick&&<span className="comic-reply-to">Membalas {comment.reply_user.nick}</span>}
+    <p>{commentToText(comment.comment||'')}</p>
+    <div className="comic-comment-actions">{typeof comment.like==='number'&&<span><ThumbsUp size={16}/>{comment.like}</span>}
+      {count>0&&<button type="button" aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<ChevronUp size={17}/>:<ChevronDown size={17}/>} {open?'Sembunyikan balasan':`${count} balasan`}</button>}
+    </div>
+    {open&&children.length>0&&<div className="comic-replies">{children.map((child,i)=><CommentItem key={child.objectId||i} comment={child} depth={depth+1}/>)}</div>}
+  </article>;
+}
 const BATCH=24;
 export function ComicSections({manga,initial}:{manga:Manga;initial:Chapter[]}) {
   const [tab,setTab]=useState<'chapters'|'comments'>('chapters');
@@ -86,7 +105,7 @@ export function ComicSections({manga,initial}:{manga:Manga;initial:Chapter[]}) {
         <InfiniteSentinel enabled={chapterMore&&!chapterLoading&&!chapterError} onVisible={()=>void loadChapters()}/>
       </TabsContent>
       <TabsContent value="comments" className="comic-tab-content">
-        <div className="comic-comments">{comments.map((c,i)=><article className="comic-comment" key={c.objectId||i}><div className="comic-comment-head"><strong>{c.nick||'Pengguna'}</strong>{c.time>0&&<time>{new Date(c.time<1e12?c.time*1000:c.time).toLocaleDateString('id-ID')}</time>}</div><p>{commentToText(c.comment)}</p></article>)}</div>
+        <div className="comic-comments">{comments.map((c,i)=><CommentItem key={c.objectId||i} comment={c}/>)}</div>
         {!comments.length&&!commentLoading&&!commentError&&<p className="muted">Belum ada komentar.</p>}
         {commentLoading&&<div aria-label="Memuat komentar"><Skeleton className="my-3 h-24 w-full"/><Skeleton className="my-3 h-24 w-full"/></div>}
         {commentError&&<Alert variant="destructive"><AlertDescription>{commentError} <Button onClick={()=>void loadComments()}>Coba lagi</Button></AlertDescription></Alert>}
