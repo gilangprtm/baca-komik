@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Heart } from 'lucide-react';
 
 type Detail={chapter_id:string;manga_id:string;chapter_number:number;chapter_title?:string;base_url:string;chapter:{path:string;data:string[]};prev_chapter_id?:string|null;next_chapter_id?:string|null};
@@ -51,7 +51,18 @@ export default function Reader({params}:{params:Promise<{id:string}>}) {
  const total=chapter.chapter.data.length;
  if(total===0)return <><Alert><AlertDescription>Chapter ini belum memiliki halaman.</AlertDescription></Alert><Link href={`/comic/${chapter.manga_id}`}>Kembali ke detail komik</Link></>;
  return <div className="reader-screen">
- <Dialog open={donationOpen} onOpenChange={setDonationOpen}><DialogContent className="max-w-sm"><DialogHeader><DialogTitle>Dukung BacaKomik</DialogTitle><DialogDescription>Jika kamu menikmati membaca komik di sini, kamu bisa membantu pengembangan BacaKomik melalui donasi. Terima kasih atas dukunganmu!</DialogDescription></DialogHeader><div className="flex flex-col gap-3 pt-3"><a href="https://saweria.co/playbit" target="_blank" rel="noopener noreferrer" onClick={()=>setDonationOpen(false)} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#7136ed] px-5 py-3 font-semibold text-white hover:bg-[#8251f4]"><Heart className="size-5"/>Donasi melalui Saweria</a><Button variant="outline" onClick={()=>setDonationOpen(false)}>Lanjutkan membaca</Button></div></DialogContent></Dialog>
+ <Dialog open={donationOpen} onOpenChange={setDonationOpen}>
+   <DialogContent className="w-[calc(100%-2rem)] max-w-sm sm:max-w-sm" aria-describedby="donation-description">
+     <DialogHeader>
+       <DialogTitle>Dukung BacaKomik</DialogTitle>
+       <p id="donation-description" className="text-sm leading-relaxed text-muted-foreground">Jika kamu menikmati membaca komik di sini, dukung pengembangan BacaKomik melalui donasi. Terima kasih atas dukunganmu!</p>
+     </DialogHeader>
+     <div className="flex w-full flex-col gap-3 pt-2">
+       <Button className="min-h-12 w-full bg-[#7136ed] text-white hover:bg-[#8251f4]" render={<a href="https://saweria.co/playbit" target="_blank" rel="noopener noreferrer" onClick={()=>setDonationOpen(false)}/>}><Heart className="size-5"/> Donasi melalui Saweria</Button>
+       <Button variant="outline" className="min-h-11 w-full" onClick={()=>setDonationOpen(false)}>Lanjutkan membaca</Button>
+     </div>
+   </DialogContent>
+ </Dialog>
  <div className="reader-topline"><Link href={`/comic/${chapter.manga_id}`}>{manga?.title||'Detail komik'}</Link><span>Chapter {chapter.chapter_number}</span><span className="reader-page-counter">{page+1}/{total}</span></div>
  <section className="reader">{chapter.chapter.data.map((file,index)=><img key={`${chapter.chapter.path}${file}`} ref={el=>{refs.current[index]=el}} data-page={index} loading={index<2?'eager':'lazy'} src={`${chapter.base_url}${chapter.chapter.path}${file}`} alt={`Halaman ${index+1}`}/>)}</section>
  <div className="reader-end"><p>Chapter {chapter.chapter_number} selesai</p>{chapter.next_chapter_id&&<Button render={<Link href={`/reader/${chapter.next_chapter_id}`}/>}>Chapter berikutnya <ChevronRight/></Button>}</div>
