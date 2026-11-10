@@ -13,7 +13,7 @@ const chapterCache = new Map<string, Promise<ChapterSummary[]>>();
 let active = 0;
 const pending: (() => void)[] = [];
 
-function CountryMark({ code, label }: { code?: string; label: string }) {
+export function CountryMark({ code, label }: { code?: string; label: string }) {
   const clipId = useId();
   return <svg className={`country-mark${code ? ` country-mark-${code.toLowerCase()}` : ' country-mark-unknown'}`} viewBox="0 0 24 16" role="img" aria-label={label}>
     <title>{label}</title>
@@ -86,4 +86,4 @@ export function ComicCard({ m, showChapters = true, resumeChapterId }: { m: Mang
   </article></Card>;
 }
 export function Grid({ items, showChapters = true }: { items: Manga[]; showChapters?: boolean }) { return <div className="grid">{items.map(m => <ComicCard key={m.manga_id} m={m} showChapters={showChapters} />)}</div>; }
-export function BookmarkButton({ m }: { m: Manga }) { const [yes, set] = useState(false); useEffect(() => { all('bookmarks').then(a => set(a.some(x => x.manga_id === m.manga_id))).catch(() => {}); }, [m.manga_id]); return <Button variant={yes ? 'secondary' : 'default'} aria-pressed={yes} onClick={async () => set(await toggle(m))}>{yes ? '★ Bookmarked' : '☆ Bookmark'}</Button>; }
+export function BookmarkButton({ m, plain = false }: { m: Manga; plain?: boolean }) { const [yes, set] = useState(false); useEffect(() => { all('bookmarks').then(a => set(a.some(x => x.manga_id === m.manga_id))).catch(() => {}); }, [m.manga_id]); return <Button variant={plain ? 'ghost' : yes ? 'secondary' : 'default'} aria-pressed={yes} onClick={async () => set(await toggle(m))}>{yes ? '★ Bookmarked' : '☆ Bookmark'}</Button>; }
