@@ -33,5 +33,8 @@ function DialogFooter({ className, children, ...props }: React.ComponentProps<"d
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return <DialogPrimitive.Title data-slot="dialog-title" className={cn("text-base leading-none font-medium", className)} {...props} />
 }
+function DialogDescription({ className, ...props }: DialogPrimitive.Description.Props) {
+  return <DialogPrimitive.Description data-slot="dialog-description" className={cn("text-sm text-muted-foreground", className)} {...props} />
+}
 
-export { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger }
+export { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger }

@@ -52,7 +52,7 @@ export default function Reader({params}:{params:Promise<{id:string}>}) {
  if(total===0)return <><Alert><AlertDescription>Chapter ini belum memiliki halaman.</AlertDescription></Alert><Link href={`/comic/${chapter.manga_id}`}>Kembali ke detail komik</Link></>;
  return <div className="reader-screen">
  <Dialog open={donationOpen} onOpenChange={setDonationOpen}>
-   <DialogContent className="w-[calc(100%-2rem)] max-w-sm sm:max-w-sm" aria-describedby="donation-description">
+   <DialogContent className="reader-donation-dialog w-[calc(100%-2rem)] max-w-sm sm:max-w-sm grid-cols-1" aria-describedby="donation-description">
      <DialogHeader>
        <DialogTitle>Dukung BacaKomik</DialogTitle>
        <p id="donation-description" className="text-sm leading-relaxed text-muted-foreground">Jika kamu menikmati membaca komik di sini, dukung pengembangan BacaKomik melalui donasi. Terima kasih atas dukunganmu!</p>

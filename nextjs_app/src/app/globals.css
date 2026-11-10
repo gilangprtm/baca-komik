@@ -146,6 +146,9 @@
 .comic-bookmark-action button{background:transparent!important;color:#f5f5f7!important;border:0!important;box-shadow:none!important}
 .comic-bookmark-action button:hover{background:#33333a!important}
 
+/* Keep the donation dialog single-column despite the legacy global .grid rule. */
+.reader-donation-dialog{grid-template-columns:minmax(0,1fr)}
+
 /* Immersive reader: replace global pill navigation with chapter controls */
 body:has(.reader-screen) .nav-pill{display:none}
 body:has(.reader-screen) .shell{max-width:none;padding:72px 0 110px}
