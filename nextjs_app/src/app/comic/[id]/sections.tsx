@@ -86,7 +86,6 @@ export function ComicSections({manga,initial}:{manga:Manga;initial:Chapter[]}) {
   const taxonomy=Object.entries(manga.taxonomy||{});
   return <>
     <div className="comic-meta">
-      {manga.user_rate!=null&&<div className="comic-rating">★ {manga.user_rate}</div>}
       <p className={expanded?'comic-description expanded':'comic-description'}>{manga.description||'Tidak ada deskripsi.'}</p>
       {Boolean(manga.description)&&<button className="comic-read-more" onClick={()=>setExpanded(v=>!v)}>{expanded?'Read Less':'Read More'}</button>}
       {taxonomy.map(([key,values])=>values.length>0&&<div className="comic-taxonomy" key={key}><strong>{key}</strong><div>{values.map((v,i)=><span key={v.slug||`${v.name}-${i}`}>{v.name}</span>)}</div></div>)}
