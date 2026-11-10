@@ -118,3 +118,21 @@
 .comic-comment-head strong{color:#a779ff}
 .comic-comment p{white-space:pre-wrap;line-height:1.7;margin:12px 0 0;overflow-wrap:anywhere}
 @media(max-width:620px){.comic-detail{margin:-18px -14px 0;border-radius:0}.comic-hero{padding-top:90px}.comic-detail-body{padding:0 16px 110px}.comic-tabs-list{top:64px}.comic-taxonomy{grid-template-columns:78px 1fr}.comic-hero-nav{left:14px;right:14px}}
+
+
+/* Nested Commento threads: replies are included in the parent API payload. */
+.comic-comment-head{align-items:center}
+.comic-comment-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none}
+.comic-comment-avatar-fallback{display:grid;place-items:center;background:#35313f;color:#fff;font-weight:700}
+.comic-comment-author{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap}
+.comic-comment-author strong{overflow-wrap:anywhere}
+.comic-comment>p{margin-left:52px}
+.comic-comment-actions{display:flex;align-items:center;gap:18px;margin:12px 0 0 52px;color:#a9a9b3;font-size:14px}
+.comic-comment-actions span,.comic-comment-actions button{display:inline-flex;align-items:center;gap:6px}
+.comic-comment-actions button{border:0;background:none;color:#9c66ff;cursor:pointer;padding:6px 0}
+.comic-replies{margin:12px 0 0 24px;padding-left:16px;border-left:2px solid #39313f}
+.comic-comment-reply{padding:14px 0;border-bottom:0}
+.comic-comment-reply .comic-comment-avatar{width:30px;height:30px}
+.comic-comment-reply>p,.comic-comment-reply .comic-comment-actions{margin-left:42px}
+.comic-reply-to{display:block;margin:8px 0 0 42px;font-size:12px;color:#a779ff}
+@media(max-width:620px){.comic-replies{margin-left:8px;padding-left:10px}.comic-comment-author{gap:5px}.comic-comment>p,.comic-comment-actions{margin-left:0}.comic-comment-reply>p,.comic-comment-reply .comic-comment-actions{margin-left:0}}
