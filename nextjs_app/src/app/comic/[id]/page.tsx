@@ -15,7 +15,7 @@ export default async function Comic({params}:{params:Promise<{id:string}>}) {
       get<Chapter[]>(`/chapter/${encodeURIComponent(id)}/list?page=1&page_size=24&sort_by=chapter_number&sort_order=desc`),
     ]);
     const cover=m.cover_portrait_url||m.cover_image_url||'';
-    const firstChapter=chapters[chapters.length-1]?.chapter_id||m.latest_chapter_id;
+    const firstChapter=m.latest_chapter_id||chapters[0]?.chapter_id;
     return <div className="comic-detail">
       <section className="comic-hero">
         {cover&&<div className="comic-hero-backdrop" style={{backgroundImage:`url("${cover.replace(/"/g,'%22')}")`}} aria-hidden="true"/>}
