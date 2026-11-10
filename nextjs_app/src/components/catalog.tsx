@@ -76,10 +76,11 @@ export function ComicCard({ m, showChapters = true, resumeChapterId }: { m: Mang
       <Link className="comic-title" href={`/comic/${m.manga_id}`}>{isRecentlyUpdated(m.latest_chapter_time) && <Badge variant="destructive" className="up-badge">UP</Badge>}<span className="comic-title-text">{m.title}</span></Link>
       {showChapters && (shown.length ? shown.map((chapter, i) => {
         const age = relativeAge(chapter.release_date || chapter.created_at || (!rows.length ? m.latest_chapter_time : undefined));
-        return <div className="chapter-row" key={chapter.chapter_id || `${chapter.chapter_number}-${i}`}>
-          {chapter.chapter_id ? <Link href={`/reader/${chapter.chapter_id}`}>Chapter {chapter.chapter_number}</Link> : <span>Chapter {chapter.chapter_number}</span>}
-          <span className="chapter-age">{age || 'Waktu tidak tersedia'}</span>
-        </div>;
+        const label = `Chapter ${chapter.chapter_number}`;
+        const content = <><span>{label}</span><span className="chapter-age">{age || 'Waktu tidak tersedia'}</span></>;
+        return chapter.chapter_id
+          ? <Link className="chapter-row" key={chapter.chapter_id} href={`/reader/${chapter.chapter_id}`} aria-label={`Baca ${label} — ${m.title}`}>{content}</Link>
+          : <div className="chapter-row muted" key={`${chapter.chapter_number}-${i}`}>{content}</div>;
       }) : requested ? <div className="chapter-row muted">Chapter tidak tersedia</div> : <div className="chapter-row muted" role="status" aria-label="Memuat chapter"><Skeleton className="h-4 w-28"/></div>)}
       {resumeChapterId && <Link className="library-resume-button" href={`/reader/${resumeChapterId}`}>Lanjutkan membaca</Link>}
     </div>
