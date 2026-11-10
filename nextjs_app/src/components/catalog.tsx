@@ -81,7 +81,7 @@ export function ComicCard({ m, showChapters = true, resumeChapterId }: { m: Mang
           <span className="chapter-age">{age || 'Waktu tidak tersedia'}</span>
         </div>;
       }) : requested ? <div className="chapter-row muted">Chapter tidak tersedia</div> : <div className="chapter-row muted" role="status" aria-label="Memuat chapter"><Skeleton className="h-4 w-28"/></div>)}
-      {resumeChapterId && <Link className="library-resume" href={`/reader/${resumeChapterId}`}>Lanjutkan membaca</Link>}
+      {resumeChapterId && <Link className="library-resume-button" href={`/reader/${resumeChapterId}`}>Lanjutkan membaca</Link>}
     </div>
   </article></Card>;
 }
