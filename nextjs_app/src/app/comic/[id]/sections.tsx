@@ -38,8 +38,8 @@ export function ComicSections({manga,initial,commentsOnly=false}:{manga:Manga;in
   const [query,setQuery]=useState('');
   const [ascending,setAscending]=useState(false);
   const [chapters,setChapters]=useState(initial);
-  const [chapterPage,setChapterPage]=useState(1);
-  const [chapterMore,setChapterMore]=useState(initial.length>=BATCH);
+  const [chapterPage,setChapterPage]=useState(initial.length?1:0);
+  const [chapterMore,setChapterMore]=useState(initial.length===0||initial.length>=BATCH);
   const [chapterLoading,setChapterLoading]=useState(false);
   const [chapterError,setChapterError]=useState('');
   const chapterBusy=useRef(false);
@@ -81,6 +81,7 @@ export function ComicSections({manga,initial,commentsOnly=false}:{manga:Manga;in
     }catch(e){setCommentError(e instanceof Error?e.message:'Gagal memuat komentar');}
     finally{commentBusy.current=false;setCommentLoading(false);}
   },[commentMore,commentPage,manga.manga_id]);
+  useEffect(()=>{if(!commentsOnly&&chapterPage===0&&!chapterLoading&&!chapterError)void loadChapters();},[commentsOnly,chapterPage,chapterLoading,chapterError,loadChapters]);
   useEffect(()=>{if((commentsOnly||tab==='comments')&&commentPage===0&&!commentLoading&&!commentError)void loadComments();},[tab,commentPage,commentLoading,commentError,loadComments]);
   const filtered=chapters.filter(c=>!query||String(c.chapter_number).includes(query)||c.chapter_title?.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>ascending?a.chapter_number-b.chapter_number:b.chapter_number-a.chapter_number);
   const taxonomy=Object.entries(manga.taxonomy||{});
