@@ -1,0 +1,2 @@
+import {Skeleton} from '@/components/ui/skeleton';
+export default function Loading(){return <div className="comic-detail"><div className="comic-hero"><Skeleton className="comic-hero-cover"/><Skeleton className="mt-6 h-10 w-3/4 max-w-md"/></div><div className="comic-detail-body"><Skeleton className="h-14 w-full rounded-xl"/><Skeleton className="mt-4 h-14 w-full rounded-xl"/><Skeleton className="mt-8 h-28 w-full"/><Skeleton className="mt-8 h-12 w-full"/>{[1,2,3].map(i=><Skeleton key={i} className="mt-4 h-16 w-full"/>)}</div></div>}
