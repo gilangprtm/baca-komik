@@ -145,3 +145,21 @@
 .comic-bookmark-action{background:#27272c}
 .comic-bookmark-action button{background:transparent!important;color:#f5f5f7!important;border:0!important;box-shadow:none!important}
 .comic-bookmark-action button:hover{background:#33333a!important}
+
+/* Immersive reader: replace global pill navigation with chapter controls */
+body:has(.reader-screen) .nav-pill{display:none}
+body:has(.reader-screen) .shell{max-width:none;padding:72px 0 110px}
+.reader-screen{background:#0b0b0e;min-height:100dvh}
+.reader-topline{max-width:760px;margin:auto;display:flex;align-items:center;gap:12px;padding:12px 16px;color:#eee}
+.reader-topline>a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
+.reader-topline>span{flex:none;color:#a779ff}
+.reader-page-counter{font-size:12px}
+.reader-end{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;padding:24px 16px}
+.reader-end button{background:#7136ed;color:#fff}
+.reader-comments{max-width:760px;margin:24px auto;padding:24px 16px 60px}
+.reader-comments h2{font-size:24px;font-weight:750;margin-bottom:18px}
+.reader-controls{position:fixed;z-index:20;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 14px;border-radius:999px;background:rgba(29,29,34,.88);backdrop-filter:blur(14px);box-shadow:0 6px 24px #0008}
+.reader-controls>a,.reader-controls>button{display:grid;place-items:center;width:52px;height:52px;flex:none;border:0;border-radius:50%;background:#29292f;color:#fff;cursor:pointer}
+.reader-controls>button[aria-pressed=true]{background:#7136ed}
+.reader-controls svg{width:24px;height:24px}
+@media(max-width:620px){body:has(.reader-screen) .shell{padding-top:64px}.reader-controls{gap:8px;padding:8px 10px}.reader-controls>a,.reader-controls>button{width:48px;height:48px}.reader-topline{font-size:13px}}
