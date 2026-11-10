@@ -13,7 +13,7 @@ import {Skeleton} from '@/components/ui/skeleton';
 
 type Comment={objectId:number;nick:string;comment:string;time:number;avatar?:string;like?:number;children?:Comment[];reply_user?:{nick?:string};};
 function replyCount(c:Comment):number{return (c.children||[]).reduce((sum,child)=>sum+1+replyCount(child),0);}
-function CommentItem({comment,depth=0}:{comment:Comment;depth?:number}){
+export function CommentItem({comment,depth=0}:{comment:Comment;depth?:number}){
   const [open,setOpen]=useState(false);
   const children=comment.children||[];
   const count=replyCount(comment);
@@ -32,7 +32,7 @@ function CommentItem({comment,depth=0}:{comment:Comment;depth?:number}){
   </article>;
 }
 const BATCH=24;
-export function ComicSections({manga,initial}:{manga:Manga;initial:Chapter[]}) {
+export function ComicSections({manga,initial,commentsOnly=false}:{manga:Manga;initial:Chapter[];commentsOnly?:boolean}) {
   const [tab,setTab]=useState<'chapters'|'comments'>('chapters');
   const [expanded,setExpanded]=useState(false);
   const [query,setQuery]=useState('');
@@ -81,9 +81,15 @@ export function ComicSections({manga,initial}:{manga:Manga;initial:Chapter[]}) {
     }catch(e){setCommentError(e instanceof Error?e.message:'Gagal memuat komentar');}
     finally{commentBusy.current=false;setCommentLoading(false);}
   },[commentMore,commentPage,manga.manga_id]);
-  useEffect(()=>{if(tab==='comments'&&commentPage===0&&!commentLoading&&!commentError)void loadComments();},[tab,commentPage,commentLoading,commentError,loadComments]);
+  useEffect(()=>{if((commentsOnly||tab==='comments')&&commentPage===0&&!commentLoading&&!commentError)void loadComments();},[tab,commentPage,commentLoading,commentError,loadComments]);
   const filtered=chapters.filter(c=>!query||String(c.chapter_number).includes(query)||c.chapter_title?.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>ascending?a.chapter_number-b.chapter_number:b.chapter_number-a.chapter_number);
   const taxonomy=Object.entries(manga.taxonomy||{});
+  const commentsView=<div className="comic-tab-content"><div className="comic-comments">{comments.map((c,i)=><CommentItem key={c.objectId||i} comment={c}/>)}</div>
+        {!comments.length&&!commentLoading&&!commentError&&<p className="muted">Belum ada komentar.</p>}
+        {commentLoading&&<div aria-label="Memuat komentar"><Skeleton className="my-3 h-24 w-full"/><Skeleton className="my-3 h-24 w-full"/></div>}
+        {commentError&&<Alert variant="destructive"><AlertDescription>{commentError} <Button onClick={()=>void loadComments()}>Coba lagi</Button></AlertDescription></Alert>}
+        <InfiniteSentinel enabled={(commentsOnly||tab==='comments')&&commentMore&&!commentLoading&&!commentError} onVisible={()=>void loadComments()}/></div>;
+  if(commentsOnly)return <section className="reader-comments"><h2>Komentar</h2>{commentsView}</section>;
   return <>
     <div className="comic-meta">
       <p className={expanded?'comic-description expanded':'comic-description'}>{manga.description||'Tidak ada deskripsi.'}</p>
@@ -103,13 +109,7 @@ export function ComicSections({manga,initial}:{manga:Manga;initial:Chapter[]}) {
         {chapterError&&<Alert variant="destructive"><AlertDescription>{chapterError} <Button onClick={()=>void loadChapters()}>Coba lagi</Button></AlertDescription></Alert>}
         <InfiniteSentinel enabled={chapterMore&&!chapterLoading&&!chapterError} onVisible={()=>void loadChapters()}/>
       </TabsContent>
-      <TabsContent value="comments" className="comic-tab-content">
-        <div className="comic-comments">{comments.map((c,i)=><CommentItem key={c.objectId||i} comment={c}/>)}</div>
-        {!comments.length&&!commentLoading&&!commentError&&<p className="muted">Belum ada komentar.</p>}
-        {commentLoading&&<div aria-label="Memuat komentar"><Skeleton className="my-3 h-24 w-full"/><Skeleton className="my-3 h-24 w-full"/></div>}
-        {commentError&&<Alert variant="destructive"><AlertDescription>{commentError} <Button onClick={()=>void loadComments()}>Coba lagi</Button></AlertDescription></Alert>}
-        <InfiniteSentinel enabled={tab==='comments'&&commentMore&&!commentLoading&&!commentError} onVisible={()=>void loadComments()}/>
-      </TabsContent>
+      <TabsContent value="comments">{commentsView}</TabsContent>
     </Tabs>
   </>;
 }
