@@ -136,3 +136,12 @@
 .comic-comment-reply>p,.comic-comment-reply .comic-comment-actions{margin-left:42px}
 .comic-reply-to{display:block;margin:8px 0 0 42px;font-size:12px;color:#a779ff}
 @media(max-width:620px){.comic-replies{margin-left:8px;padding-left:10px}.comic-comment-author{gap:5px}.comic-comment>p,.comic-comment-actions{margin-left:0}.comic-comment-reply>p,.comic-comment-reply .comic-comment-actions{margin-left:0}}
+
+/* Detail cover badges and neutral bookmark action */
+.comic-hero-cover-wrap{position:relative;width:min(220px,56vw);aspect-ratio:2/3}
+.comic-hero-cover-wrap .comic-hero-cover{display:block;width:100%;height:100%}
+.comic-cover-rating{position:absolute;top:9px;left:9px;z-index:1;padding:5px 9px;border-radius:7px;background:rgba(0,0,0,.78);color:#ff9876;font-size:15px;font-weight:750}
+.comic-hero-cover-wrap .country-mark{position:absolute;right:9px;bottom:9px;width:34px;filter:drop-shadow(0 1px 4px #000a)}
+.comic-bookmark-action{background:#27272c}
+.comic-bookmark-action button{background:transparent!important;color:#f5f5f7!important;border:0!important;box-shadow:none!important}
+.comic-bookmark-action button:hover{background:#33333a!important}
