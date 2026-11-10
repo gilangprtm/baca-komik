@@ -76,3 +76,45 @@
 .explore-filter-dialog .explore-filter-select [data-slot=select-value]{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .explore-filter-dialog>.explore-filter-footer{display:flex;flex-direction:row!important;flex-wrap:nowrap!important;justify-content:flex-end;gap:8px;width:100%;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
 .explore-filter-dialog>.explore-filter-footer>[data-slot=button]{flex:1 1 0;min-width:0;height:48px!important}
+
+
+/* Comic detail: cover-led hero and sticky line tabs */
+.comic-detail{margin:-24px 0 0;background:#0b0b0e;color:#f8f8fb;border-radius:16px;overflow:clip;overflow:visible}
+.comic-hero{position:relative;isolation:isolate;display:flex;align-items:center;flex-direction:column;min-height:390px;padding:84px 20px 32px;text-align:center;overflow:hidden}
+.comic-hero-backdrop{position:absolute;z-index:-2;inset:-50px -50px 0;background-position:center top;background-size:cover;filter:blur(35px);opacity:.58;transform:scale(1.08)}
+.comic-hero:after{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(to bottom,rgba(11,11,14,.1),#0b0b0e 84%)}
+.comic-hero-nav{position:absolute;top:16px;left:20px;right:20px;display:flex;justify-content:space-between}
+.comic-hero-nav a{display:grid;place-items:center;width:48px;height:48px;background:#26262b;border-radius:50%}
+.comic-hero-cover{width:min(220px,56vw);aspect-ratio:2/3;object-fit:cover;border-radius:12px;box-shadow:0 14px 35px #0006}
+.comic-hero h1{max-width:760px;margin:24px 0 0;font-size:clamp(27px,4vw,42px);line-height:1.16;font-weight:750;overflow-wrap:anywhere}
+.comic-detail-body{padding:0 24px 50px;max-width:900px;margin:auto}
+.comic-read-button{width:100%;height:58px;background:#7136ed!important;color:white!important;font-size:20px;border-radius:12px}
+.comic-read-button svg{width:20px;height:20px}
+.comic-bookmark-action{display:flex;justify-content:center;margin-top:12px;padding:10px;background:#27272c;border-radius:12px}
+.comic-bookmark-action button{width:100%;min-height:40px;font-size:17px}
+.comic-meta{padding:26px 0 30px}
+.comic-rating{font-size:20px;color:#fb9575;margin-bottom:20px}
+.comic-description{white-space:pre-line;line-height:1.7;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;line-clamp:4;overflow:hidden;margin:0}
+.comic-description.expanded{display:block}
+.comic-read-more{border:0;background:none;color:#a27bff;font-weight:700;cursor:pointer;padding:4px 0 20px}
+.comic-taxonomy{display:grid;grid-template-columns:110px 1fr;align-items:start;gap:12px;margin:15px 0}
+.comic-taxonomy strong{text-transform:capitalize;padding:9px 0}
+.comic-taxonomy>div{display:flex;gap:8px;flex-wrap:wrap}
+.comic-taxonomy span{background:#27272d;padding:9px 13px;border-radius:9px}
+.comic-tabs{display:block}
+.comic-tabs-list{position:sticky;top:72px;z-index:5;display:flex!important;width:100%;height:54px!important;background:#0b0b0e!important;border-bottom:1px solid #35353b;border-radius:0!important;padding:0!important}
+.comic-tabs-list [data-slot=tabs-trigger]{flex:1;height:100%;border:0!important;border-radius:0!important;background:transparent!important;color:#aaa!important;font-weight:650;font-size:17px;box-shadow:none!important}
+.comic-tabs-list [data-slot=tabs-trigger][data-active],.comic-tabs-list [data-slot=tabs-trigger][aria-selected=true]{color:#fff!important;border-bottom:3px solid #793bfa!important}
+.comic-tab-content{padding-top:18px}
+.comic-chapter-toolbar{display:flex;gap:10px;margin-bottom:20px}
+.comic-search{display:flex;align-items:center;gap:10px;flex:1;background:#27272d;border-radius:10px;padding:0 12px}
+.comic-search input{border:0;background:transparent;box-shadow:none;min-width:0;height:48px}
+.comic-chapter-toolbar>button{height:48px;width:48px;background:#27272d}
+.comic-chapter-item{display:flex;flex-direction:column;justify-content:center;gap:5px;min-height:78px;padding:14px 4px;border-bottom:1px solid #29292e}
+.comic-chapter-item strong{font-size:17px;font-weight:600}
+.comic-chapter-item small,.comic-comment time{font-size:13px;color:#999}
+.comic-comment{padding:20px 0;border-bottom:1px solid #29292e}
+.comic-comment-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.comic-comment-head strong{color:#a779ff}
+.comic-comment p{white-space:pre-wrap;line-height:1.7;margin:12px 0 0;overflow-wrap:anywhere}
+@media(max-width:620px){.comic-detail{margin:-18px -14px 0;border-radius:0}.comic-hero{padding-top:90px}.comic-detail-body{padding:0 16px 110px}.comic-tabs-list{top:64px}.comic-taxonomy{grid-template-columns:78px 1fr}.comic-hero-nav{left:14px;right:14px}}
