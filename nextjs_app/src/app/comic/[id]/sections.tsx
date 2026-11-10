@@ -1,24 +1,97 @@
 'use client';
-import {useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
+import {ArrowDown,ArrowUp,Search} from 'lucide-react';
 import type {Manga,Chapter,ApiEnvelope} from '@/lib/api';
 import {commentToText} from '@/lib/comment-text';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import {InfiniteSentinel} from '@/components/infinite-loading';
+import {Tabs,TabsList,TabsTrigger,TabsContent} from '@/components/ui/tabs';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Alert,AlertDescription} from '@/components/ui/alert';
+import {Skeleton} from '@/components/ui/skeleton';
 
 type Comment={objectId:number;nick:string;comment:string;time:number};
+const BATCH=24;
 export function ComicSections({manga,initial}:{manga:Manga;initial:Chapter[]}) {
-  const [tab,setTab]=useState<'chapters'|'info'|'comments'>('chapters');
-  const [chapters,setChapters]=useState(initial); const [page,setPage]=useState(1); const [more,setMore]=useState(true); const [loading,setLoading]=useState(false); const [chapterError,setChapterError]=useState('');
-  const [comments,setComments]=useState<Comment[]|null>(null); const [commentError,setCommentError]=useState(''); const [commentLoading,setCommentLoading]=useState(false);
-  async function loadChapters(){if(loading||!more)return;setLoading(true);setChapterError('');try{const p=page+1;const x=await fetch(`/api/shinigami/chapter/${encodeURIComponent(manga.manga_id)}/list?page=${p}&page_size=24&sort_by=chapter_number&sort_order=desc`).then(r=>{if(!r.ok)throw Error(`API error (${r.status})`);return r.json()}) as ApiEnvelope<Chapter[]>;if(x.retcode!==0)throw Error(x.message||'Chapter request failed');const incoming=x.data||[];setChapters(v=>{const ids=new Set(v.map(c=>c.chapter_id));return [...v,...incoming.filter(c=>!ids.has(c.chapter_id))]});setPage(p);setMore(incoming.length>0&&(x.meta? p<x.meta.total_page:incoming.length>=24));}catch(e){setChapterError(e instanceof Error?e.message:'Unable to load chapters');}finally{setLoading(false)}}
-  async function loadComments(){setCommentLoading(true);setCommentError('');try{const p=new URLSearchParams({path:`series/${manga.manga_id}`,pageSize:'10',page:'1',lang:'en',sortBy:'insertedAt_desc'});const x=await fetch(`/api/comment/comment?${p}`).then(r=>{if(!r.ok)throw Error(`Commento error (${r.status})`);return r.json()});if(x.errno!==0)throw Error(x.errmsg||'Comment request failed');setComments(x.data?.data||[]);}catch(e){setCommentError(e instanceof Error?e.message:'Unable to load comments');}finally{setCommentLoading(false)}}
-  function select(value:'chapters'|'info'|'comments'){setTab(value);if(value==='comments'&&comments===null&&!commentLoading)void loadComments();}
-  return <Tabs value={tab} onValueChange={(v:string)=>{if(v==='chapters'||v==='info'||v==='comments')select(v)}}><TabsList aria-label="Comic sections"><TabsTrigger value="chapters">Chapters</TabsTrigger><TabsTrigger value="info">Info</TabsTrigger><TabsTrigger value="comments">Comments</TabsTrigger></TabsList>
-  <TabsContent value={tab} aria-label={tab==='chapters'?'Chapters':tab==='info'?'Info':'Comments'}>
-  {tab==='info'?<Card><CardContent><h2>Info</h2><p>{manga.description||'Tidak ada deskripsi.'}</p><p>{Object.entries(manga.taxonomy||{}).flatMap(([k,v])=>v.map(x=>`${k}: ${x.name}`)).join(' · ')}</p></CardContent></Card>:tab==='chapters'?<Card><CardContent><h2>Chapters</h2>{chapters.length?chapters.map((c,i)=><p key={`${c.chapter_id}-${i}`}><Link href={`/reader/${c.chapter_id}`}>Chapter {c.chapter_number}{c.chapter_title?` · ${c.chapter_title}`:''}</Link></p>):<p>Chapter tidak tersedia.</p>}{chapterError&&<Alert variant="destructive"><AlertDescription>{chapterError}</AlertDescription></Alert>}{loading&&<div role="status" aria-label="Memuat chapter"><Skeleton className="my-2 h-5 w-2/3"/><Skeleton className="my-2 h-5 w-1/2"/></div>}{more&&<Button disabled={loading} onClick={()=>void loadChapters()}>{loading?'Memuat…':'Muat chapter lainnya'}</Button>}</CardContent></Card>:<><h2>Comments</h2>{commentLoading?<div role="status" aria-label="Memuat komentar"><Skeleton className="my-2 h-20 w-full"/><Skeleton className="my-2 h-20 w-full"/></div>:commentError?<><Alert variant="destructive"><AlertDescription>{commentError}</AlertDescription></Alert><Button onClick={()=>void loadComments()}>Coba lagi</Button></>:comments?.length?comments.map(c=><Card key={c.objectId}><CardContent><strong>{c.nick}</strong><p style={{whiteSpace:'pre-wrap'}}>{commentToText(c.comment)}</p></CardContent></Card>):<Card><CardContent><p>{comments?'Belum ada komentar.':'Belum dimuat.'}</p></CardContent></Card>}</>}
-  </TabsContent></Tabs>;
+  const [tab,setTab]=useState<'chapters'|'comments'>('chapters');
+  const [expanded,setExpanded]=useState(false);
+  const [query,setQuery]=useState('');
+  const [ascending,setAscending]=useState(false);
+  const [chapters,setChapters]=useState(initial);
+  const [chapterPage,setChapterPage]=useState(1);
+  const [chapterMore,setChapterMore]=useState(initial.length>=BATCH);
+  const [chapterLoading,setChapterLoading]=useState(false);
+  const [chapterError,setChapterError]=useState('');
+  const chapterBusy=useRef(false);
+  const [comments,setComments]=useState<Comment[]>([]);
+  const [commentPage,setCommentPage]=useState(0);
+  const [commentMore,setCommentMore]=useState(true);
+  const [commentLoading,setCommentLoading]=useState(false);
+  const [commentError,setCommentError]=useState('');
+  const commentBusy=useRef(false);
+  const loadChapters=useCallback(async()=>{
+    if(chapterBusy.current||!chapterMore)return;
+    chapterBusy.current=true;setChapterLoading(true);setChapterError('');
+    try {
+      const p=chapterPage+1;
+      const r=await fetch(`/api/shinigami/chapter/${encodeURIComponent(manga.manga_id)}/list?page=${p}&page_size=${BATCH}&sort_by=chapter_number&sort_order=desc`);
+      if(!r.ok)throw Error(`API error (${r.status})`);
+      const x=await r.json() as ApiEnvelope<Chapter[]>;
+      if(x.retcode!==0)throw Error(x.message||'Gagal memuat chapter');
+      const incoming=Array.isArray(x.data)?x.data:[];
+      setChapters(old=>{const ids=new Set(old.map(c=>c.chapter_id));return [...old,...incoming.filter(c=>!ids.has(c.chapter_id))]});
+      setChapterPage(p);
+      setChapterMore(incoming.length>0&&(x.meta?p<x.meta.total_page:incoming.length>=BATCH));
+    }catch(e){setChapterError(e instanceof Error?e.message:'Gagal memuat chapter');}
+    finally{chapterBusy.current=false;setChapterLoading(false);}
+  },[chapterMore,chapterPage,manga.manga_id]);
+  const loadComments=useCallback(async()=>{
+    if(commentBusy.current||!commentMore)return;
+    commentBusy.current=true;setCommentLoading(true);setCommentError('');
+    try{
+      const next=commentPage+1;
+      const p=new URLSearchParams({path:`series/${manga.manga_id}`,pageSize:'10',page:String(next),lang:'en',sortBy:'insertedAt_desc'});
+      const r=await fetch(`/api/comment/comment?${p}`);
+      if(!r.ok)throw Error(`Comment error (${r.status})`);
+      const x=await r.json();
+      if(x.errno!==0)throw Error(x.errmsg||'Gagal memuat komentar');
+      const incoming:Comment[]=Array.isArray(x.data?.data)?x.data.data:[];
+      setComments(old=>{const ids=new Set(old.map(c=>c.objectId));return [...old,...incoming.filter(c=>!ids.has(c.objectId))]});
+      setCommentPage(next);setCommentMore(incoming.length>=10);
+    }catch(e){setCommentError(e instanceof Error?e.message:'Gagal memuat komentar');}
+    finally{commentBusy.current=false;setCommentLoading(false);}
+  },[commentMore,commentPage,manga.manga_id]);
+  useEffect(()=>{if(tab==='comments'&&commentPage===0&&!commentLoading&&!commentError)void loadComments();},[tab,commentPage,commentLoading,commentError,loadComments]);
+  const filtered=chapters.filter(c=>!query||String(c.chapter_number).includes(query)||c.chapter_title?.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>ascending?a.chapter_number-b.chapter_number:b.chapter_number-a.chapter_number);
+  const taxonomy=Object.entries(manga.taxonomy||{});
+  return <>
+    <div className="comic-meta">
+      {manga.user_rate!=null&&<div className="comic-rating">★ {manga.user_rate}</div>}
+      <p className={expanded?'comic-description expanded':'comic-description'}>{manga.description||'Tidak ada deskripsi.'}</p>
+      {Boolean(manga.description)&&<button className="comic-read-more" onClick={()=>setExpanded(v=>!v)}>{expanded?'Read Less':'Read More'}</button>}
+      {taxonomy.map(([key,values])=>values.length>0&&<div className="comic-taxonomy" key={key}><strong>{key}</strong><div>{values.map((v,i)=><span key={v.slug||`${v.name}-${i}`}>{v.name}</span>)}</div></div>)}
+      {manga.release_year&&<div className="comic-taxonomy"><strong>Tahun</strong><div><span>{manga.release_year}</span></div></div>}
+    </div>
+    <Tabs value={tab} onValueChange={v=>{if(v==='chapters'||v==='comments')setTab(v)}} className="comic-tabs">
+      <TabsList className="comic-tabs-list" aria-label="Chapter dan komentar">
+        <TabsTrigger value="chapters">Chapter</TabsTrigger><TabsTrigger value="comments">Comment</TabsTrigger>
+      </TabsList>
+      <TabsContent value="chapters" className="comic-tab-content">
+        <div className="comic-chapter-toolbar"><div className="comic-search"><Search size={18}/><Input aria-label="Cari chapter" placeholder="Cari chapter..." value={query} onChange={e=>setQuery(e.target.value)}/></div><Button variant="outline" size="icon" aria-label="Balik urutan chapter" onClick={()=>setAscending(v=>!v)}>{ascending?<ArrowUp/>:<ArrowDown/>}</Button></div>
+        <div className="comic-chapter-list">{filtered.map((c,i)=><Link className="comic-chapter-item" key={c.chapter_id||i} href={`/reader/${c.chapter_id}`}><strong>Chapter {c.chapter_number}{c.chapter_title?` · ${c.chapter_title}`:''}</strong>{(c.release_date||c.created_at)&&<small>{new Date(c.release_date||c.created_at||'').toLocaleDateString('id-ID')}</small>}</Link>)}</div>
+        {!filtered.length&&!chapterLoading&&<p className="muted">Chapter tidak ditemukan.</p>}
+        {chapterLoading&&<div aria-label="Memuat chapter"><Skeleton className="my-3 h-16 w-full"/><Skeleton className="my-3 h-16 w-full"/></div>}
+        {chapterError&&<Alert variant="destructive"><AlertDescription>{chapterError} <Button onClick={()=>void loadChapters()}>Coba lagi</Button></AlertDescription></Alert>}
+        <InfiniteSentinel enabled={chapterMore&&!chapterLoading&&!chapterError} onVisible={()=>void loadChapters()}/>
+      </TabsContent>
+      <TabsContent value="comments" className="comic-tab-content">
+        <div className="comic-comments">{comments.map((c,i)=><article className="comic-comment" key={c.objectId||i}><div className="comic-comment-head"><strong>{c.nick||'Pengguna'}</strong>{c.time>0&&<time>{new Date(c.time<1e12?c.time*1000:c.time).toLocaleDateString('id-ID')}</time>}</div><p>{commentToText(c.comment)}</p></article>)}</div>
+        {!comments.length&&!commentLoading&&!commentError&&<p className="muted">Belum ada komentar.</p>}
+        {commentLoading&&<div aria-label="Memuat komentar"><Skeleton className="my-3 h-24 w-full"/><Skeleton className="my-3 h-24 w-full"/></div>}
+        {commentError&&<Alert variant="destructive"><AlertDescription>{commentError} <Button onClick={()=>void loadComments()}>Coba lagi</Button></AlertDescription></Alert>}
+        <InfiniteSentinel enabled={tab==='comments'&&commentMore&&!commentLoading&&!commentError} onVisible={()=>void loadComments()}/>
+      </TabsContent>
+    </Tabs>
+  </>;
 }
