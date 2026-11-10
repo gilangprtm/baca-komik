@@ -1,9 +1,10 @@
 /* eslint @next/next/no-img-element: "off" -- Covers come from variable upstream hosts. */
 import Link from 'next/link';
-import { ArrowLeft, House, Play } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { get, type Manga, type Chapter } from '@/lib/api';
 import { ComicSections } from './sections';
-import { BookmarkButton } from '@/components/catalog';
+import { BookmarkButton, CountryMark } from '@/components/catalog';
+import { countryFlag } from '@/lib/comic-card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -15,17 +16,18 @@ export default async function Comic({params}:{params:Promise<{id:string}>}) {
       get<Chapter[]>(`/chapter/${encodeURIComponent(id)}/list?page=1&page_size=24&sort_by=chapter_number&sort_order=desc`),
     ]);
     const cover=m.cover_portrait_url||m.cover_image_url||'';
+    const flag=countryFlag(m.country_id);
     const firstChapter=m.latest_chapter_id||chapters[0]?.chapter_id;
     return <div className="comic-detail">
       <section className="comic-hero">
         {cover&&<div className="comic-hero-backdrop" style={{backgroundImage:`url("${cover.replace(/"/g,'%22')}")`}} aria-hidden="true"/>}
-        <div className="comic-hero-nav"><Link href="/" aria-label="Kembali"><ArrowLeft/></Link><Link href="/" aria-label="Beranda"><House/></Link></div>
-        {cover&&<img className="comic-hero-cover" src={cover} alt={`Cover ${m.title}`}/>}
+
+        {cover&&<div className="comic-hero-cover-wrap"><img className="comic-hero-cover" src={cover} alt={`Cover ${m.title}`}/>{m.user_rate!=null&&<span className="comic-cover-rating">★ {m.user_rate}</span>}<CountryMark code={flag?.[0]} label={flag?.[1]||"Negara tidak diketahui"}/></div>}
         <h1>{m.title}</h1>
       </section>
       <div className="comic-detail-body">
         {firstChapter&&<Button className="comic-read-button" render={<Link href={`/reader/${firstChapter}`}/>}><Play fill="currentColor"/> Baca</Button>}
-        <div className="comic-bookmark-action"><BookmarkButton m={m}/></div>
+        <div className="comic-bookmark-action"><BookmarkButton m={m} plain/></div>
         <ComicSections manga={m} initial={chapters}/>
       </div>
     </div>;
