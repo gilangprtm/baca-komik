@@ -32,7 +32,7 @@ export function CommentItem({comment,depth=0}:{comment:Comment;depth?:number}){
   </article>;
 }
 const BATCH=24;
-export function ComicSections({manga,initial,commentsOnly=false}:{manga:Manga;initial:Chapter[];commentsOnly?:boolean}) {
+export function ComicSections({manga,initial,commentsOnly=false,commentChapterId}:{manga:Manga;initial:Chapter[];commentsOnly?:boolean;commentChapterId?:string}) {
   const [tab,setTab]=useState<'chapters'|'comments'>('chapters');
   const [expanded,setExpanded]=useState(false);
   const [query,setQuery]=useState('');
@@ -70,7 +70,7 @@ export function ComicSections({manga,initial,commentsOnly=false}:{manga:Manga;in
     commentBusy.current=true;setCommentLoading(true);setCommentError('');
     try{
       const next=commentPage+1;
-      const p=new URLSearchParams({path:`series/${manga.manga_id}`,pageSize:'10',page:String(next),lang:'en',sortBy:'insertedAt_desc'});
+      const p=new URLSearchParams({path:commentChapterId?`chapter/${commentChapterId}`:`series/${manga.manga_id}`,pageSize:'10',page:String(next),lang:'en',sortBy:'insertedAt_desc'});
       const r=await fetch(`/api/comment/comment?${p}`);
       if(!r.ok)throw Error(`Comment error (${r.status})`);
       const x=await r.json();
@@ -80,8 +80,9 @@ export function ComicSections({manga,initial,commentsOnly=false}:{manga:Manga;in
       setCommentPage(next);setCommentMore(incoming.length>=10);
     }catch(e){setCommentError(e instanceof Error?e.message:'Gagal memuat komentar');}
     finally{commentBusy.current=false;setCommentLoading(false);}
-  },[commentMore,commentPage,manga.manga_id]);
+  },[commentMore,commentPage,manga.manga_id,commentChapterId]);
   useEffect(()=>{if(!commentsOnly&&chapterPage===0&&!chapterLoading&&!chapterError)void loadChapters();},[commentsOnly,chapterPage,chapterLoading,chapterError,loadChapters]);
+  useEffect(()=>{setComments([]);setCommentPage(0);setCommentMore(true);setCommentError('');},[commentChapterId,manga.manga_id]);
   useEffect(()=>{if((commentsOnly||tab==='comments')&&commentPage===0&&!commentLoading&&!commentError)void loadComments();},[tab,commentPage,commentLoading,commentError,loadComments]);
   const filtered=chapters.filter(c=>!query||String(c.chapter_number).includes(query)||c.chapter_title?.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>ascending?a.chapter_number-b.chapter_number:b.chapter_number-a.chapter_number);
   const taxonomy=Object.entries(manga.taxonomy||{});
