@@ -66,7 +66,7 @@ export default function Reader({params}:{params:Promise<{id:string}>}) {
  <div className="reader-topline"><Link href={`/comic/${chapter.manga_id}`}>{manga?.title||'Detail komik'}</Link><span>Chapter {chapter.chapter_number}</span><span className="reader-page-counter">{page+1}/{total}</span></div>
  <section className="reader">{chapter.chapter.data.map((file,index)=><img key={`${chapter.chapter.path}${file}`} ref={el=>{refs.current[index]=el}} data-page={index} loading={index<2?'eager':'lazy'} src={`${chapter.base_url}${chapter.chapter.path}${file}`} alt={`Halaman ${index+1}`}/>)}</section>
  <div className="reader-end"><p>Chapter {chapter.chapter_number} selesai</p>{chapter.next_chapter_id&&<Button render={<Link href={`/reader/${chapter.next_chapter_id}`}/>}>Chapter berikutnya <ChevronRight/></Button>}</div>
- {manga&&<ComicSections manga={manga} initial={[]} commentsOnly/>}
+ {manga&&<ComicSections key={chapter.chapter_id} manga={manga} initial={[]} commentsOnly commentChapterId={chapter.chapter_id}/>}
  <nav className="reader-controls" aria-label="Navigasi pembaca">
  {chapter.prev_chapter_id&&<Link href={`/reader/${chapter.prev_chapter_id}`} aria-label="Chapter sebelumnya"><ChevronLeft/></Link>}
  <button type="button" aria-label={autoPlay?'Hentikan scroll otomatis':'Mulai scroll otomatis'} aria-pressed={autoPlay} onClick={()=>setAutoPlay(v=>!v)}>{autoPlay?<Pause fill="currentColor"/>:<Play fill="currentColor"/>}</button>
