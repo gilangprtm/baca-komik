@@ -1,5 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Heart } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Tentang BacaKomik', description: 'Informasi tentang BacaKomik, katalog komik, bookmark, riwayat bacaan, dan dukungan.' };
 
 export default function AboutPage() {
   return (

@@ -1,5 +1,4 @@
 import { Card, CardContent } from '@/components/ui/card';
-
 export default function Profile() {
   return (
     <Card>

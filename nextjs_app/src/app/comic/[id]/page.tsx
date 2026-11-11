@@ -7,6 +7,18 @@ import { BookmarkButton, CountryMark } from '@/components/catalog';
 import { countryFlag } from '@/lib/comic-card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({params}:{params:Promise<{id:string}>}): Promise<Metadata> {
+  try {
+    const {id}=await params;
+    const manga=await get<Manga>(`/manga/detail/${encodeURIComponent(id)}`);
+    const description=manga.description?.replace(/\s+/g,' ').trim().slice(0,300)||`Detail ${manga.title} di BacaKomik. Jelajahi informasi komik dan chapter yang tersedia.`;
+    return {title:manga.title,description,openGraph:{title:manga.title,description,type:'website'}};
+  } catch {
+    return {};
+  }
+}
 
 export default async function Comic({params}:{params:Promise<{id:string}>}) {
   const {id}=await params;
